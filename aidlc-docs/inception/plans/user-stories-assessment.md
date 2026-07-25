@@ -1,30 +1,31 @@
-# User Stories Assessment
+# User Stories Assessment: GUI with Embedded Codex Panel
 
 ## Request Analysis
 
-- **Original Request**: Build the Zundamon Video Generator MVP from a detailed Japanese specification.
-- **User Impact**: Direct. The project is a creator-facing CLI and rendering workflow.
+- **Original Request**: Add a video production GUI with an embedded Codex panel to support planning conversations, JSON draft generation and review, asset management, preview, and rendering.
+- **User Impact**: Direct. The change introduces the primary user interface for video creation.
 - **Complexity Level**: Complex.
-- **Stakeholders**: Individual technical video creator, future maintainers, and the implementation team.
+- **Stakeholders**: Individual technical video creator, future implementer/maintainer, and Codex-assisted workflow operator.
 
 ## Assessment Criteria Met
 
 - [x] High Priority: New user-facing functionality.
-- [x] High Priority: Multiple user workflows, including setup, validation, voice generation, preview, rendering, and correction.
-- [x] High Priority: Complex business logic around script validation, cache behavior, audio duration, and timeline calculation.
-- [x] Medium Priority: Multiple components will affect the user outcome, including CLI scripts, VOICEVOX integration, timeline generation, and Remotion rendering.
-- [x] Benefits: Stories will make acceptance criteria testable and keep implementation aligned with creator workflows.
+- [x] High Priority: User experience changes across the full production workflow.
+- [x] High Priority: Complex business rules around draft JSON, approval, command execution, and generated artifacts.
+- [x] Medium Priority: Multiple user touchpoints: planning chat, scene editing, JSON review, asset selection, preview, logs, rendering.
+- [x] Medium Priority: Multiple valid implementation approaches exist for story grouping and acceptance criteria.
+- [x] Benefits: Stories will clarify creator journeys, approval gates, and testable behavior before design.
 
 ## Decision
 
-**Execute User Stories**: Yes
+**Execute User Stories**: Yes.
 
-**Reasoning**: User stories add clear value because the MVP is not a simple implementation task. It must support a coherent creator workflow from JSON authoring to final MP4 output, with predictable behavior when VOICEVOX, assets, input data, or cache state changes.
+**Reasoning**: This GUI concept is primarily defined by user workflows. User stories are valuable because they express how a creator moves from idea to output, where Codex assists, where human approval is required, and what observable outcomes must exist.
 
 ## Expected Outcomes
 
-- Define the primary creator persona and supporting maintainer perspective.
-- Convert MVP requirements into testable user-centered stories.
-- Clarify acceptance criteria for each workflow.
-- Provide a story map that can guide Workflow Planning and unit decomposition.
+- Clarify the creator's end-to-end production journey.
+- Separate Codex-assisted actions from direct GUI actions.
+- Define acceptance criteria for draft review, approval, and generation workflows.
+- Provide testable behavior for later design and implementation.
 

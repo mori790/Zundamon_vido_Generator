@@ -1,112 +1,125 @@
-# Application Design Plan
+# Application Design Plan: GUI with Embedded Codex Panel
 
-## Context
+## Design Plan Checklist
 
-This plan defines the high-level application design for Zundamon Video Generator. It focuses on component boundaries, interfaces, service orchestration, and dependencies. Detailed algorithms and business rules will be designed later in Functional Design.
-
-## Planning Checklist
-
-- [x] Load approved requirements.
-- [x] Load approved user stories and persona.
-- [x] Load approved workflow execution plan.
-- [x] Identify key functional areas and component candidates.
+- [x] Load requirements, user stories, reverse engineering artifacts, and execution plan.
+- [x] Identify main design decision points.
 - [x] Collect user answers for application design choices.
-- [x] Analyze answers for ambiguity.
-- [x] Obtain explicit approval of this application design plan.
-
-## Design Generation Checklist
-
-- [x] Generate `aidlc-docs/inception/application-design/components.md` with component definitions and high-level responsibilities.
-- [x] Generate `aidlc-docs/inception/application-design/component-methods.md` with method signatures and high-level purposes.
-- [x] Generate `aidlc-docs/inception/application-design/services.md` with service definitions and orchestration patterns.
-- [x] Generate `aidlc-docs/inception/application-design/component-dependency.md` with dependency relationships and communication patterns.
-- [x] Generate `aidlc-docs/inception/application-design/application-design.md` as consolidated design documentation.
+- [x] Analyze answers for ambiguity or contradictions.
+- [x] Generate `components.md` with component definitions and high-level responsibilities.
+- [x] Generate `component-methods.md` with component interfaces and method signatures.
+- [x] Generate `services.md` with service definitions and orchestration patterns.
+- [x] Generate `component-dependency.md` with dependency relationships and communication patterns.
+- [x] Generate consolidated `application-design.md`.
 - [x] Validate design completeness and consistency.
-- [x] Update this plan's checkboxes immediately after each completed generation step.
 
-## Candidate Components
+## Design Scope
 
-- Script Loader and Validator
-- Asset Checker and Path Resolver
-- VOICEVOX Client
-- Voice Generation and Cache Manager
-- Audio Duration Reader
-- Timeline Generator
-- Render Data Builder
-- Remotion Composition and Scene Components
-- CLI Orchestrator
-- Logger and Error Formatter
-- Test Utilities
+This design covers the application-level architecture for a local video production GUI with an embedded Codex panel.
+
+The design should define:
+
+- GUI application shell.
+- Single-video workspace.
+- Codex panel and Codex App Server adapter.
+- Draft JSON and approval workflow.
+- Raw JSON and structured scene editor.
+- Asset selector and public path handling.
+- Command runner and log streaming.
+- Preview and render integration.
+- Compatibility boundary with the existing CLI/core pipeline.
 
 ## Questions
 
+Please answer every `[Answer]:` tag below before design artifacts are generated.
+
 ## Question 1
-How should the application code be organized?
+GUIの実装形態はどれを前提に設計しますか？
 
-A) Use the specification's structure with `scripts/` for CLI entry points and `src/` for shared app code and Remotion components
+A) Electronなどのデスクトップアプリとして設計する
 
-B) Put all TypeScript code under `src/`, including CLI entry points
+B) ローカルWebアプリとして設計し、ブラウザで開く
 
-C) Split into package-style folders such as `packages/core`, `packages/remotion`, and `packages/cli`
+C) まずはローカルWebアプリとして設計し、将来的にデスクトップ化できる境界を残す
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 2
-How should validation be implemented at the component boundary?
+GUIと既存CLI/coreの接続はどれを前提にしますか？
 
-A) Use Zod schemas as the runtime source of truth, and infer TypeScript types from them where practical
+A) GUIから既存npmコマンドを実行して連携する
 
-B) Use TypeScript interfaces plus manual validation functions
+B) GUI用のローカルバックエンドを作り、既存coreサービスを直接呼び出す
 
-C) Use JSON Schema files plus a validator such as Ajv
+C) MVPはnpmコマンド実行を使い、設計上はcore直接呼び出しへ移行できる境界を作る
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 3
-How should CLI orchestration call Remotion rendering?
+Codex App Serverとの接続境界はどれがよいですか？
 
-A) Use Remotion's Node APIs from TypeScript scripts for controlled render orchestration
+A) GUIフロントエンドが直接Codex App Serverとやり取りする
 
-B) Spawn Remotion CLI commands from scripts
+B) ローカルバックエンドがCodex App Serverとやり取りし、GUIには抽象化したイベントを渡す
 
-C) Only generate audio and timeline in custom scripts; let users run Remotion render manually
+C) まずはバックエンド経由を前提にし、直接接続は採用しない
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 4
-How should generated data be passed into the Remotion composition?
+JSON下書きやチャット履歴の保存はどうしますか？
 
-A) Load script, manifest, and timeline JSON from files at render time using input props
+A) MVPではメモリ上だけで扱い、正式適用したJSONだけ保存する
 
-B) Generate a single combined render-data JSON and pass that to Remotion
+B) `generated/` 配下などにGUI用ドラフトと会話メタデータを保存する
 
-C) Import input JSON directly from Remotion components
+C) 専用の `projects/` または `.zundamon-studio/` のようなGUI状態ディレクトリを作る
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 5
-How should component dependencies be managed?
+プレビュー方式はどれを設計の主案にしますか？
 
-A) Keep dependency direction one-way: CLI orchestration depends on core modules, Remotion depends on render data/types, core does not depend on Remotion
+A) GUI内にRemotion Player相当を埋め込む
 
-B) Allow shared utilities to import from Remotion components when convenient
+B) GUIからRemotion Studioを起動し、別画面でプレビューする
 
-C) Keep Remotion and CLI completely isolated with duplicated types if needed
+C) 主案はGUI内プレビュー、フォールバックとしてRemotion Studio起動を設計に含める
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
-## Approval
+## Question 6
+Codexの実行承認UIはどれがよいですか？
 
-After answering all questions above, approve or request changes to this application design plan.
+A) Codexメッセージ内に「承認して実行」ボタンを出す
 
-[Answer]: approve
+B) 画面上部やサイドバーに承認待ちキューを出す
+
+C) メッセージ内ボタンと承認待ちキューの両方を用意する
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: a
+
+## Question 7
+Application Designの成果物では、実装技術をどこまで固定しますか？
+
+A) Electron/React/Nodeなど、具体技術まで固定する
+
+B) React/Node/Remotion/Codex App Serverは固定し、デスクトップ化方式は未確定にする
+
+C) 技術は極力固定せず、責務と境界だけを設計する
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: a

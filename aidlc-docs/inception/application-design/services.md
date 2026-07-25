@@ -1,68 +1,125 @@
-# Services
+# Services: GUI with Embedded Codex Panel
 
-## Service Overview
+## Service Layer Overview
 
-| Service | Responsibility | Calls |
-|---|---|---|
-| Validation Service | Validate script and assets before generation. | Script Loader, Asset Checker, Logger |
-| Voice Service | Generate or reuse narration WAV files. | VOICEVOX Client, Manifest Store, Audio Analyzer, Logger |
-| Timeline Service | Generate frame timeline from script and manifest durations. | Script Loader, Manifest Store, Timeline Generator |
-| Render Service | Build props and render MP4 through Remotion Node APIs. | Render Data Builder, Timeline Store, Remotion APIs |
-| Video Pipeline Service | Execute full `npm run video -- {videoId}` workflow. | Validation, Voice, Timeline, Render |
-| Preview Service | Prepare data for Remotion Studio preview. | Validation, Render Data Builder, Remotion Studio command/API |
+The GUI application is organized around orchestration services rather than rewriting the existing generation pipeline. The existing CLI commands remain the MVP execution boundary.
 
-## Orchestration Patterns
+## S1: Project Workspace Service
 
-### Validate Command
+- **Purpose**: Coordinates the single-video project lifecycle.
+- **Responsibilities**:
+  - Open or create a video workspace.
+  - Load active script.
+  - Track active script, draft state, and generated artifact readiness.
+  - Notify UI panels when project state changes.
+- **Primary Components**:
+  - Workspace Controller.
+  - Script Repository Adapter.
+  - Draft State Store.
+  - Command Runner.
 
-1. Parse `videoId`.
-2. Load script through Zod validation.
-3. Check asset references and placeholders.
-4. Print warnings and stop on blocking errors.
+## S2: Codex Conversation Service
 
-### Voice Command
+- **Purpose**: Manages planning chat and Codex-generated proposals.
+- **Responsibilities**:
+  - Connect to Codex App Server.
+  - Send user messages with current project context.
+  - Receive chat responses, JSON proposals, and action proposals.
+  - Route proposals to draft review or approval UI.
+- **Primary Components**:
+  - Codex Panel.
+  - Codex App Server Client.
+  - Action Approval Controller.
+  - Draft State Store.
 
-1. Parse `videoId` and `--force`.
-2. Load and validate script.
-3. Check VOICEVOX connection.
-4. Load manifest.
-5. For each scene, compare cache hash.
-6. Generate WAV only when needed.
-7. Measure duration and update manifest.
+## S3: Draft Review Service
 
-### Timeline Command
+- **Purpose**: Manages in-memory script proposals before application.
+- **Responsibilities**:
+  - Accept Codex-generated JSON.
+  - Accept manual edits from raw or structured views.
+  - Validate drafts.
+  - Apply approved drafts to canonical script files.
+  - Discard rejected drafts without touching files.
+- **Primary Components**:
+  - Draft State Store.
+  - JSON Review UI.
+  - Scene Editor.
+  - Validation Adapter.
+  - Script Repository Adapter.
 
-1. Load validated script.
-2. Load manifest with audio duration data.
-3. Generate frame timeline.
-4. Save timeline JSON.
+## S4: Asset Workflow Service
 
-### Video Command
+- **Purpose**: Handles image selection and scene attachment.
+- **Responsibilities**:
+  - Open image picker.
+  - Copy selected images under `public/visuals/{videoId}/`.
+  - Produce public paths for script references.
+  - Attach visuals to scenes.
+  - Surface missing asset checks.
+- **Primary Components**:
+  - Asset Manager.
+  - Scene Editor.
+  - Validation Adapter.
 
-1. Run validation.
-2. Run voice generation.
-3. Run timeline generation.
-4. Build render input props.
-5. Render MP4 with Remotion Node APIs.
-6. Confirm output path and log completion.
+## S5: Production Command Service
 
-### Preview Command
+- **Purpose**: Runs the existing production commands through the GUI.
+- **Responsibilities**:
+  - Run validation, voice generation, timeline generation, preview, and render commands.
+  - Stream logs and final status.
+  - Prevent conflicting operations.
+  - Return useful error states to GUI and Codex.
+- **Primary Components**:
+  - Command Runner.
+  - Log Panel.
+  - Workspace Controller.
 
-1. Validate script and available assets.
-2. Generate or load timeline if available.
-3. Start Remotion Studio with selected video input props.
+## S6: Preview Service
 
-## Error Handling Boundaries
+- **Purpose**: Provides the preview experience.
+- **Responsibilities**:
+  - Load embedded preview when render data is available.
+  - Detect stale or missing artifacts.
+  - Trigger fallback preview launch if embedded preview is unavailable.
+- **Primary Components**:
+  - Preview Panel.
+  - Workspace Controller.
+  - Command Runner.
 
-- Services return typed results or throw domain errors.
-- CLI scripts catch domain errors and print Japanese user-facing messages.
-- Low-level HTTP, file system, and Remotion errors are wrapped with context such as video ID, scene ID, and target path.
+## S7: Approval Service
 
-## Data Ownership
+- **Purpose**: Enforces user control over Codex-proposed file and command actions.
+- **Responsibilities**:
+  - Register proposed actions.
+  - Display inline approval controls.
+  - Execute only approved actions.
+  - Record action result state.
+- **Primary Components**:
+  - Action Approval Controller.
+  - Codex Panel.
+  - Script Repository Adapter.
+  - Command Runner.
 
-- `input/` is user-authored.
-- `public/audio/` contains generated audio used by Remotion.
-- `generated/manifests/` contains cache metadata.
-- `generated/timelines/` contains computed frame data.
-- `output/` contains rendered MP4 files.
+## Orchestration Examples
+
+### Planning to Applied JSON
+
+1. Creator sends prompt in Codex Panel.
+2. Codex App Server Client streams response.
+3. Codex proposes JSON draft.
+4. Draft State Store stores draft in memory.
+5. JSON Review UI displays raw and structured views.
+6. Validation Adapter validates draft.
+7. Creator approves apply action.
+8. Script Repository Adapter saves `input/{videoId}.json`.
+
+### Active Script to MP4
+
+1. Creator clicks render or approves Codex-proposed render action.
+2. Action Approval Controller confirms permission if action came from Codex.
+3. Command Runner runs existing npm script.
+4. Log Panel displays logs.
+5. Workspace Controller refreshes generated artifact status.
+6. Preview Panel or output path updates after success.
 

@@ -1,120 +1,155 @@
-# Story Generation Plan
-
-## Context
-
-This plan converts the approved requirements for Zundamon Video Generator into personas and user stories. The recommended approach is a hybrid of user journey-based and feature-based breakdown: organize stories around the creator's workflow, then group implementation-facing capabilities under each workflow step.
+# Story Generation Plan: GUI with Embedded Codex Panel
 
 ## Planning Checklist
 
-- [x] Review approved requirements.
-- [x] Assess whether user stories are needed.
-- [x] Select a story breakdown approach.
-- [x] Collect user answers for story-generation preferences.
-- [x] Analyze answers for ambiguity.
-- [x] Obtain explicit approval of this story generation plan.
+- [x] Review requirements and reverse engineering context.
+- [x] Confirm that User Stories should execute for this user-facing GUI feature.
+- [x] Collect user answers for story structure and persona assumptions.
+- [x] Analyze answers for ambiguity or contradictions.
+- [x] Generate `personas.md`.
+- [x] Generate `stories.md`.
+- [x] Verify each story has acceptance criteria.
+- [x] Verify stories follow INVEST where practical.
+- [x] Map personas to relevant stories.
 
-## Generation Checklist
+## Recommended Story Approach
+
+Use a hybrid of user journey-based and feature-based breakdown.
+
+- **Primary organization**: User journey, because the product value is the flow from idea to rendered MP4.
+- **Secondary organization**: Feature clusters, because Codex panel, JSON review, asset management, preview, and command execution each need testable acceptance criteria.
+
+## Story Breakdown Options Considered
+
+### User Journey-Based
+
+Stories follow the creator workflow: project setup, planning chat, JSON draft, review, asset assignment, validation, preview, render.
+
+**Best for this project** because the main risk is whether the end-to-end creator experience feels coherent.
+
+### Feature-Based
+
+Stories are grouped by GUI feature: Codex panel, editor, asset manager, preview, logs, command runner.
+
+**Useful as a secondary structure** because implementation will likely be organized by components.
+
+### Persona-Based
+
+Stories are grouped by creator types or operator roles.
+
+**Less useful for MVP** because the initial user is a single individual creator, not a multi-role organization.
+
+### Domain-Based
+
+Stories are grouped by planning, scripting, generation, and rendering domains.
+
+**Useful for future expansion** but too abstract for early GUI experience design.
+
+### Epic-Based
+
+Stories are grouped under epics with sub-stories.
+
+**Useful for planning** and will be used lightly to keep stories readable.
+
+## Mandatory Artifacts
 
 - [x] Generate `aidlc-docs/inception/user-stories/personas.md`.
 - [x] Generate `aidlc-docs/inception/user-stories/stories.md`.
-- [x] Ensure stories follow INVEST criteria.
-- [x] Include acceptance criteria for each story.
-- [x] Map personas to relevant stories.
-- [x] Mark this plan's generation checklist complete.
-
-## Story Breakdown Options
-
-### Option 1: User Journey-Based
-
-Stories follow the creator workflow from first setup to completed video output. This is useful for validating that the system works as an end-to-end tool.
-
-### Option 2: Feature-Based
-
-Stories are grouped by capability, such as validation, VOICEVOX, timeline, rendering, and logging. This is useful for implementation planning.
-
-### Option 3: Persona-Based
-
-Stories are grouped by user type, such as creator and maintainer. This is useful when multiple user groups have distinct goals.
-
-### Option 4: Domain-Based
-
-Stories are grouped by domain concepts, such as script, audio, timeline, scene composition, and rendering. This is useful for architecture alignment.
-
-### Recommended Approach
-
-Use a hybrid journey-based plus feature-based approach. The primary story flow should follow the creator journey, while acceptance criteria should reference the feature capabilities needed to make each journey step work.
+- [x] Ensure stories include acceptance criteria.
+- [x] Ensure stories are Independent, Negotiable, Valuable, Estimable, Small, and Testable where practical.
+- [x] Map personas to relevant user stories.
 
 ## Questions
 
+Please answer every `[Answer]:` tag below before story generation starts.
+
 ## Question 1
-Which story breakdown approach should be used?
+ストーリーの粒度はどれがよいですか？
 
-A) Use the recommended hybrid journey-based plus feature-based approach
+A) MVP実装に近い細かめのストーリーにする
 
-B) Use purely user journey-based stories
+B) 体験設計を重視した大きめのストーリーにする
 
-C) Use purely feature-based stories
-
-D) Use domain-based stories
+C) エピックは大きく、配下ストーリーは実装可能な粒度にする
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 2
-Which personas should be included?
+ペルソナはどの範囲で作りますか？
 
-A) Primary creator only
+A) 個人クリエイター1人に絞る
 
-B) Primary creator plus maintainer/developer
+B) 個人クリエイター、技術監修者、将来のGUI運用者を分ける
 
-C) Primary creator, maintainer/developer, and future GUI user
+C) MVPは個人クリエイター中心にし、補助ペルソナとしてAI/Codexとメンテナーを記載する
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 3
-How detailed should acceptance criteria be?
+受け入れ条件の書き方はどれがよいですか？
 
-A) Standard - concise Given/When/Then criteria for each story
+A) Given/When/Then形式で厳密に書く
 
-B) Detailed - include edge cases, failure behavior, and observable outputs for each story
+B) 箇条書きで読みやすく書く
 
-C) Minimal - short bullet acceptance checks only
+C) 重要ストーリーはGiven/When/Then、軽いストーリーは箇条書きにする
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 4
-Should future extensions such as AI台本生成, GUI, thumbnail generation, and YouTube posting be included in stories now?
+最優先のユーザージャーニーはどれですか？
 
-A) No - MVP stories only, with future extensions listed as out of scope
+A) 企画相談からJSON適用まで
 
-B) Yes - include separate future-state epics without MVP acceptance criteria
+B) JSON適用からMP4出力まで
 
-C) Yes - include MVP and future extensions with full acceptance criteria
+C) 企画相談からMP4出力までの全体
 
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: a
+[Answer]: c
 
 ## Question 5
-How should story priority be represented?
+Codexのストーリーでは何を強く表現しますか？
 
-A) Use MVP priorities A, B, and C from the specification
+A) 相談相手としての企画支援
 
-B) Use MoSCoW labels: Must, Should, Could, Won't
+B) JSON生成と修正の自動化
 
-C) Do not assign priority labels
+C) 承認付きで制作作業を進める制作アシスタント
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
-## Approval
+## Question 6
+失敗時のストーリーはどこまで含めますか？
 
-After answering all questions above, approve or request changes to this story generation plan.
+A) MVPでは主要な成功パスだけに絞る
 
-[Answer]: approve
+B) VOICEVOX未起動、JSON不正、素材不足、レンダー失敗は含める
+
+C) 上記に加えて、Codex接続失敗や認証失敗も含める
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: c
+
+## Question 7
+ストーリーの優先度は付けますか？
+
+A) Must/Should/Couldで優先度を付ける
+
+B) MVP/将来対応で分ける
+
+C) 今回は優先度を付けず、要件との対応だけを示す
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: a

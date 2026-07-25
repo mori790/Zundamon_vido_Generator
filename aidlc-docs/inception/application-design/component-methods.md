@@ -1,98 +1,175 @@
-# Component Methods
+# Component Methods: GUI with Embedded Codex Panel
 
-## Script and Validation
-
-```ts
-export function loadVideoScript(videoId: string, options?: LoadScriptOptions): Promise<VideoScript>;
-export function parseVideoScript(input: unknown): VideoScript;
-export function validateVideoId(videoId: string): void;
-export function collectScriptWarnings(script: VideoScript): ValidationWarning[];
-```
-
-- `loadVideoScript` reads and validates `input/{videoId}.json`.
-- `parseVideoScript` is the Zod-backed runtime boundary.
-- `validateVideoId` prevents unsafe IDs and mismatched input.
-- `collectScriptWarnings` reports non-blocking script concerns.
-
-## Asset and Path Handling
+## Type Names
 
 ```ts
-export function resolveWorkspacePath(...segments: string[]): string;
-export function resolveInputScriptPath(videoId: string): string;
-export function resolvePublicReference(publicPath: string): string;
-export function resolveAudioPath(videoId: string, sceneId: string): AudioPathInfo;
-export function checkAssets(script: VideoScript): Promise<AssetCheckResult>;
+type VideoId = string;
+type DraftStatus = 'none' | 'draft' | 'reviewing' | 'invalid' | 'applied' | 'discarded';
+type OperationName = 'validate' | 'voice' | 'timeline' | 'preview' | 'render';
+type OperationStatus = 'idle' | 'queued' | 'running' | 'succeeded' | 'failed';
 ```
 
-- `resolvePublicReference` accepts paths like `/visuals/topic/image.png` and maps them inside `public`.
-- `checkAssets` validates visuals, background, BGM, and character assets.
-
-## VOICEVOX and Voice Cache
+## C1: Electron App Shell
 
 ```ts
-export function createVoicevoxClient(config: VoicevoxConfig): VoicevoxClient;
-export function checkVoicevoxConnection(client: VoicevoxClient): Promise<void>;
-export function createAudioQuery(client: VoicevoxClient, text: string, speakerId: number): Promise<VoicevoxAudioQuery>;
-export function synthesizeSpeech(client: VoicevoxClient, query: VoicevoxAudioQuery, speakerId: number): Promise<ArrayBuffer>;
-export function buildVoiceCacheHash(text: string, speaker: SpeakerConfig): string;
-export function loadManifest(videoId: string): Promise<VoiceManifest>;
-export function saveManifest(videoId: string, manifest: VoiceManifest): Promise<void>;
-export function generateVoices(videoId: string, options?: VoiceGenerationOptions): Promise<VoiceGenerationResult>;
+createMainWindow(): Promise<void>
+registerIpcHandlers(): void
+showOpenImageDialog(): Promise<string[]>
 ```
 
-- `createVoicevoxClient` centralizes base URL configuration.
-- `generateVoices` owns cache decisions and sequential generation.
-- `buildVoiceCacheHash` is deterministic and independent of file paths.
+- Opens the primary desktop window.
+- Registers safe bridges for file picking, file operations, and command execution.
 
-## Audio and Timeline
+## C2: Workspace Controller
 
 ```ts
-export function measureWavDuration(filePath: string): Promise<number>;
-export function secondsToFrames(seconds: number, fps: number): number;
-export function generateTimeline(script: VideoScript, manifest: VoiceManifest): Timeline;
-export function saveTimeline(videoId: string, timeline: Timeline): Promise<void>;
-export function loadTimeline(videoId: string): Promise<Timeline>;
+openWorkspace(videoId: VideoId): Promise<WorkspaceState>
+createWorkspace(videoId: VideoId): Promise<WorkspaceState>
+refreshArtifactStatus(videoId: VideoId): Promise<ArtifactStatus>
+setActiveScript(script: VideoScript): void
+getWorkspaceState(): WorkspaceState
 ```
 
-- `measureWavDuration` returns seconds.
-- `secondsToFrames` rounds `seconds * fps`.
-- `generateTimeline` produces ordered scene frame data.
+- Owns the single-video workspace state.
+- Coordinates active script, draft state, artifacts, and command readiness.
 
-## Render Data and Remotion
+## C3: Script Repository Adapter
 
 ```ts
-export function buildRenderData(videoId: string): Promise<ZundamonRenderData>;
-export function renderVideo(videoId: string, options?: RenderOptions): Promise<RenderResult>;
-export function getCompositionProps(videoId: string): Promise<ZundamonCompositionProps>;
+loadScript(videoId: VideoId): Promise<VideoScript | null>
+saveScript(videoId: VideoId, script: VideoScript): Promise<void>
+scriptExists(videoId: VideoId): Promise<boolean>
+getScriptPath(videoId: VideoId): string
 ```
 
-- `buildRenderData` combines script, manifest, and timeline.
-- `renderVideo` uses Remotion Node APIs.
-- `getCompositionProps` returns props suitable for Remotion Studio or render.
+- Reads and writes canonical `input/{videoId}.json`.
+- Does not store draft proposals.
 
-## CLI
+## C4: Draft State Store
 
 ```ts
-export function runValidateCommand(argv: string[]): Promise<void>;
-export function runVoiceCommand(argv: string[]): Promise<void>;
-export function runTimelineCommand(argv: string[]): Promise<void>;
-export function runPreviewCommand(argv: string[]): Promise<void>;
-export function runVideoCommand(argv: string[]): Promise<void>;
+createDraft(source: 'codex' | 'manual', script: unknown): DraftState
+updateDraft(script: unknown): DraftState
+markDraftInvalid(errors: ValidationIssue[]): DraftState
+markDraftApplied(): DraftState
+discardDraft(): DraftState
+getDraft(): DraftState
 ```
 
-- CLI functions parse arguments, call services, log results, and map failures to user-facing messages.
+- Holds draft script state in memory only.
+- Separates unapplied JSON from the active script.
 
-## React Components
+## C5: Codex Panel
 
-```tsx
-export function ZundamonVideo(props: ZundamonCompositionProps): JSX.Element;
-export function Scene(props: SceneProps): JSX.Element;
-export function Character(props: CharacterProps): JSX.Element;
-export function Subtitle(props: SubtitleProps): JSX.Element | null;
-export function Visual(props: VisualProps): JSX.Element | null;
-export function TitleScene(props: TitleSceneProps): JSX.Element;
-export function EndingScene(props: EndingSceneProps): JSX.Element;
+```ts
+sendMessage(text: string): Promise<void>
+receiveCodexEvent(event: CodexEvent): void
+showActionProposal(action: ProposedAction): void
+attachDraftProposal(script: unknown): void
 ```
 
-- React components render data only and do not perform file system or network work.
+- Manages chat messages and Codex-proposed drafts/actions.
+
+## C6: Codex App Server Client
+
+```ts
+connect(): Promise<CodexConnectionState>
+disconnect(): Promise<void>
+sendUserMessage(text: string, context: CodexContext): Promise<void>
+onEvent(handler: (event: CodexEvent) => void): Unsubscribe
+getConnectionState(): CodexConnectionState
+```
+
+- Communicates directly with Codex App Server from the GUI layer.
+- Converts protocol-level events into app-level events.
+
+## C7: Action Approval Controller
+
+```ts
+registerProposal(action: ProposedAction): ApprovalState
+approveAction(actionId: string): Promise<ActionResult>
+rejectAction(actionId: string): ApprovalState
+getPendingActions(): ProposedAction[]
+```
+
+- Ensures save and command actions require explicit approval.
+- MVP UI renders approvals inline inside Codex messages.
+
+## C8: JSON Review UI
+
+```ts
+setReviewMode(mode: 'raw' | 'structured'): void
+editRawJson(text: string): DraftState
+editStructuredScene(sceneId: string, patch: Partial<Scene>): DraftState
+applyDraft(): Promise<void>
+discardDraft(): void
+```
+
+- Presents both raw JSON and structured scene views.
+
+## C9: Scene Editor
+
+```ts
+addScene(scene: Scene): DraftState
+removeScene(sceneId: string): DraftState
+reorderScene(sceneId: string, targetIndex: number): DraftState
+updateScene(sceneId: string, patch: Partial<Scene>): DraftState
+```
+
+- Updates scene data in the editable script state.
+
+## C10: Asset Manager
+
+```ts
+selectImages(): Promise<LocalAssetSelection[]>
+copyVisualAsset(videoId: VideoId, sourcePath: string): Promise<PublicAssetRef>
+attachVisualToScene(sceneId: string, asset: PublicAssetRef): DraftState
+checkVisualAssets(script: VideoScript): Promise<AssetCheckResult>
+```
+
+- Handles local image selection and public path creation.
+
+## C11: Validation Adapter
+
+```ts
+validateDraft(script: unknown): ValidationResult
+validateActiveScript(videoId: VideoId): Promise<ValidationResult>
+formatValidationIssues(error: unknown): ValidationIssue[]
+```
+
+- Validates in-memory drafts and active scripts.
+
+## C12: Command Runner
+
+```ts
+runOperation(videoId: VideoId, operation: OperationName): Promise<OperationResult>
+cancelOperation(operationId: string): Promise<void>
+onLog(handler: (entry: LogEntry) => void): Unsubscribe
+getOperationStatus(operationId: string): OperationStatus
+```
+
+- Runs existing npm commands through Electron main process.
+
+## C13: Log Panel
+
+```ts
+appendLog(entry: LogEntry): void
+clearLogs(scope?: OperationName): void
+getLogs(scope?: OperationName): LogEntry[]
+exportLogsForCodex(scope?: OperationName): CodexLogContext
+```
+
+- Shows logs and can provide selected logs as Codex context.
+
+## C14: Preview Panel
+
+```ts
+loadPreview(videoId: VideoId): Promise<void>
+refreshPreview(): Promise<void>
+markPreviewStale(reason: string): void
+openPreviewFallback(videoId: VideoId): Promise<void>
+```
+
+- Targets embedded preview first.
+- Keeps Remotion Studio fallback as a recovery path.
 

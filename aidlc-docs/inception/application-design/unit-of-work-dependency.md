@@ -1,50 +1,46 @@
-# Unit of Work Dependencies
+# Unit of Work Dependencies: GUI with Embedded Codex Panel
 
-## Dependency Strategy
+## Dependency Matrix
 
-Implementation proceeds sequentially. Each unit builds on outputs from previous units.
-
-| Unit | Depends On | Enables |
-|---|---|---|
-| U1 Project Foundation and Shared Types | None | All later units |
-| U2 Script Validation, Assets, and Path Safety | U1 | U3, U4, U6, U7 |
-| U3 VOICEVOX Audio Generation and Cache | U1, U2 | U4, U6, U7 |
-| U4 Audio Measurement and Timeline Generation | U1, U2, U3 | U5, U6, U7 |
-| U5 Remotion Composition and Scene Rendering | U1, U2, U4 | U6, U7 |
-| U6 CLI Orchestration and Render Integration | U1, U2, U3, U4, U5 | U7 |
-| U7 Tests, Sample Data, Placeholder Assets, and Documentation | U1, U2, U3, U4, U5, U6 | MVP verification |
+| Unit | Depends On | Dependency Type | Rationale |
+|---|---|---|---|
+| U1: Electron App Shell and Workspace Foundation | Existing project structure | Foundational | All GUI units need desktop shell and workspace state |
+| U2: Codex App Server Connection | U1 | Runtime/UI | Codex panel needs app shell and workspace context |
+| U3: JSON Draft Review and Scene Editing | U1 | State/Data | Draft review needs workspace and script loading |
+| U4: Codex Proposal and Approval Flow | U2, U3 | Workflow | Codex proposals must become drafts or approved actions |
+| U5: Asset Selection and Visual Attachment | U1, U3 | File/UI | Asset attachment edits scenes and uses file dialogs |
+| U6: Command Runner and Log Panel | U1 | Process | Commands require Electron main process and workspace context |
+| U7: Embedded Remotion Preview | U1, U3, U6 | Preview/Artifacts | Preview depends on script state and generated artifacts |
+| U8: Render Workflow and CLI Compatibility Verification | U1, U3, U5, U6 | End-to-end | Render verification depends on scripts, assets, commands, and logs |
 
 ## Critical Path
 
-1. U1 must be completed first because all modules need types and project configuration.
-2. U2 must precede generation and rendering because invalid scripts and unsafe paths must be rejected at boundaries.
-3. U3 must precede U4 because timeline generation needs measured audio durations in manifest data.
-4. U4 must precede U5 because scene rendering depends on frame timeline data.
-5. U5 must precede U6 final render orchestration because the render service needs a composition to render.
-6. U7 finalizes verification after implementation paths exist.
+1. U1 must be completed first.
+2. U2 and U3 can proceed after U1.
+3. U4 requires U2 and U3.
+4. U6 can proceed after U1 and is needed for production commands.
+5. U5 can proceed after U3.
+6. U7 should follow U6 because preview requires generated artifacts and status handling.
+7. U8 should be the final MVP integration unit.
 
-## Parallelization
+## Parallelization Opportunities
 
-Limited parallelization is possible after U1 and U2:
+- U2 and U3 can be developed in parallel once U1 exists.
+- U5 and U6 can be developed in parallel once U1 and U3 are stable.
+- U7 can start as a spike or prototype while U6 is being built, but production integration should wait for command status and artifact readiness.
 
-- Some Remotion component styling in U5 can be prepared while U3 and U4 are implemented, as long as placeholder render data is used.
-- README drafts and sample JSON in U7 can be prepared early.
-- Final tests in U7 depend on completed units and should run after U6.
+## Coordination Points
 
-## Integration Checkpoints
-
-| After Unit | Checkpoint |
-|---|---|
-| U2 | `npm run validate -- sample-video` can report script and asset status. |
-| U3 | `npm run voice -- sample-video` can generate or cache WAV files when VOICEVOX is running. |
-| U4 | Timeline JSON can be generated from measured audio. |
-| U5 | Remotion preview can display scenes from render data. |
-| U6 | `npm run video -- sample-video` can orchestrate the full flow. |
-| U7 | Unit and lightweight integration tests pass; README explains manual MP4 verification. |
+- **VideoScript schema**: U3, U5, U8 must use the existing schema.
+- **Workspace state**: U1 owns the primary state contract used by all units.
+- **Codex proposal format**: U2 and U4 must agree on event/proposal shapes.
+- **Command operation model**: U6, U7, U8 must share operation status and log types.
+- **File path conventions**: U3, U5, U8 must preserve `input/`, `public/`, `generated/`, and `output/`.
 
 ## Risk Notes
 
-- VOICEVOX availability is an environment dependency; integration tests should distinguish unavailable engine from code failure.
-- Remotion render may require local FFmpeg/browser dependencies; build instructions must document expected setup.
-- Placeholder assets reduce first-run friction but should be clearly replaceable with real character art.
+- U2 has product/API uncertainty because Codex App Server behavior and auth must be validated.
+- U7 has technical uncertainty because embedded Remotion preview may be harder than launching Remotion Studio.
+- U3 has product safety risk because draft and active script separation must be unambiguous.
+- U6 has reliability risk because long-running command logs and cancellation can be tricky in Electron.
 

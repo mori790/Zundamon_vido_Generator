@@ -1,54 +1,66 @@
-# Application Design
+# Application Design: GUI with Embedded Codex Panel
 
 ## Summary
 
-Zundamon Video Generator will be implemented as a TypeScript Node.js and Remotion application. CLI entry points live in `scripts/`; shared validation, generation, timing, rendering orchestration, types, and utilities live in `src/`; Remotion React components live under `src/compositions` and `src/components`.
+The proposed GUI is an Electron desktop application with a React renderer. It sits above the existing Zundamon Video Generator CLI and Remotion pipeline. The MVP uses existing npm commands for validation, voice generation, timeline generation, preview, and rendering. Codex App Server is connected directly from the GUI renderer, with action approval handled inside Codex messages.
 
-The design keeps core generation logic independent from Remotion components. CLI scripts orchestrate workflows, core modules perform validation and generation, and Remotion receives prepared input props for rendering.
+## Core Design Decisions
 
-## Approved Design Decisions
+- **Desktop shell**: Electron.
+- **UI**: React.
+- **Local execution**: Electron main process runs npm commands and local file operations.
+- **Codex connection**: Renderer directly connects to Codex App Server.
+- **Draft persistence**: Draft JSON and chat-derived proposals are memory-only until applied.
+- **Approval UI**: Inline approval buttons in Codex messages.
+- **Preview**: GUI-embedded Remotion preview is the main target.
+- **CLI compatibility**: Existing npm commands and project folders remain intact.
 
-- Code organization follows the specification's `scripts/` plus `src/` structure.
-- Runtime validation uses Zod schemas.
-- Rendering uses Remotion Node APIs from TypeScript scripts.
-- Remotion input is built from script, manifest, and timeline JSON.
-- Dependency direction is one-way: CLI to core, Remotion to render data/types, core independent of Remotion.
+## Primary Components
 
-## Main Components
+- Electron App Shell.
+- Workspace Controller.
+- Script Repository Adapter.
+- Draft State Store.
+- Codex Panel.
+- Codex App Server Client.
+- Action Approval Controller.
+- JSON Review UI.
+- Scene Editor.
+- Asset Manager.
+- Validation Adapter.
+- Command Runner.
+- Log Panel.
+- Preview Panel.
 
-- Script Schema and Script Loader.
-- Asset Checker and Path Resolver.
-- VOICEVOX Client, Voice Generator, Manifest Store, and Audio Analyzer.
-- Timeline Generator and Timeline Store.
-- Render Data Builder and Render Service.
-- Remotion composition and scene components.
-- CLI Orchestrator and Logger.
+## Service Boundaries
 
-## Service Flow
+- **Project Workspace Service**: Coordinates active video project state.
+- **Codex Conversation Service**: Handles planning chat and Codex proposals.
+- **Draft Review Service**: Manages draft JSON, validation, application, and discard.
+- **Asset Workflow Service**: Handles visual selection and scene attachment.
+- **Production Command Service**: Runs existing npm commands and streams logs.
+- **Preview Service**: Provides embedded preview and fallback behavior.
+- **Approval Service**: Ensures Codex-proposed changes and commands require explicit approval.
 
-1. `validate` loads the script, validates schema, and checks assets.
-2. `voice` validates input, checks VOICEVOX, generates or reuses WAV files, and updates manifest durations.
-3. `timeline` builds frame data from script scene settings and manifest audio durations.
-4. `video` runs validate, voice, timeline, render data build, and Remotion render.
-5. `preview` prepares render data and opens Remotion Studio for iterative review.
+## Important Constraints
 
-## Design Artifact References
+- Codex-generated JSON must remain unapplied until approved.
+- Active scripts must stay compatible with `input/{videoId}.json`.
+- Existing CLI commands must continue to work.
+- Long-running operations must report status and logs.
+- Memory-only draft storage means unapplied drafts can be lost on app quit. This is acceptable for MVP based on the selected design, but should be revisited after the first usable version.
 
-- `components.md`: Component definitions and responsibilities.
-- `component-methods.md`: High-level method signatures.
-- `services.md`: Service definitions and orchestration patterns.
-- `component-dependency.md`: Dependency relationships, data flow, and coupling rules.
+## Key Risks
 
-## Validation Summary
+- Direct renderer-to-Codex connection may need revision if authentication, protocol, or desktop security constraints require a main-process or backend adapter.
+- Embedded Remotion preview may be more complex than command-based preview.
+- npm command orchestration is pragmatic for MVP but less precise than directly calling core services.
+- Memory-only drafts reduce persistence complexity but increase risk of losing uncommitted AI proposals.
 
-- Required application design artifacts are present.
-- Component responsibilities map to approved requirements and user stories.
-- Service boundaries cover validation, voice generation, timeline generation, rendering, and preview.
-- Dependency rules preserve separation between core generation logic and Remotion rendering.
+## Artifact References
 
-## Extension Compliance Summary
-
-- Security Baseline: N/A. Disabled during Requirements Analysis.
-- Resiliency Baseline: N/A. Disabled during Requirements Analysis.
-- Property-Based Testing: N/A. Disabled during Requirements Analysis.
+- `components.md` defines component responsibilities.
+- `component-methods.md` defines high-level method signatures.
+- `services.md` defines service orchestration.
+- `component-dependency.md` defines communication and dependency patterns.
 

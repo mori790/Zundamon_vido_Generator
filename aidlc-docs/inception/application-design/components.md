@@ -1,83 +1,193 @@
-# Components
+# Components: GUI with Embedded Codex Panel
 
-## Design Decisions
+## Design Assumptions
 
-- Use the specification's structure: `scripts/` for CLI entry points and `src/` for shared application code and Remotion components.
-- Use Zod schemas as the runtime validation boundary and infer TypeScript types where practical.
-- Use Remotion Node APIs from TypeScript scripts for controlled render orchestration.
-- Pass script, manifest, and timeline JSON to Remotion using input props.
-- Keep dependencies one-way: CLI orchestration depends on core modules; Remotion depends on render data and shared types; core modules do not depend on Remotion.
+- GUI form: Electron desktop app.
+- UI stack: React renderer inside Electron.
+- Runtime boundary: Electron main process handles local OS/file/process operations.
+- Existing generation integration: GUI invokes existing npm scripts for MVP.
+- Codex integration: GUI renderer communicates directly with Codex App Server.
+- Draft persistence: JSON drafts and chat-derived proposal state are memory-only in MVP until the user applies a script.
+- Preview: GUI-embedded preview is the primary target.
 
 ## Component List
 
-| Component | Location | Purpose |
-|---|---|---|
-| Script Schema | `src/schemas/video-script.ts` | Define and validate script JSON shape with Zod. |
-| Domain Types | `src/types/video.ts` | Export domain and render data types used by scripts and Remotion. |
-| Script Loader | `src/core/script-loader.ts` | Read `input/{videoId}.json`, parse JSON, and return validated script data. |
-| Asset Checker | `src/core/asset-checker.ts` | Validate referenced public assets and required character placeholders or real assets. |
-| Path Resolver | `src/core/path-resolver.ts` | Normalize paths, constrain public references, and derive project file paths. |
-| VOICEVOX Client | `src/core/voicevox-client.ts` | Wrap VOICEVOX Engine HTTP calls and connection checks. |
-| Voice Generator | `src/core/voice-generator.ts` | Generate WAV files scene by scene using VOICEVOX Client and cache state. |
-| Manifest Store | `src/core/manifest-store.ts` | Read and write generated voice cache metadata. |
-| Audio Analyzer | `src/core/audio-analyzer.ts` | Measure WAV duration in seconds. |
-| Timeline Generator | `src/core/timeline-generator.ts` | Convert scene durations into frame-based timeline data. |
-| Render Data Builder | `src/core/render-data-builder.ts` | Combine script, manifest, and timeline into Remotion input props. |
-| Logger | `src/core/logger.ts` | Emit INFO, WARN, and ERROR messages with consistent formatting. |
-| CLI Orchestrator | `scripts/*.ts` | Implement user commands for validate, voice, timeline, preview, render, and video. |
-| Remotion Root | `src/Root.tsx` | Register the video composition and default props. |
-| Zundamon Composition | `src/compositions/ZundamonVideo.tsx` | Render all scenes using timeline data. |
-| Scene Components | `src/components/*.tsx` | Render scene layout, character, subtitles, visuals, title, and ending. |
-| Utilities | `src/utils/*.ts` | Provide frame, file, text, and subtitle helper functions. |
+### C1: Electron App Shell
 
-## Responsibilities
+- **Purpose**: Host the desktop application and coordinate renderer, main process, menus, and window lifecycle.
+- **Responsibilities**:
+  - Start the main application window.
+  - Expose controlled local capabilities to the renderer.
+  - Keep the GUI desktop-oriented while preserving local project file access.
+- **Interfaces**:
+  - Renderer IPC bridge.
+  - File dialog bridge.
+  - Process execution bridge.
 
-### Script Schema
+### C2: Workspace Controller
 
-- Define allowed scene types, emotions, speaker settings, video settings, subtitle settings, and visual variants.
-- Apply defaults for optional settings where appropriate.
-- Produce typed data for downstream components.
+- **Purpose**: Manage the currently opened single video workspace.
+- **Responsibilities**:
+  - Track the active `videoId`.
+  - Load existing script state from `input/{videoId}.json`.
+  - Track generated artifact readiness for audio, timeline, preview, and output.
+  - Coordinate active script and in-memory draft state.
+- **Interfaces**:
+  - Script Repository.
+  - Draft State Store.
+  - Command Runner.
 
-### Script Loader
+### C3: Script Repository Adapter
 
-- Resolve the input script path from a video ID.
-- Read and parse JSON.
-- Validate the script through Script Schema.
-- Ensure script `id` matches the requested video ID.
+- **Purpose**: Read and write canonical script JSON files.
+- **Responsibilities**:
+  - Load `input/{videoId}.json`.
+  - Save approved scripts to `input/{videoId}.json`.
+  - Preserve compatibility with existing CLI commands.
+  - Surface read/write errors.
+- **Interfaces**:
+  - Existing filesystem paths.
+  - Existing schema validation.
 
-### Asset Checker and Path Resolver
+### C4: Draft State Store
 
-- Keep JSON-controlled file references inside `public`.
-- Verify visuals, backgrounds, BGM, and character assets.
-- Allow development placeholder assets for character art.
-- Return blocking validation errors and non-blocking warnings.
+- **Purpose**: Hold Codex-generated and user-edited draft JSON before application.
+- **Responsibilities**:
+  - Store draft JSON in memory.
+  - Track draft status: `none`, `draft`, `reviewing`, `invalid`, `applied`, `discarded`.
+  - Keep active script separate from draft script.
+  - Discard drafts without changing files.
+- **Interfaces**:
+  - Codex Panel.
+  - JSON Review UI.
+  - Scene Editor.
+  - Validation Adapter.
 
-### Voice Generation
+### C5: Codex Panel
 
-- Check VOICEVOX connectivity.
-- Generate audio query and synthesis requests per scene.
-- Persist WAV files under `public/audio/{videoId}`.
-- Reuse generated audio when the cache hash matches.
-- Update manifest duration and hash metadata.
+- **Purpose**: Provide chat-based planning and revision inside the production app.
+- **Responsibilities**:
+  - Display conversation messages.
+  - Send creator prompts to Codex App Server.
+  - Receive assistant responses and action proposals.
+  - Present inline approval buttons for proposed actions.
+  - Pass JSON draft proposals to Draft State Store.
+- **Interfaces**:
+  - Codex App Server Client.
+  - Action Approval Controller.
+  - Draft State Store.
 
-### Timeline Generation
+### C6: Codex App Server Client
 
-- Read measured audio durations.
-- Apply scene wait durations.
-- Convert seconds to rounded frames.
-- Write timeline JSON under `generated/timelines`.
+- **Purpose**: Encapsulate direct renderer-side communication with Codex App Server.
+- **Responsibilities**:
+  - Manage connection and authentication state.
+  - Send chat input.
+  - Receive streamed responses and structured events.
+  - Convert Codex events into GUI-friendly message, draft, log, or action proposal events.
+- **Interfaces**:
+  - Codex App Server protocol.
+  - Codex Panel event model.
 
-### Rendering
+### C7: Action Approval Controller
 
-- Build Remotion input props from script, manifest, and timeline data.
-- Use Remotion Node APIs for render orchestration.
-- Render title, explanation, code, summary, and ending scenes.
-- Render subtitles, character art, visuals, BGM, and audio.
+- **Purpose**: Ensure Codex cannot apply changes or run commands without creator approval.
+- **Responsibilities**:
+  - Represent proposed actions from Codex.
+  - Render inline approval controls inside Codex messages.
+  - Dispatch approved actions to the correct service.
+  - Mark actions as approved, rejected, completed, or failed.
+- **Interfaces**:
+  - Codex Panel.
+  - Script Repository Adapter.
+  - Command Runner.
+  - Draft State Store.
 
-## Non-Responsibilities
+### C8: JSON Review UI
 
-- Core modules must not import Remotion components.
-- Remotion components must not call VOICEVOX or mutate generated files.
-- CLI scripts must orchestrate modules but avoid embedding business logic.
-- MVP does not include GUI, YouTube upload, AI script generation, or web image search.
+- **Purpose**: Let the creator inspect and edit generated JSON drafts.
+- **Responsibilities**:
+  - Display raw JSON editor.
+  - Display structured scene review.
+  - Switch between both views without losing state.
+  - Show validation status and schema errors.
+  - Apply or discard drafts.
+- **Interfaces**:
+  - Draft State Store.
+  - Validation Adapter.
+  - Script Repository Adapter.
+
+### C9: Scene Editor
+
+- **Purpose**: Provide direct editing of scene-level content.
+- **Responsibilities**:
+  - Add, remove, reorder, and edit scenes.
+  - Edit text, scene type, emotion, visual config, and character visibility.
+  - Send edits to draft or active script state depending on mode.
+- **Interfaces**:
+  - Draft State Store.
+  - Workspace Controller.
+  - Asset Manager.
+
+### C10: Asset Manager
+
+- **Purpose**: Manage visual image selection and public path assignment.
+- **Responsibilities**:
+  - Open local file picker.
+  - Copy selected images to `public/visuals/{videoId}/`.
+  - Generate script-compatible public paths.
+  - Mark scenes with missing or valid visual assets.
+- **Interfaces**:
+  - Electron file dialog bridge.
+  - File operation bridge.
+  - Scene Editor.
+  - Validation Adapter.
+
+### C11: Validation Adapter
+
+- **Purpose**: Expose existing validation behavior to the GUI.
+- **Responsibilities**:
+  - Validate active script or draft script.
+  - Normalize schema, asset, and path errors for display.
+  - Block apply or generation when validation fails.
+- **Interfaces**:
+  - Existing `npm run validate -- {videoId}` for active scripts.
+  - In-memory schema validation for drafts.
+
+### C12: Command Runner
+
+- **Purpose**: Run existing generation commands and stream status to the GUI.
+- **Responsibilities**:
+  - Execute validation, voice, timeline, preview, and render commands.
+  - Stream stdout and stderr to Log Panel.
+  - Track command status.
+  - Prevent conflicting long-running operations.
+- **Interfaces**:
+  - Electron main process process execution.
+  - Existing npm scripts.
+  - Log Panel.
+
+### C13: Log Panel
+
+- **Purpose**: Display command and integration logs.
+- **Responsibilities**:
+  - Append logs in order.
+  - Show operation status.
+  - Surface failures with actionable context.
+  - Provide logs to Codex for diagnosis when the creator asks.
+- **Interfaces**:
+  - Command Runner.
+  - Codex Panel.
+
+### C14: Preview Panel
+
+- **Purpose**: Show the current video preview inside the GUI.
+- **Responsibilities**:
+  - Render or embed a Remotion preview experience.
+  - Detect stale audio or timeline data.
+  - Show fallback guidance if embedded preview is unavailable.
+- **Interfaces**:
+  - Workspace Controller.
+  - Command Runner.
+  - Existing Remotion composition.
 
