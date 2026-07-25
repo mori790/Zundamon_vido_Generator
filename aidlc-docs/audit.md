@@ -901,3 +901,206 @@ https://learn.chatgpt.com/docs/app-server"
 **Context**: CONSTRUCTION - Code Generation approval gate for U2.
 
 ---
+
+## Code Generation Approval
+**Timestamp**: 2026-07-25T08:15:00Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Logged approval of U2 Code Generation and proceeded to U3 Functional Design planning."
+**Context**: CONSTRUCTION - Code Generation approval gate for U2.
+
+---
+
+## Functional Design Planning
+**Timestamp**: 2026-07-25T08:15:00Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Loaded common AI-DLC rules, U3 unit definition, story mapping, requirements, application design, and current Studio workspace code. Created U3 functional design plan with clarification questions."
+**Context**: CONSTRUCTION - Functional Design planning for U3.
+
+---
+
+## Functional Design
+**Timestamp**: 2026-07-25T08:13:45Z
+**User Input**: "done"
+**AI Response**: "Read U3 functional design plan answers and generated functional design artifacts for draft lifecycle, validation, apply behavior with .bak backup, and structured scene editing."
+**Context**: CONSTRUCTION - Functional Design for U3.
+
+---
+
+## Functional Design Approval
+**Timestamp**: 2026-07-25T08:15:58Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Logged approval of U3 Functional Design and proceeded to U3 NFR Requirements planning."
+**Context**: CONSTRUCTION - Functional Design approval gate for U3.
+
+---
+
+## NFR Requirements Planning
+**Timestamp**: 2026-07-25T08:15:58Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Loaded U3 functional design artifacts and created NFR requirements plan with questions for editor responsiveness, backup overwrite behavior, accessibility, and test scope."
+**Context**: CONSTRUCTION - NFR Requirements planning for U3.
+
+---
+
+## Question Format Update
+**Timestamp**: 2026-07-25T08:17:48Z
+**User Input**: "Questionの選択肢は全て日本語に直してください。以後同じ"
+**AI Response**: "Updated the current U3 NFR Requirements question options to Japanese and recorded the preference for future question files."
+**Context**: CONSTRUCTION - NFR Requirements planning for U3.
+
+---
+
+## Question Format Update
+**Timestamp**: 2026-07-25T08:19:29Z
+**User Input**: "Question文も以後全て日本語で。修正せよ"
+**AI Response**: "Updated the current U3 NFR Requirements question headings and question text to Japanese and recorded the preference for future question files."
+**Context**: CONSTRUCTION - NFR Requirements planning for U3.
+
+---
+
+## NFR Requirements Answer Review
+**Timestamp**: 2026-07-25T08:22:14Z
+**User Input**: "done
+またU6,U7を同時並行で今他のタブで進めさせる。"
+**AI Response**: "Reviewed U3 NFR answers. Question 1 selected Other without a concrete target size, so created a Japanese clarification question file. Noted that U6/U7 may proceed in other tabs and that U3 will avoid unrelated edits."
+**Context**: CONSTRUCTION - NFR Requirements answer validation for U3.
+
+---
+
+## NFR Requirements Clarification Review
+**Timestamp**: 2026-07-25T08:23:50Z
+**User Input**: "done"
+**AI Response**: "Reviewed the U3 NFR clarification question file and found the [Answer]: tag still empty. Asked the user to provide an answer before proceeding."
+**Context**: CONSTRUCTION - NFR Requirements clarification validation for U3.
+
+---
+
+## NFR Requirements Clarification Review
+**Timestamp**: 2026-07-25T08:25:11Z
+**User Input**: "done"
+**AI Response**: "Reviewed the U3 NFR clarification answer and accepted option C: target smooth editing for up to 100 scenes."
+**Context**: CONSTRUCTION - NFR Requirements clarification validation for U3.
+
+---
+
+## NFR Requirements
+**Timestamp**: 2026-07-25T08:25:11Z
+**User Input**: "done"
+**AI Response**: "Generated U3 NFR requirements and tech stack decisions based on validated answers."
+**Context**: CONSTRUCTION - NFR Requirements for U3.
+
+---
+
+## NFR Requirements Approval
+**Timestamp**: 2026-07-25T08:27:01Z
+**User Input**: "2"
+**AI Response**: "Logged approval of U3 NFR Requirements and proceeded to U3 NFR Design planning."
+**Context**: CONSTRUCTION - NFR Requirements approval gate for U3.
+
+---
+
+## NFR Design Planning
+**Timestamp**: 2026-07-25T08:27:01Z
+**User Input**: "2"
+**AI Response**: "Loaded U3 NFR Requirements and created Japanese NFR Design planning questions for save recovery, performance pattern, error presentation, and component boundaries."
+**Context**: CONSTRUCTION - NFR Design planning for U3.
+
+---
+
+## NFR Design
+**Timestamp**: 2026-07-25T08:30:23Z
+**User Input**: "done"
+**AI Response**: "Read U3 NFR Design answers and generated NFR design artifacts for save recovery, debounce validation, stale structured view display, and shared save logic boundary."
+**Context**: CONSTRUCTION - NFR Design for U3.
+
+---
+
+## NFR Design Approval
+**Timestamp**: 2026-07-25T08:36:41Z
+**User Input**: "2"
+**AI Response**: "Logged approval of U3 NFR Design and proceeded to U3 Code Generation planning."
+**Context**: CONSTRUCTION - NFR Design approval gate for U3.
+
+---
+
+## Code Generation Planning
+**Timestamp**: 2026-07-25T08:36:41Z
+**User Input**: "2"
+**AI Response**: "Loaded U3 functional design, NFR requirements, NFR design, code-generation rules, and current Studio code. Created U3 code generation plan with implementation, test, and verification steps."
+**Context**: CONSTRUCTION - Code Generation Part 1 Planning for U3.
+
+---
+
+## Code Generation Approval
+**Timestamp**: 2026-07-25T08:37:58Z
+**User Input**: "2"
+**AI Response**: "Logged approval of U3 Code Generation plan and began implementing script draft state logic."
+**Context**: CONSTRUCTION - Code Generation Part 2 Generation for U3.
+
+---
+
+## Parallelization Analysis
+**Timestamp**: 2026-07-25T08:15:52Z
+**User Input**: "Using-AIDLC
+U3と並列で
+行えるタスクをあげて"
+**AI Response**: "Reviewed unit dependency artifacts and identified which units can safely proceed in parallel with U3, which require U3 completion, and which can only be prepared as bounded spikes."
+**Context**: CONSTRUCTION - Parallel task analysis around U3.
+
+---
+
+## Functional Design Planning
+**Timestamp**: 2026-07-25T08:22:47Z
+**User Input**: "じゃあU6に取り掛かって。"
+**AI Response**: "Loaded U6 unit definition, story mapping, dependency rules, requirements, U1 functional design context, existing npm scripts, and functional-design stage rules. Created the U6 functional design plan in Japanese with clarification questions and recorded U6 as a parallel workstream without overwriting the active U3 state."
+**Context**: CONSTRUCTION - Functional Design planning for U6.
+
+---
+
+## Functional Design
+**Timestamp**: 2026-07-25T08:29:07Z
+**User Input**: "done"
+**AI Response**: "Read U6 functional design plan answers, validated all six answers, generated functional design artifacts for command execution, log handling, concurrency, Stop behavior, auto-Validate, and U3 draft isolation, then updated plan checkboxes."
+**Context**: CONSTRUCTION - Functional Design for U6 parallel workstream.
+
+---
+
+## Functional Design Approval
+**Timestamp**: 2026-07-25T08:36:46Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Logged approval of U6 Functional Design and proceeded to U6 NFR Requirements planning as a parallel workstream."
+**Context**: CONSTRUCTION - Functional Design approval gate for U6.
+
+---
+
+## NFR Requirements Planning
+**Timestamp**: 2026-07-25T08:36:46Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Loaded U6 functional design artifacts and created the U6 NFR Requirements plan in Japanese with questions for UI responsiveness, log limits, Stop timeout, execution technology choice, dependency error display, and test scope."
+**Context**: CONSTRUCTION - NFR Requirements planning for U6.
+
+---
+
+## NFR Requirements
+**Timestamp**: 2026-07-25T08:38:49Z
+**User Input**: "done"
+**AI Response**: "Read U6 NFR Requirements plan answers, validated all six answers, generated NFR requirements and tech stack decision artifacts, and updated plan checkboxes."
+**Context**: CONSTRUCTION - NFR Requirements for U6 parallel workstream.
+
+---
+
+## NFR Requirements Approval
+**Timestamp**: 2026-07-25T08:50:05Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Logged approval of U6 NFR Requirements and proceeded to U6 NFR Design planning as a parallel workstream."
+**Context**: CONSTRUCTION - NFR Requirements approval gate for U6.
+
+---
+
+## NFR Design Planning
+**Timestamp**: 2026-07-25T08:50:05Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "Loaded U6 NFR requirements and tech stack decisions, then created the U6 NFR Design plan in Japanese with questions for Validate operation modeling, process tree Stop behavior, log batching, recovery hint classification, and shared type boundaries."
+**Context**: CONSTRUCTION - NFR Design planning for U6.
+
+---

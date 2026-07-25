@@ -75,6 +75,7 @@ describe('StudioApp', () => {
 
     expect(await screen.findByTestId('workspace-header-video-id')).toHaveTextContent('sample-video');
     expect(screen.getByTestId('workspace-header-mode')).toHaveTextContent('既存台本');
+    expect(screen.getByTestId('script-review-panel')).toBeInTheDocument();
     expect(screen.getByTestId('codex-panel')).toBeInTheDocument();
   });
 
@@ -94,6 +95,7 @@ describe('StudioApp', () => {
 
     expect(await screen.findByTestId('workspace-header-video-id')).toHaveTextContent('new-video');
     expect(screen.getByTestId('workspace-header-mode')).toHaveTextContent('空の下書き');
+    expect(screen.getByTestId('script-review-panel')).toBeInTheDocument();
     expect(screen.getByTestId('codex-panel')).toBeInTheDocument();
   });
 

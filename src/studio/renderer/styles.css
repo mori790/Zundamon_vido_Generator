@@ -15,6 +15,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -128,6 +129,16 @@ input {
   border-radius: 6px;
 }
 
+select {
+  width: 100%;
+  height: 42px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
 textarea {
   width: 100%;
   min-height: 112px;
@@ -139,7 +150,11 @@ textarea {
 }
 
 button[type='submit'],
-.workspace-header button {
+.workspace-header button,
+.script-review-actions button,
+.script-review-tabs button,
+.scene-list-header button,
+.scene-detail-actions button {
   min-height: 40px;
   padding: 0 14px;
   color: #ffffff;
@@ -149,9 +164,18 @@ button[type='submit'],
   cursor: pointer;
 }
 
-button[type='submit']:disabled {
+button[type='submit']:disabled,
+button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #84c5f4;
+  outline-offset: 2px;
 }
 
 .workspace-header button {
@@ -246,13 +270,194 @@ button[type='submit']:disabled {
   display: grid;
 }
 
+.script-review-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+}
+
+.script-review-header,
+.script-review-actions,
+.script-review-tabs,
+.scene-list-header,
+.scene-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.script-review-header,
+.scene-list-header {
+  justify-content: space-between;
+}
+
+.script-review-header h2,
+.script-review-header p {
+  margin-bottom: 4px;
+}
+
+.script-review-header p {
+  color: #667085;
+}
+
+.script-review-actions button,
+.script-review-tabs button,
+.scene-list-header button,
+.scene-detail-actions button {
+  color: #344054;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.script-review-actions button:last-child {
+  color: #ffffff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.script-status-banner {
+  padding: 10px 12px;
+  color: #1849a9;
+  background: #eff8ff;
+  border: 1px solid #b2ddff;
+  border-radius: 8px;
+}
+
+.script-status-banner.warning {
+  color: #93370d;
+  background: #fffaeb;
+  border-color: #fedf89;
+}
+
+.script-status-banner.success {
+  color: #05603a;
+  background: #ecfdf3;
+  border-color: #abefc6;
+}
+
+.script-review-tabs {
+  border-bottom: 1px solid #d9e2ec;
+}
+
+.script-review-tabs button {
+  margin-bottom: -1px;
+  border-radius: 6px 6px 0 0;
+}
+
+.script-review-tabs button[aria-selected='true'] {
+  color: #175cd3;
+  background: #eff8ff;
+  border-bottom-color: #eff8ff;
+}
+
+.script-raw-editor textarea {
+  min-height: 480px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.script-empty-state {
+  padding: 24px;
+  color: #667085;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.scene-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.34fr) minmax(0, 0.66fr);
+  gap: 16px;
+}
+
+.scene-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.scene-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: #1f2933;
+  background: #f8fafc;
+  border: 1px solid #d9e2ec;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.scene-row.selected {
+  background: #eef6ff;
+  border-color: #7db7e8;
+}
+
+.scene-row small {
+  color: #667085;
+}
+
+.scene-detail {
+  padding: 14px;
+  background: #fcfcfd;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+}
+
+.scene-detail-actions {
+  margin-bottom: 12px;
+}
+
+.scene-field {
+  display: block;
+}
+
+.scene-field input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+}
+
+.scene-number-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.validation-issue-list {
+  display: grid;
+  gap: 8px;
+}
+
+.validation-issue {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  color: #7a271a;
+  background: #fffbfa;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+}
+
+.validation-issue span {
+  color: #b42318;
+  font-size: 13px;
+}
+
 @media (max-width: 760px) {
   .studio-shell {
     padding: 20px;
   }
 
   .start-grid,
-  .workspace-body {
+  .workspace-body,
+  .scene-editor-grid,
+  .scene-number-grid {
     grid-template-columns: 1fr;
   }
 }

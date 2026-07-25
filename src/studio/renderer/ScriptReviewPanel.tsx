@@ -1,0 +1,443 @@
+import {useEffect, useState} from 'react';
+import type {Scene, VideoScript} from '../../types/video';
+import {applyScriptDraft, type ScriptFileAccess} from '../shared/script-apply';
+import {
+  addDraftScene,
+  createDraftFromScript,
+  createEmptyScriptDraft,
+  emotions,
+  moveDraftScene,
+  removeDraftScene,
+  sceneTypes,
+  updateDraftRawJson,
+  updateDraftScene,
+  type DraftViewMode,
+  type ScriptDraft,
+} from '../shared/script-draft';
+import {createRendererScriptFileAccess} from './script-file-access';
+
+type ScriptReviewPanelProps = {
+  videoId: string;
+  activeScript: VideoScript | null;
+  onApply(script: VideoScript): void;
+  fileAccess?: ScriptFileAccess;
+};
+
+export function ScriptReviewPanel({
+  videoId,
+  activeScript,
+  onApply,
+  fileAccess,
+}: ScriptReviewPanelProps): JSX.Element {
+  const [draft, setDraft] = useState<ScriptDraft | null>(null);
+  const [viewMode, setViewMode] = useState<DraftViewMode>('structured');
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(activeScript?.scenes[0]?.id ?? null);
+  const [applyMessage, setApplyMessage] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    setDraft(null);
+    setSelectedSceneId(activeScript?.scenes[0]?.id ?? null);
+    setApplyMessage(null);
+  }, [activeScript, videoId]);
+
+  const displayedScript = draft?.lastValidScript ?? activeScript;
+  const selectedScene = displayedScript?.scenes.find((scene) => scene.id === selectedSceneId) ?? displayedScript?.scenes[0] ?? null;
+  const canApply = Boolean(draft && draft.validation.status === 'valid' && !applying);
+
+  function createDraft() {
+    const nextDraft = activeScript ? createDraftFromScript(videoId, activeScript) : createEmptyScriptDraft(videoId);
+    setDraft(nextDraft);
+    setSelectedSceneId(nextDraft.lastValidScript?.scenes[0]?.id ?? null);
+    setApplyMessage(null);
+  }
+
+  function discardDraft() {
+    setDraft(null);
+    setSelectedSceneId(activeScript?.scenes[0]?.id ?? null);
+    setApplyMessage(null);
+  }
+
+  function changeRawJson(rawJson: string) {
+    if (!draft) {
+      return;
+    }
+    const nextDraft = updateDraftRawJson(draft, rawJson);
+    setDraft(nextDraft);
+    if (!selectedSceneId && nextDraft.lastValidScript?.scenes[0]) {
+      setSelectedSceneId(nextDraft.lastValidScript.scenes[0].id);
+    }
+  }
+
+  function patchScene(sceneId: string, patch: Parameters<typeof updateDraftScene>[2]) {
+    if (!draft) {
+      return;
+    }
+    const nextDraft = updateDraftScene(draft, sceneId, patch);
+    setDraft(nextDraft);
+    if (patch.id && typeof patch.id === 'string') {
+      setSelectedSceneId(patch.id);
+    }
+  }
+
+  function addScene() {
+    if (!draft) {
+      return;
+    }
+    const nextDraft = addDraftScene(draft, selectedSceneId ?? undefined);
+    setDraft(nextDraft);
+    const scenes = nextDraft.lastValidScript?.scenes ?? [];
+    setSelectedSceneId(scenes[scenes.length - 1]?.id ?? null);
+  }
+
+  function removeScene() {
+    if (!draft || !selectedSceneId) {
+      return;
+    }
+    const nextDraft = removeDraftScene(draft, selectedSceneId);
+    setDraft(nextDraft);
+    setSelectedSceneId(nextDraft.lastValidScript?.scenes[0]?.id ?? null);
+  }
+
+  function moveScene(direction: 'up' | 'down') {
+    if (!draft || !selectedSceneId) {
+      return;
+    }
+    setDraft(moveDraftScene(draft, selectedSceneId, direction));
+  }
+
+  async function applyDraft() {
+    if (!draft) {
+      return;
+    }
+    setApplying(true);
+    const access = fileAccess ?? createRendererScriptFileAccess();
+    const result = await applyScriptDraft(videoId, draft.rawJson, access);
+    setApplying(false);
+
+    if (result.status === 'failed') {
+      setApplyMessage(result.error.message);
+      return;
+    }
+
+    onApply(result.script);
+    setDraft(null);
+    setSelectedSceneId(result.script.scenes[0]?.id ?? null);
+    setApplyMessage(`保存しました: ${result.scriptPath}`);
+  }
+
+  return (
+    <section className="script-review-panel" data-testid="script-review-panel">
+      <header className="script-review-header">
+        <div>
+          <h2>台本レビュー</h2>
+          <p>{draft ? '下書き編集中' : activeScript ? '既存台本を読み取り専用で表示中' : '台本はまだありません'}</p>
+        </div>
+        <div className="script-review-actions">
+          {!draft ? (
+            <button data-testid="script-review-create-draft-button" onClick={createDraft} type="button">
+              下書き作成
+            </button>
+          ) : (
+            <>
+              <button data-testid="script-review-discard-button" onClick={discardDraft} type="button">
+                破棄
+              </button>
+              <button
+                data-testid="script-review-apply-button"
+                disabled={!canApply}
+                onClick={applyDraft}
+                type="button"
+              >
+                {applying ? '保存中' : 'Apply'}
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <StatusBanner activeScript={activeScript} applyMessage={applyMessage} draft={draft} />
+
+      {displayedScript ? (
+        <>
+          <div className="script-review-tabs" role="tablist">
+            <button
+              aria-selected={viewMode === 'structured'}
+              data-testid="script-review-scenes-tab"
+              onClick={() => setViewMode('structured')}
+              role="tab"
+              type="button"
+            >
+              Scenes
+            </button>
+            <button
+              aria-selected={viewMode === 'raw'}
+              data-testid="script-review-raw-tab"
+              onClick={() => setViewMode('raw')}
+              role="tab"
+              type="button"
+            >
+              Raw JSON
+            </button>
+          </div>
+
+          {viewMode === 'raw' ? (
+            <RawJsonEditor draft={draft} script={displayedScript} onChange={changeRawJson} />
+          ) : (
+            <StructuredSceneEditor
+              draft={draft}
+              onAdd={addScene}
+              onMove={moveScene}
+              onPatchScene={patchScene}
+              onRemove={removeScene}
+              onSelectScene={setSelectedSceneId}
+              script={displayedScript}
+              selectedScene={selectedScene}
+            />
+          )}
+
+          <ValidationIssueList draft={draft} />
+        </>
+      ) : (
+        <div className="script-empty-state" data-testid="script-review-empty-state">
+          <p>下書きを作成すると、Raw JSONとシーン編集を開始できます。</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function StatusBanner({
+  activeScript,
+  applyMessage,
+  draft,
+}: {
+  activeScript: VideoScript | null;
+  applyMessage: string | null;
+  draft: ScriptDraft | null;
+}): JSX.Element {
+  let text = activeScript ? '既存台本を読み取り専用で表示しています。' : '新しい台本を作成できます。';
+  let kind = 'info';
+
+  if (draft?.status === 'draft') {
+    text = '下書き編集中です。Applyするまでinput配下の台本は変更されません。';
+  }
+  if (draft?.status === 'invalid') {
+    text = 'Raw JSONまたはスキーマが無効です。最後に有効だった構造化ビューを表示しています。';
+    kind = 'warning';
+  }
+  if (applyMessage) {
+    text = applyMessage;
+    kind = applyMessage.startsWith('保存しました') ? 'success' : 'warning';
+  }
+
+  return (
+    <div className={`script-status-banner ${kind}`} data-testid="script-review-status-banner">
+      {text}
+    </div>
+  );
+}
+
+function RawJsonEditor({
+  draft,
+  onChange,
+  script,
+}: {
+  draft: ScriptDraft | null;
+  onChange(rawJson: string): void;
+  script: VideoScript;
+}): JSX.Element {
+  return (
+    <label className="script-raw-editor">
+      <span className="field-label">Raw JSON</span>
+      <textarea
+        data-testid="script-review-raw-json-input"
+        onChange={(event) => onChange(event.target.value)}
+        readOnly={!draft}
+        rows={18}
+        value={draft?.rawJson ?? JSON.stringify(script, null, 2)}
+      />
+    </label>
+  );
+}
+
+function StructuredSceneEditor({
+  draft,
+  onAdd,
+  onMove,
+  onPatchScene,
+  onRemove,
+  onSelectScene,
+  script,
+  selectedScene,
+}: {
+  draft: ScriptDraft | null;
+  onAdd(): void;
+  onMove(direction: 'up' | 'down'): void;
+  onPatchScene(sceneId: string, patch: Parameters<typeof updateDraftScene>[2]): void;
+  onRemove(): void;
+  onSelectScene(sceneId: string): void;
+  script: VideoScript;
+  selectedScene: Scene | null;
+}): JSX.Element {
+  const editable = Boolean(draft && draft.status !== 'invalid');
+  const stale = draft?.status === 'invalid';
+
+  return (
+    <div className="structured-scene-editor" data-testid="structured-scene-editor">
+      {stale ? (
+        <div className="script-status-banner warning" data-testid="structured-scene-stale-banner">
+          最後に有効だったJSONのシーンを表示しています。
+        </div>
+      ) : null}
+      <div className="scene-editor-grid">
+        <div className="scene-list">
+          <div className="scene-list-header">
+            <strong>Scenes</strong>
+            {draft ? (
+              <button data-testid="scene-add-button" onClick={onAdd} type="button">
+                Add
+              </button>
+            ) : null}
+          </div>
+          {script.scenes.map((scene) => (
+            <button
+              className={scene.id === selectedScene?.id ? 'scene-row selected' : 'scene-row'}
+              data-testid={`scene-row-${scene.id}`}
+              key={scene.id}
+              onClick={() => onSelectScene(scene.id)}
+              type="button"
+            >
+              <span>{scene.id}</span>
+              <small>{scene.type}</small>
+            </button>
+          ))}
+        </div>
+
+        {selectedScene ? (
+          <div className="scene-detail" data-testid="scene-detail-panel">
+            <div className="scene-detail-actions">
+              <button disabled={!draft} onClick={() => onMove('up')} type="button">
+                Up
+              </button>
+              <button disabled={!draft} onClick={() => onMove('down')} type="button">
+                Down
+              </button>
+              <button disabled={!draft || script.scenes.length <= 1} onClick={onRemove} type="button">
+                Remove
+              </button>
+            </div>
+            <SceneField label="Scene ID">
+              <input
+                data-testid="scene-id-input"
+                onChange={(event) => onPatchScene(selectedScene.id, {id: event.target.value})}
+                readOnly={!editable}
+                value={selectedScene.id}
+              />
+            </SceneField>
+            <SceneField label="Type">
+              <select
+                data-testid="scene-type-select"
+                disabled={!editable}
+                onChange={(event) => onPatchScene(selectedScene.id, {type: event.target.value as Scene['type']})}
+                value={selectedScene.type}
+              >
+                {sceneTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </SceneField>
+            <SceneField label="Text">
+              <textarea
+                data-testid="scene-text-input"
+                onChange={(event) => onPatchScene(selectedScene.id, {text: event.target.value})}
+                readOnly={!editable}
+                rows={4}
+                value={selectedScene.text}
+              />
+            </SceneField>
+            <SceneField label="Emotion">
+              <select
+                data-testid="scene-emotion-select"
+                disabled={!editable}
+                onChange={(event) => onPatchScene(selectedScene.id, {emotion: event.target.value as Scene['emotion']})}
+                value={selectedScene.emotion}
+              >
+                {emotions.map((emotion) => (
+                  <option key={emotion} value={emotion}>
+                    {emotion}
+                  </option>
+                ))}
+              </select>
+            </SceneField>
+            <SceneField label="Character Visible">
+              <input
+                checked={selectedScene.characterVisible}
+                data-testid="scene-character-visible-input"
+                disabled={!editable}
+                onChange={(event) => onPatchScene(selectedScene.id, {characterVisible: event.target.checked})}
+                type="checkbox"
+              />
+            </SceneField>
+            <div className="scene-number-grid">
+              <SceneField label="Before">
+                <input
+                  data-testid="scene-before-input"
+                  min="0"
+                  onChange={(event) =>
+                    onPatchScene(selectedScene.id, {durationBeforeSpeech: Number(event.target.value)})
+                  }
+                  readOnly={!editable}
+                  step="0.1"
+                  type="number"
+                  value={selectedScene.durationBeforeSpeech}
+                />
+              </SceneField>
+              <SceneField label="After">
+                <input
+                  data-testid="scene-after-input"
+                  min="0"
+                  onChange={(event) =>
+                    onPatchScene(selectedScene.id, {durationAfterSpeech: Number(event.target.value)})
+                  }
+                  readOnly={!editable}
+                  step="0.1"
+                  type="number"
+                  value={selectedScene.durationAfterSpeech}
+                />
+              </SceneField>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SceneField({children, label}: {children: React.ReactNode; label: string}): JSX.Element {
+  return (
+    <label className="scene-field">
+      <span className="field-label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function ValidationIssueList({draft}: {draft: ScriptDraft | null}): JSX.Element | null {
+  if (!draft || draft.validation.status !== 'invalid') {
+    return null;
+  }
+
+  return (
+    <div className="validation-issue-list" data-testid="script-review-validation-issues">
+      {draft.validation.errors.map((issue, index) => (
+        <div className="validation-issue" key={`${issue.code}-${issue.path ?? index}`}>
+          <strong>{issue.message}</strong>
+          {issue.path ? <span>{issue.path}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}

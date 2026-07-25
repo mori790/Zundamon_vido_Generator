@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {CodexPanel} from './CodexPanel';
+import {ScriptReviewPanel} from './ScriptReviewPanel';
 import {listVideoProjects, loadWorkspace} from './workspace-client';
 import type {VideoProjectSummary, WorkspaceError, WorkspaceState} from '../shared/workspace';
 
@@ -48,6 +49,13 @@ export function StudioApp(): JSX.Element {
     return (
       <WorkspaceShell
         workspace={workspace}
+        onApplyScript={(activeScript) => {
+          setWorkspace({
+            ...workspace,
+            mode: 'existing-script',
+            activeScript,
+          });
+        }}
         onBack={() => {
           setWorkspace(null);
           setScreen('start');
@@ -161,20 +169,25 @@ function WorkspaceOpenError({error}: {error: WorkspaceError}): JSX.Element {
   );
 }
 
-function WorkspaceShell({workspace, onBack}: {workspace: WorkspaceState; onBack(): void}): JSX.Element {
+function WorkspaceShell({
+  workspace,
+  onApplyScript,
+  onBack,
+}: {
+  workspace: WorkspaceState;
+  onApplyScript(activeScript: NonNullable<WorkspaceState['activeScript']>): void;
+  onBack(): void;
+}): JSX.Element {
   return (
     <main className="studio-shell">
       <section className="workspace-panel">
         <WorkspaceHeader workspace={workspace} onBack={onBack} />
         <div className="workspace-body">
-          <div className="workspace-placeholder">
-            <h2>Workspace</h2>
-            {workspace.mode === 'existing-script' ? (
-              <p>台本JSONを読み込みました。後続ユニットで編集、生成操作を追加します。</p>
-            ) : (
-              <p>空の下書きワークスペースです。まだ `input/{workspace.videoId}.json` は作成していません。</p>
-            )}
-          </div>
+          <ScriptReviewPanel
+            activeScript={workspace.activeScript}
+            onApply={onApplyScript}
+            videoId={workspace.videoId}
+          />
           <CodexPanel
             title={workspace.activeScript?.title}
             videoId={workspace.videoId}
