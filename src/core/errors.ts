@@ -48,3 +48,15 @@ export function formatError(error: unknown): string {
 
   return String(error);
 }
+
+export function formatVerboseCause(error: unknown): string | null {
+  if (!(error instanceof AppError) || !error.cause) {
+    return null;
+  }
+
+  if (error.cause instanceof Error) {
+    return error.cause.stack ?? error.cause.message;
+  }
+
+  return String(error.cause);
+}

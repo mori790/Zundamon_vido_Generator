@@ -1,5 +1,5 @@
 import React from 'react';
-import {Composition} from 'remotion';
+import {Composition, registerRoot} from 'remotion';
 import {ZundamonVideo} from './compositions/ZundamonVideo';
 import type {ZundamonCompositionProps} from './types/video';
 
@@ -63,3 +63,5 @@ export const RemotionRoot: React.FC = () => {
     />
   );
 };
+
+registerRoot(RemotionRoot);

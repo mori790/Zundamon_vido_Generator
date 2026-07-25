@@ -1,4 +1,4 @@
-import {formatError} from '../src/core/errors';
+import {formatError, formatVerboseCause} from '../src/core/errors';
 import {Logger} from '../src/core/logger';
 import {loadManifest} from '../src/core/manifest-store';
 import {loadVideoScript} from '../src/core/script-loader';
@@ -26,5 +26,9 @@ function parseArgs(argv: string[]): {videoId: string; verbose: boolean} {
 runTimelineCommand().catch((error) => {
   const logger = new Logger(process.argv.includes('--verbose'));
   logger.error(formatError(error));
+  const cause = formatVerboseCause(error);
+  if (process.argv.includes('--verbose') && cause) {
+    logger.error(cause);
+  }
   process.exitCode = 1;
 });

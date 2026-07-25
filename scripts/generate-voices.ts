@@ -1,4 +1,4 @@
-import {formatError} from '../src/core/errors';
+import {formatError, formatVerboseCause} from '../src/core/errors';
 import {generateVoices} from '../src/core/voice-generator';
 import {Logger} from '../src/core/logger';
 
@@ -24,5 +24,9 @@ function parseArgs(argv: string[]): {videoId: string; force: boolean; verbose: b
 runVoiceCommand().catch((error) => {
   const logger = new Logger(process.argv.includes('--verbose'));
   logger.error(formatError(error));
+  const cause = formatVerboseCause(error);
+  if (process.argv.includes('--verbose') && cause) {
+    logger.error(cause);
+  }
   process.exitCode = 1;
 });

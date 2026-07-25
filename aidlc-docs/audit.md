@@ -13,6 +13,29 @@ Note: The full raw prompt is present in the conversation context for this workfl
 
 ---
 
+## Render Failure Fix
+**Timestamp**: 2026-07-25T06:23:58Z
+**User Input**: "[INFO] 台本を読み込みました: sample-video
+[INFO] 4個のシーンを検出しました
+[WARN] 説明素材が設定されていません
+シーン: scene-001
+[WARN] 説明素材が設定されていません
+シーン: scene-004
+[INFO] VOICEVOXへの接続を確認しました
+[INFO] scene-001.wav を生成しました
+[INFO] scene-002.wav を生成しました
+[INFO] scene-003.wav を生成しました
+[INFO] scene-004.wav を生成しました
+[INFO] タイムラインを生成しました
+[INFO] 動画をレンダリングしています
+[ERROR] 動画のレンダリングに失敗しました。
+RemotionまたはFFmpegのログを確認してください。
+対象: /Users/tomimorichiharu/Zundamon_vido_Generator/output/sample-video.mp4"
+**AI Response**: "Investigated render failure, added verbose cause logging, identified missing Remotion registerRoot() call in src/Root.tsx, fixed it, reran typecheck and unit tests, and verified render success with npm run video -- sample-video --skip-voice --verbose."
+**Context**: Post-AIDLC bug fix for Remotion render entry point.
+
+---
+
 ## Documentation Update
 **Timestamp**: 2026-07-25T06:10:22Z
 **User Input**: "使い方をREADME.mdに記載せよ"
