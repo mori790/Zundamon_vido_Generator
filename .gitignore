@@ -1,8 +1,10 @@
 node_modules/
 dist/
+dist-studio/
 .DS_Store
 output/*.mp4
 public/audio/**/*.wav
 generated/manifests/*.json
 generated/timelines/*.json
+generated/studio/
 .env
