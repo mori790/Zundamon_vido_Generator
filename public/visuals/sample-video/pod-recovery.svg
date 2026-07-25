@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+  <rect width="1000" height="620" rx="24" fill="#ffffff"/>
+  <rect x="80" y="90" width="260" height="120" rx="14" fill="#dbeafe" stroke="#2563eb" stroke-width="5"/>
+  <text x="210" y="163" text-anchor="middle" font-size="34" font-family="sans-serif" fill="#1e3a8a">Deployment</text>
+  <path d="M340 150 H520" stroke="#2563eb" stroke-width="8" marker-end="url(#arrow)"/>
+  <rect x="560" y="72" width="150" height="84" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="5"/>
+  <rect x="560" y="190" width="150" height="84" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="5"/>
+  <rect x="560" y="308" width="150" height="84" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="5"/>
+  <text x="635" y="124" text-anchor="middle" font-size="30" font-family="sans-serif" fill="#14532d">Pod</text>
+  <text x="635" y="242" text-anchor="middle" font-size="30" font-family="sans-serif" fill="#14532d">Pod</text>
+  <text x="635" y="360" text-anchor="middle" font-size="30" font-family="sans-serif" fill="#14532d">Pod</text>
+  <text x="500" y="520" text-anchor="middle" font-size="38" font-family="sans-serif" fill="#111827">削除されても必要数へ戻す</text>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+</svg>

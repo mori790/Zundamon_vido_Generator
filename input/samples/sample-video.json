@@ -1,0 +1,67 @@
+{
+  "id": "sample-video",
+  "title": "Podを削除しても復活する理由",
+  "description": "KubernetesのDeploymentとPodの自己修復について説明するサンプル",
+  "speaker": {
+    "engine": "voicevox",
+    "speakerId": 3,
+    "speedScale": 1.05,
+    "pitchScale": 0,
+    "intonationScale": 1,
+    "volumeScale": 1
+  },
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "/backgrounds/default.svg"
+  },
+  "subtitle": {
+    "enabled": true,
+    "maxCharactersPerLine": 24,
+    "maxLines": 2,
+    "fontSize": 56,
+    "bottom": 50,
+    "highlightKeywords": ["Pod", "Deployment"]
+  },
+  "scenes": [
+    {
+      "id": "scene-001",
+      "type": "title",
+      "text": "Podを削除しても復活する理由",
+      "emotion": "normal",
+      "durationAfterSpeech": 0.5
+    },
+    {
+      "id": "scene-002",
+      "type": "explanation",
+      "text": "Podを削除したのに、勝手に復活したことはないのだ？",
+      "emotion": "surprised",
+      "visual": {
+        "type": "image",
+        "src": "/visuals/sample-video/pod-recovery.svg",
+        "position": "center"
+      },
+      "durationAfterSpeech": 0.3
+    },
+    {
+      "id": "scene-003",
+      "type": "summary",
+      "text": "Deploymentは必要なPod数を維持しているのだ。",
+      "emotion": "normal",
+      "visual": {
+        "type": "text",
+        "heading": "Deploymentの役割",
+        "body": "指定した数のPodが存在する状態を維持する"
+      },
+      "durationAfterSpeech": 0.5
+    },
+    {
+      "id": "scene-004",
+      "type": "ending",
+      "text": "つまり、PodではなくDeploymentが状態を管理しているのだ。",
+      "emotion": "happy",
+      "durationAfterSpeech": 1
+    }
+  ]
+}
