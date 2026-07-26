@@ -1,7 +1,10 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {CodexPanel} from './CodexPanel';
 import {ScriptReviewPanel} from './ScriptReviewPanel';
+import {loadChatHistory, saveChatHistory} from './chat-history-store';
 import {listVideoProjects, loadWorkspace} from './workspace-client';
+import type {ChatHistory} from '../shared/chat';
+import {transitionProposal, type JsonDraftProposal, type Proposal} from '../shared/proposal';
 import type {VideoProjectSummary, WorkspaceError, WorkspaceState} from '../shared/workspace';
 
 type Screen = 'start' | 'workspace';
@@ -178,6 +181,130 @@ function WorkspaceShell({
   onApplyScript(activeScript: NonNullable<WorkspaceState['activeScript']>): void;
   onBack(): void;
 }): JSX.Element {
+  const [history, setHistory] = useState<ChatHistory>({messages: [], proposals: []});
+  const [busyProposalIds, setBusyProposalIds] = useState<Set<string>>(new Set());
+  const [selectedProposal, setSelectedProposal] = useState<JsonDraftProposal | null>(null);
+  const [proposalError, setProposalError] = useState<string | null>(null);
+  const historyRef = useRef(history);
+  const busyProposalIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    let active = true;
+    loadChatHistory(workspace.videoId).then((loaded) => {
+      if (active) {
+        historyRef.current = loaded;
+        setHistory(loaded);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [workspace.videoId]);
+
+  async function persistHistory(next: ChatHistory) {
+    await saveChatHistory(workspace.videoId, next);
+    historyRef.current = next;
+    setHistory(next);
+  }
+
+  async function changeMessages(next: ChatHistory) {
+    historyRef.current = next;
+    setHistory(next);
+    await saveChatHistory(workspace.videoId, next);
+  }
+
+  async function saveProposalTransition(current: Proposal, next: Proposal): Promise<boolean> {
+    if (current === next || busyProposalIdsRef.current.has(current.id)) {
+      return false;
+    }
+    busyProposalIdsRef.current.add(current.id);
+    setBusyProposalIds((ids) => new Set(ids).add(current.id));
+    setProposalError(null);
+    try {
+      const latest = historyRef.current;
+      const nextHistory = {
+        ...latest,
+        proposals: latest.proposals.map((proposal) => proposal.id === current.id ? next : proposal),
+      };
+      await persistHistory(nextHistory);
+      return true;
+    } catch (caught) {
+      setProposalError(caught instanceof Error ? caught.message : '提案状態の保存に失敗しました。');
+      return false;
+    } finally {
+      busyProposalIdsRef.current.delete(current.id);
+      setBusyProposalIds((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(current.id);
+        return nextIds;
+      });
+    }
+  }
+
+  async function rejectProposal(proposalId: string) {
+    const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
+    if (!proposal || proposal.status !== 'pending' || busyProposalIdsRef.current.has(proposalId)) {
+      return;
+    }
+    await saveProposalTransition(proposal, transitionProposal(proposal, 'rejected'));
+  }
+
+  function approveProposal(proposalId: string) {
+    const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
+    if (!proposal || proposal.status !== 'pending' || busyProposalIdsRef.current.has(proposalId)) {
+      return;
+    }
+    if (proposal.kind === 'json-draft') {
+      setSelectedProposal(proposal);
+      return;
+    }
+    void failUnavailableCommand(proposal);
+  }
+
+  async function acceptJsonProposal(proposal: JsonDraftProposal): Promise<boolean> {
+    return saveProposalTransition(proposal, transitionProposal(proposal, 'approved'));
+  }
+
+  async function completeJsonProposal(proposalId: string) {
+    const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
+    if (proposal) {
+      const approved = proposal.status === 'pending' ? transitionProposal(proposal, 'approved') : proposal;
+      await saveProposalTransition(proposal, transitionProposal(approved, 'completed'));
+    }
+    setSelectedProposal(null);
+  }
+
+  async function failUnavailableCommand(proposal: Proposal) {
+    const approved = transitionProposal(proposal, 'approved');
+    if (!(await saveProposalTransition(proposal, approved))) {
+      return;
+    }
+    await saveProposalTransition(
+      approved,
+      transitionProposal(approved, 'failed', {error: 'Command Runner未接続'}),
+    );
+  }
+
+  async function retryProposal(proposalId: string) {
+    const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
+    if (!proposal || proposal.status !== 'failed') {
+      return;
+    }
+    const {error: _error, ...retryBase} = proposal;
+    const retry = {
+      ...retryBase,
+      id: `${proposal.id}-retry-${Date.now()}`,
+      status: 'pending' as const,
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      const latest = historyRef.current;
+      await persistHistory({...latest, proposals: [...latest.proposals, retry]});
+    } catch (caught) {
+      setProposalError(caught instanceof Error ? caught.message : '提案状態の保存に失敗しました。');
+    }
+  }
+
   return (
     <main className="studio-shell">
       <section className="workspace-panel">
@@ -185,10 +312,21 @@ function WorkspaceShell({
         <div className="workspace-body">
           <ScriptReviewPanel
             activeScript={workspace.activeScript}
+            onAcceptProposal={acceptJsonProposal}
             onApply={onApplyScript}
+            onDismissProposal={() => setSelectedProposal(null)}
+            onProposalLoaded={completeJsonProposal}
+            proposal={selectedProposal}
             videoId={workspace.videoId}
           />
           <CodexPanel
+            busyProposalIds={busyProposalIds}
+            history={history}
+            onApproveProposal={approveProposal}
+            onHistoryChange={changeMessages}
+            onRejectProposal={(proposalId) => void rejectProposal(proposalId)}
+            onRetryProposal={(proposalId) => void retryProposal(proposalId)}
+            proposalError={proposalError}
             title={workspace.activeScript?.title}
             videoId={workspace.videoId}
             workspaceMode={workspace.mode}

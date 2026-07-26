@@ -1,10 +1,14 @@
 import {describe, expect, it} from 'vitest';
 import {
   appendChatMessage,
+  compactChatHistory,
   createChatMessage,
+  parseChatHistory,
   validateUserMessage,
   type ChatMessage,
 } from '../../src/studio/shared/chat';
+import {extractProposals, transitionProposal} from '../../src/studio/shared/proposal';
+import {createMinimalScript} from '../../src/studio/shared/script-draft';
 import {chatHistoryPath, loadChatHistory, saveChatHistory} from '../../src/studio/renderer/chat-history-store';
 import {MockCodexConnection} from '../../src/studio/renderer/mock-codex-connection';
 
@@ -85,8 +89,61 @@ describe('chat history store', () => {
       createdAt: '2026-07-25T00:00:00.000Z',
     };
 
-    await saveChatHistory('sample-video', [message], fsAccess);
+    const history = {messages: [message], proposals: []};
+    await saveChatHistory('sample-video', history, fsAccess);
 
-    await expect(loadChatHistory('sample-video', fsAccess)).resolves.toEqual([message]);
+    await expect(loadChatHistory('sample-video', fsAccess)).resolves.toEqual(history);
+  });
+
+  it('loads the legacy message array and excludes invalid proposals', () => {
+    const message = createChatMessage('assistant', '提案', {
+      id: 'assistant-1',
+      createdAt: '2026-07-25T00:00:00.000Z',
+    });
+
+    expect(parseChatHistory([message])).toEqual({messages: [message], proposals: []});
+    expect(parseChatHistory({messages: [message], proposals: [{kind: 'command', operation: 'shell'}]}))
+      .toEqual({messages: [message], proposals: []});
+  });
+
+  it('compacts old terminal proposals but preserves pending proposals', () => {
+    const message = createChatMessage('assistant', 'x'.repeat(100), {
+      id: 'assistant-1',
+      createdAt: '2026-07-25T00:00:00.000Z',
+    });
+    const pending = extractProposals(
+      message.id,
+      'sample-video',
+      '',
+      [{kind: 'json-draft', script: createMinimalScript('sample-video')}],
+      '2026-07-25T00:00:00.000Z',
+    ).proposals[0];
+    const completed = transitionProposal(
+      transitionProposal({...pending, id: 'completed'} as typeof pending, 'approved'),
+      'completed',
+    );
+
+    const compacted = compactChatHistory(
+      {messages: [message], proposals: [completed, pending]},
+      JSON.stringify({messages: [message], proposals: [pending]}).length + 20,
+    );
+
+    expect(compacted.proposals).toEqual([pending]);
+    expect(compacted.messages).toEqual([message]);
+  });
+
+  it('does not report a save as successful when file writing fails', async () => {
+    const fsAccess = {
+      async mkdir() {},
+      async readFile() {
+        return '[]';
+      },
+      async writeFile() {
+        throw new Error('disk full');
+      },
+    };
+
+    await expect(saveChatHistory('sample-video', {messages: [], proposals: []}, fsAccess))
+      .rejects.toThrow('disk full');
   });
 });

@@ -14,6 +14,7 @@ import {
   type DraftViewMode,
   type ScriptDraft,
 } from '../shared/script-draft';
+import type {JsonDraftProposal} from '../shared/proposal';
 import {createRendererScriptFileAccess} from './script-file-access';
 
 type ScriptReviewPanelProps = {
@@ -21,6 +22,10 @@ type ScriptReviewPanelProps = {
   activeScript: VideoScript | null;
   onApply(script: VideoScript): void;
   fileAccess?: ScriptFileAccess;
+  proposal?: JsonDraftProposal | null;
+  onAcceptProposal?(proposal: JsonDraftProposal): Promise<boolean>;
+  onProposalLoaded?(proposalId: string): Promise<void> | void;
+  onDismissProposal?(proposalId: string): void;
 };
 
 export function ScriptReviewPanel({
@@ -28,18 +33,30 @@ export function ScriptReviewPanel({
   activeScript,
   onApply,
   fileAccess,
+  proposal,
+  onAcceptProposal,
+  onProposalLoaded,
+  onDismissProposal,
 }: ScriptReviewPanelProps): JSX.Element {
   const [draft, setDraft] = useState<ScriptDraft | null>(null);
   const [viewMode, setViewMode] = useState<DraftViewMode>('structured');
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(activeScript?.scenes[0]?.id ?? null);
   const [applyMessage, setApplyMessage] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [loadingProposal, setLoadingProposal] = useState(false);
 
   useEffect(() => {
     setDraft(null);
     setSelectedSceneId(activeScript?.scenes[0]?.id ?? null);
     setApplyMessage(null);
   }, [activeScript, videoId]);
+
+  useEffect(() => {
+    if (!proposal || draft || loadingProposal) {
+      return;
+    }
+    void loadProposal(proposal);
+  }, [draft, loadingProposal, proposal]);
 
   const displayedScript = draft?.lastValidScript ?? activeScript;
   const selectedScene = displayedScript?.scenes.find((scene) => scene.id === selectedSceneId) ?? displayedScript?.scenes[0] ?? null;
@@ -106,6 +123,19 @@ export function ScriptReviewPanel({
     setDraft(moveDraftScene(draft, selectedSceneId, direction));
   }
 
+  async function loadProposal(nextProposal: JsonDraftProposal) {
+    setLoadingProposal(true);
+    const accepted = await (onAcceptProposal?.(nextProposal) ?? Promise.resolve(true));
+    if (accepted) {
+      const nextDraft = createDraftFromScript(videoId, nextProposal.script);
+      setDraft(nextDraft);
+      setSelectedSceneId(nextDraft.lastValidScript?.scenes[0]?.id ?? null);
+      setApplyMessage('Codex提案を下書きへ読み込みました。内容を確認してApplyしてください。');
+      await onProposalLoaded?.(nextProposal.id);
+    }
+    setLoadingProposal(false);
+  }
+
   async function applyDraft() {
     if (!draft) {
       return;
@@ -157,6 +187,30 @@ export function ScriptReviewPanel({
       </header>
 
       <StatusBanner activeScript={activeScript} applyMessage={applyMessage} draft={draft} />
+
+      {proposal && draft ? (
+        <div className="proposal-confirmation" data-testid="script-review-proposal-confirmation" role="alertdialog">
+          <strong>編集中の下書きをCodex提案で置き換えますか？</strong>
+          <p>現在の未適用の編集内容は失われます。</p>
+          <div>
+            <button
+              data-testid="script-review-proposal-cancel-button"
+              onClick={() => onDismissProposal?.(proposal.id)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              data-testid="script-review-proposal-confirm-button"
+              disabled={loadingProposal}
+              onClick={() => void loadProposal(proposal)}
+              type="button"
+            >
+              {loadingProposal ? '読込中' : '置き換える'}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {displayedScript ? (
         <>

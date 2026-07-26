@@ -14,8 +14,7 @@
     "width": 1920,
     "height": 1080,
     "fps": 30,
-    "background": "/backgrounds/default.svg",
-    "bgmVolume": 0.1
+    "background": "/backgrounds/default.svg"
   },
   "subtitle": {
     "enabled": true,
@@ -23,20 +22,15 @@
     "maxLines": 2,
     "fontSize": 56,
     "bottom": 50,
-    "highlightKeywords": [
-      "Pod",
-      "Deployment"
-    ]
+    "highlightKeywords": ["Pod", "Deployment"]
   },
   "scenes": [
     {
       "id": "scene-001",
       "type": "title",
       "text": "Podを削除しても復活する理由",
-      "emotion": "happy",
-      "durationBeforeSpeech": 0.2,
-      "durationAfterSpeech": 0.5,
-      "characterVisible": true
+      "emotion": "normal",
+      "durationAfterSpeech": 0.5
     },
     {
       "id": "scene-002",
@@ -46,12 +40,9 @@
       "visual": {
         "type": "image",
         "src": "/visuals/sample-video/pod-recovery.svg",
-        "position": "center",
-        "fit": "contain"
+        "position": "center"
       },
-      "durationBeforeSpeech": 0.2,
-      "durationAfterSpeech": 0.3,
-      "characterVisible": true
+      "durationAfterSpeech": 0.3
     },
     {
       "id": "scene-003",
@@ -61,21 +52,17 @@
       "visual": {
         "type": "code",
         "language": "yaml",
-        "code": "spec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: demo",
-        "fileName": "deployment.yaml"
+        "fileName": "deployment.yaml",
+        "code": "spec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: demo"
       },
-      "durationBeforeSpeech": 0.2,
-      "durationAfterSpeech": 0.5,
-      "characterVisible": true
+      "durationAfterSpeech": 0.5
     },
     {
       "id": "scene-004",
       "type": "ending",
       "text": "つまり、PodではなくDeploymentが状態を管理しているのだ。",
       "emotion": "happy",
-      "durationBeforeSpeech": 0.2,
-      "durationAfterSpeech": 1,
-      "characterVisible": true
+      "durationAfterSpeech": 1
     }
   ]
 }

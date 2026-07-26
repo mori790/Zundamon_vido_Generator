@@ -1,4 +1,8 @@
-import type {ChatMessage} from '../shared/chat';
+import {
+  compactChatHistory,
+  parseChatHistory,
+  type ChatHistory,
+} from '../shared/chat';
 
 type FileSystemAccess = {
   mkdir(path: string, options?: {recursive?: boolean}): Promise<void>;
@@ -43,39 +47,22 @@ function chatHistoryDir(videoId: string): string {
   return `generated/studio/${safeVideoId(videoId)}`;
 }
 
-export async function loadChatHistory(videoId: string, fsAccess?: FileSystemAccess): Promise<ChatMessage[]> {
-  const fs = fsAccess ?? browserFs();
+export async function loadChatHistory(videoId: string, fsAccess?: FileSystemAccess): Promise<ChatHistory> {
   try {
+    const fs = fsAccess ?? browserFs();
     const source = await fs.readFile(chatHistoryPath(videoId));
-    const parsed = JSON.parse(source) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.filter(isChatMessage);
+    return parseChatHistory(JSON.parse(source));
   } catch {
-    return [];
+    return {messages: [], proposals: []};
   }
 }
 
 export async function saveChatHistory(
   videoId: string,
-  messages: ChatMessage[],
+  history: ChatHistory,
   fsAccess?: FileSystemAccess,
 ): Promise<void> {
   const fs = fsAccess ?? browserFs();
   await fs.mkdir(chatHistoryDir(videoId), {recursive: true});
-  await fs.writeFile(chatHistoryPath(videoId), JSON.stringify(messages, null, 2));
-}
-
-function isChatMessage(value: unknown): value is ChatMessage {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const candidate = value as Partial<ChatMessage>;
-  return (
-    typeof candidate.id === 'string' &&
-    (candidate.role === 'user' || candidate.role === 'assistant' || candidate.role === 'system') &&
-    typeof candidate.content === 'string' &&
-    typeof candidate.createdAt === 'string'
-  );
+  await fs.writeFile(chatHistoryPath(videoId), JSON.stringify(compactChatHistory(history), null, 2));
 }

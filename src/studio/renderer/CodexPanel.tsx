@@ -3,30 +3,27 @@ import {
   appendChatMessage,
   createChatMessage,
   validateUserMessage,
+  type ChatHistory,
   type ChatMessage,
   type CodexConnection,
   type CodexConnectionState,
 } from '../shared/chat';
+import {extractProposals, type Proposal} from '../shared/proposal';
 import type {WorkspaceMode} from '../shared/workspace';
-import {loadChatHistory, saveChatHistory} from './chat-history-store';
 import {MockCodexConnection} from './mock-codex-connection';
-
-type HistoryStore = {
-  load(videoId: string): Promise<ChatMessage[]>;
-  save(videoId: string, messages: ChatMessage[]): Promise<void>;
-};
 
 export type CodexPanelProps = {
   videoId: string;
   workspaceMode: WorkspaceMode;
+  history: ChatHistory;
+  onHistoryChange(history: ChatHistory): Promise<void>;
+  onApproveProposal(proposalId: string): void;
+  onRejectProposal(proposalId: string): void;
+  onRetryProposal(proposalId: string): void;
+  busyProposalIds?: ReadonlySet<string>;
   title?: string;
   connection?: CodexConnection;
-  historyStore?: HistoryStore;
-};
-
-const defaultHistoryStore: HistoryStore = {
-  load: loadChatHistory,
-  save: saveChatHistory,
+  proposalError?: string | null;
 };
 
 function connectionStatusLabel(state: CodexConnectionState): string {
@@ -47,50 +44,48 @@ function connectionStatusLabel(state: CodexConnectionState): string {
 export function CodexPanel({
   videoId,
   workspaceMode,
+  history,
+  onHistoryChange,
+  onApproveProposal,
+  onRejectProposal,
+  onRetryProposal,
+  busyProposalIds = new Set(),
   title,
   connection,
-  historyStore = defaultHistoryStore,
+  proposalError,
 }: CodexPanelProps): JSX.Element {
   const codexConnection = useMemo(() => connection ?? new MockCodexConnection(), [connection]);
   const [connectionState, setConnectionState] = useState<CodexConnectionState>({status: 'connecting'});
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-
-    async function initialize() {
-      try {
-        const [state, history] = await Promise.all([codexConnection.connect(), historyStore.load(videoId)]);
-        if (!active) {
-          return;
+    codexConnection.connect()
+      .then((state) => {
+        if (active) {
+          setConnectionState(state);
         }
-        setConnectionState(state);
-        setMessages(history);
-      } catch (caught) {
-        if (!active) {
-          return;
+      })
+      .catch((caught) => {
+        if (active) {
+          setConnectionState({
+            status: 'error',
+            message: caught instanceof Error ? caught.message : 'Codex panel initialization failed.',
+          });
         }
-        setConnectionState({
-          status: 'error',
-          message: caught instanceof Error ? caught.message : 'Codex panel initialization failed.',
-        });
-      }
-    }
-
-    initialize();
+      });
 
     return () => {
       active = false;
       codexConnection.disconnect().catch(() => undefined);
     };
-  }, [codexConnection, historyStore, videoId]);
+  }, [codexConnection]);
 
-  async function persist(nextMessages: ChatMessage[]) {
+  async function persist(nextHistory: ChatHistory) {
     try {
-      await historyStore.save(videoId, nextMessages);
+      await onHistoryChange(nextHistory);
       setError(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'チャット履歴の保存に失敗しました。');
@@ -104,24 +99,31 @@ export function CodexPanel({
     }
 
     const userMessage = createChatMessage('user', message);
-    const withUserMessage = appendChatMessage(messages, userMessage);
-    setMessages(withUserMessage);
+    const withUserMessage = appendChatMessage(history.messages, userMessage);
     setInput('');
     setSending(true);
-    await persist(withUserMessage);
+    await persist({...history, messages: withUserMessage});
 
     try {
       const assistantMessage = await codexConnection.sendMessage({
         videoId,
         message,
-        context: {
-          workspaceMode,
-          title,
-        },
+        context: {workspaceMode, title},
       });
-      const nextMessages = appendChatMessage(withUserMessage, assistantMessage);
-      setMessages(nextMessages);
-      await persist(nextMessages);
+      const extraction = extractProposals(
+        assistantMessage.id,
+        videoId,
+        assistantMessage.content,
+        assistantMessage.structuredProposals,
+      );
+      const nextHistory = {
+        messages: appendChatMessage(withUserMessage, assistantMessage),
+        proposals: [...history.proposals, ...extraction.proposals],
+      };
+      await persist(nextHistory);
+      if (extraction.oversized) {
+        setError('Codex返答が1 MBを超えたため、提案抽出をスキップしました。');
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Codexへの送信に失敗しました。');
     } finally {
@@ -141,17 +143,27 @@ export function CodexPanel({
         </span>
       </header>
 
-      {error ? (
+      {error || proposalError ? (
         <div className="error-banner compact" data-testid="codex-chat-error">
-          <strong>{error}</strong>
+          <strong>{proposalError ?? error}</strong>
         </div>
       ) : null}
 
       <div className="codex-message-list" data-testid="codex-message-list">
-        {messages.length === 0 ? (
+        {history.messages.length === 0 ? (
           <p className="muted">企画、構成、対象者、尺について相談できます。</p>
         ) : (
-          messages.map((message) => <CodexMessageItem key={message.id} message={message} />)
+          history.messages.map((message) => (
+            <CodexMessageItem
+              busyProposalIds={busyProposalIds}
+              key={message.id}
+              message={message}
+              onApprove={onApproveProposal}
+              onReject={onRejectProposal}
+              onRetry={onRetryProposal}
+              proposals={history.proposals.filter((proposal) => proposal.messageId === message.id)}
+            />
+          ))
         )}
       </div>
 
@@ -159,7 +171,7 @@ export function CodexPanel({
         className="codex-input-form"
         onSubmit={(event) => {
           event.preventDefault();
-          sendMessage();
+          void sendMessage();
         }}
       >
         <textarea
@@ -182,13 +194,91 @@ export function CodexPanel({
   );
 }
 
-function CodexMessageItem({message}: {message: ChatMessage}): JSX.Element {
-  const testId = `codex-message-${message.role}`;
-
+function CodexMessageItem({
+  message,
+  proposals,
+  busyProposalIds,
+  onApprove,
+  onReject,
+  onRetry,
+}: {
+  message: ChatMessage;
+  proposals: Proposal[];
+  busyProposalIds: ReadonlySet<string>;
+  onApprove(proposalId: string): void;
+  onReject(proposalId: string): void;
+  onRetry(proposalId: string): void;
+}): JSX.Element {
   return (
-    <article className={`codex-message ${message.role}`} data-testid={testId}>
+    <article className={`codex-message ${message.role}`} data-testid={`codex-message-${message.role}`}>
       <strong>{message.role === 'user' ? 'You' : 'Codex'}</strong>
       <p>{message.content}</p>
+      {proposals.map((proposal) => (
+        <ProposalCard
+          busy={busyProposalIds.has(proposal.id)}
+          key={proposal.id}
+          onApprove={onApprove}
+          onReject={onReject}
+          onRetry={onRetry}
+          proposal={proposal}
+        />
+      ))}
     </article>
+  );
+}
+
+function ProposalCard({
+  proposal,
+  busy,
+  onApprove,
+  onReject,
+  onRetry,
+}: {
+  proposal: Proposal;
+  busy: boolean;
+  onApprove(proposalId: string): void;
+  onReject(proposalId: string): void;
+  onRetry(proposalId: string): void;
+}): JSX.Element {
+  return (
+    <section
+      aria-busy={busy}
+      className={`proposal-card ${proposal.status}`}
+      data-testid={`proposal-${proposal.kind}-card`}
+    >
+      <strong>{proposal.kind === 'json-draft' ? 'JSON下書き提案' : `コマンド提案: ${proposal.operation}`}</strong>
+      <span data-testid={`proposal-${proposal.kind}-status`}>{busy ? '保存中' : proposal.status}</span>
+      {proposal.error ? <p>{proposal.error}</p> : null}
+      {proposal.status === 'pending' ? (
+        <div className="proposal-actions">
+          <button
+            data-testid={`proposal-${proposal.kind}-reject`}
+            disabled={busy}
+            onClick={() => onReject(proposal.id)}
+            type="button"
+          >
+            Reject
+          </button>
+          <button
+            data-testid={`proposal-${proposal.kind}-approve`}
+            disabled={busy}
+            onClick={() => onApprove(proposal.id)}
+            type="button"
+          >
+            Approve
+          </button>
+        </div>
+      ) : null}
+      {proposal.status === 'failed' ? (
+        <button
+          data-testid={`proposal-${proposal.kind}-retry`}
+          disabled={busy}
+          onClick={() => onRetry(proposal.id)}
+          type="button"
+        >
+          Retry
+        </button>
+      ) : null}
+    </section>
   );
 }

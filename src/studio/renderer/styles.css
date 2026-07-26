@@ -266,6 +266,62 @@ textarea:focus-visible {
   border: 1px solid #d9e2ec;
 }
 
+.proposal-card,
+.proposal-confirmation {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #b2ddff;
+  border-radius: 6px;
+}
+
+.proposal-card > span {
+  color: #475467;
+  font-size: 13px;
+}
+
+.proposal-card.failed {
+  border-color: #fecdca;
+}
+
+.proposal-actions,
+.proposal-confirmation > div {
+  display: flex;
+  gap: 8px;
+}
+
+.proposal-actions button,
+.proposal-card > button,
+.proposal-confirmation button {
+  min-height: 36px;
+  padding: 0 12px;
+  color: #344054;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.proposal-actions button:last-child,
+.proposal-confirmation button:last-child {
+  color: #ffffff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.proposal-confirmation {
+  margin-top: 0;
+  color: #93370d;
+  background: #fffaeb;
+  border-color: #fedf89;
+}
+
+.proposal-confirmation p {
+  margin-bottom: 0;
+}
+
 .codex-input-form {
   display: grid;
 }

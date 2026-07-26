@@ -4,9 +4,9 @@
 - **Project Type**: Brownfield
 - **Start Date**: 2026-07-25T04:13:23Z
 - **Current Phase**: CONSTRUCTION
-- **Current Stage**: Code Generation - U3 JSON Draft Review and Scene Editing
-- **Last Completed**: Code Generation - U2 Codex App Server Connection
-- **Next Step**: Implement U3 draft review, apply adapter, UI, tests, and verification
+- **Current Stage**: Code Generation - U4 Review Required
+- **Last Completed**: Code Generation Part 2 - U4 Codex Proposal and Approval Flow
+- **Next Step**: Review generated U4 code and approve or request changes
 
 ## Workspace State
 - **Existing Code**: Yes
@@ -45,7 +45,7 @@
 ## Active Change Request
 - **Request**: Add a video production GUI with an embedded Codex panel for planning, JSON generation review, validation, preview, and rendering workflows.
 - **Mode**: Ideation and requirements only at this point.
-- **Status**: U3 code generation in progress.
+- **Status**: U4 implementation and verification complete. Generated code awaiting explicit review approval.
 
 ## Parallel Workstreams
 - **U6 Command Runner and Log Panel**: NFR Requirements approved; NFR Design plan created and awaiting answers in `aidlc-docs/construction/plans/u6-command-runner-and-log-panel-nfr-design-plan.md`.

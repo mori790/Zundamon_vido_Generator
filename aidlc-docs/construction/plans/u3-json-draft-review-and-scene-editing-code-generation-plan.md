@@ -124,16 +124,16 @@ Documentation summary:
 
 ### Step 11: Code Summary
 
-- [ ] `aidlc-docs/construction/u3-json-draft-review-and-scene-editing/code/summary.md`を作成する。
-- [ ] 作成/変更ファイルをまとめる。
-- [ ] US-6、US-8、US-9への対応をまとめる。
+- [x] `aidlc-docs/construction/u3-json-draft-review-and-scene-editing/code/summary.md`を作成する。
+- [x] 作成/変更ファイルをまとめる。
+- [x] US-6、US-8、US-9への対応をまとめる。
 
 ### Step 12: Verification
 
-- [ ] `npx tsc --noEmit`を実行する。
-- [ ] `npm test`を実行する。
-- [ ] `npm run studio:build`を実行する。
-- [ ] `npm run studio:dev -- --host 127.0.0.1`を短時間起動確認する。
+- [x] `npx tsc --noEmit`を実行する。
+- [x] `npm test`を実行する。
+- [x] `npm run studio:build`を実行する。
+- [x] `npm run studio:dev -- --host 127.0.0.1`を短時間起動確認する。
 
 ## Story Traceability
 

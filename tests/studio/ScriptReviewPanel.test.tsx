@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {ScriptReviewPanel} from '../../src/studio/renderer/ScriptReviewPanel';
 import {formatScriptJson} from '../../src/studio/shared/script-draft';
 import type {ScriptFileAccess} from '../../src/studio/shared/script-apply';
+import {extractProposals, type JsonDraftProposal} from '../../src/studio/shared/proposal';
 import type {VideoScript} from '../../src/types/video';
 
 function createScript(): VideoScript {
@@ -56,6 +57,16 @@ function createFileAccess(): ScriptFileAccess {
       files.set(path, data);
     },
   };
+}
+
+function createProposal(): JsonDraftProposal {
+  return extractProposals(
+    'assistant-1',
+    'sample-video',
+    '',
+    [{kind: 'json-draft', script: {...createScript(), title: 'Codex Proposal'}}],
+    '2026-07-25T00:00:00.000Z',
+  ).proposals[0] as JsonDraftProposal;
 }
 
 describe('ScriptReviewPanel', () => {
@@ -127,5 +138,57 @@ describe('ScriptReviewPanel', () => {
       expect(onApply).toHaveBeenCalledWith(expect.objectContaining({title: 'Updated'}));
     });
     expect(screen.getByTestId('script-review-status-banner')).toHaveTextContent('保存しました');
+  });
+
+  it('loads an approved proposal as a draft without saving the canonical script', async () => {
+    const fileAccess = {readFile: vi.fn(), writeFile: vi.fn()};
+    const onLoaded = vi.fn();
+    render(
+      <ScriptReviewPanel
+        activeScript={createScript()}
+        fileAccess={fileAccess}
+        onAcceptProposal={vi.fn().mockResolvedValue(true)}
+        onApply={vi.fn()}
+        onProposalLoaded={onLoaded}
+        proposal={createProposal()}
+        videoId="sample-video"
+      />,
+    );
+
+    await waitFor(() => expect(onLoaded).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('script-review-raw-tab'));
+    expect((screen.getByTestId('script-review-raw-json-input') as HTMLTextAreaElement).value)
+      .toContain('"title": "Codex Proposal"');
+    expect(fileAccess.writeFile).not.toHaveBeenCalled();
+    expect(screen.getByTestId('script-review-status-banner')).toHaveTextContent('Applyしてください');
+  });
+
+  it('requires confirmation before replacing an existing draft', async () => {
+    const onAccept = vi.fn().mockResolvedValue(true);
+    const onDismiss = vi.fn();
+    const proposal = createProposal();
+    const activeScript = createScript();
+    const {rerender} = render(
+      <ScriptReviewPanel activeScript={activeScript} onApply={vi.fn()} videoId="sample-video" />,
+    );
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+
+    rerender(
+      <ScriptReviewPanel
+        activeScript={activeScript}
+        onAcceptProposal={onAccept}
+        onApply={vi.fn()}
+        onDismissProposal={onDismiss}
+        proposal={proposal}
+        videoId="sample-video"
+      />,
+    );
+
+    expect(screen.getByTestId('script-review-proposal-confirmation')).toBeInTheDocument();
+    expect(onAccept).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('script-review-proposal-cancel-button'));
+    expect(onDismiss).toHaveBeenCalledWith(proposal.id);
+    fireEvent.click(screen.getByTestId('script-review-proposal-confirm-button'));
+    await waitFor(() => expect(onAccept).toHaveBeenCalledWith(proposal));
   });
 });

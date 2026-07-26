@@ -3,7 +3,10 @@ import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {StudioApp} from '../../src/studio/renderer/StudioApp';
 import {createEmptyDraftWorkspace, createExistingWorkspace} from '../../src/studio/shared/workspace';
+import {createChatMessage} from '../../src/studio/shared/chat';
+import {extractProposals} from '../../src/studio/shared/proposal';
 import type {VideoScript} from '../../src/types/video';
+import * as chatHistoryStore from '../../src/studio/renderer/chat-history-store';
 import * as workspaceClient from '../../src/studio/renderer/workspace-client';
 
 const script: VideoScript = {
@@ -119,6 +122,78 @@ describe('StudioApp', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('workspace-open-error')).toHaveTextContent('台本JSONの形式が不正です。');
+    });
+  });
+
+  it('loads an approved JSON proposal into the U3 draft editor', async () => {
+    vi.spyOn(workspaceClient, 'listVideoProjects').mockResolvedValue([
+      {videoId: 'sample-video', fileName: 'sample-video.json', filePath: 'input/sample-video.json'},
+    ]);
+    vi.spyOn(workspaceClient, 'loadWorkspace').mockResolvedValue({
+      status: 'opened',
+      workspace: createExistingWorkspace('sample-video', script),
+    });
+    const message = createChatMessage('assistant', 'JSON提案', {
+      id: 'assistant-1',
+      createdAt: '2026-07-25T00:00:00.000Z',
+    });
+    const proposal = extractProposals(
+      message.id,
+      'sample-video',
+      '',
+      [{kind: 'json-draft', script: {...script, title: 'Codex Proposal'}}],
+      '2026-07-25T00:00:00.000Z',
+    ).proposals[0];
+    vi.spyOn(chatHistoryStore, 'loadChatHistory').mockResolvedValue({
+      messages: [message],
+      proposals: [proposal],
+    });
+    vi.spyOn(chatHistoryStore, 'saveChatHistory').mockResolvedValue();
+
+    render(<StudioApp />);
+    fireEvent.click(await screen.findByTestId('project-list-item-sample-video'));
+    fireEvent.click(await screen.findByTestId('proposal-json-draft-approve'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('script-review-status-banner')).toHaveTextContent('Applyしてください');
+    });
+    fireEvent.click(screen.getByTestId('script-review-raw-tab'));
+    expect((screen.getByTestId('script-review-raw-json-input') as HTMLTextAreaElement).value)
+      .toContain('"title": "Codex Proposal"');
+  });
+
+  it('marks a command proposal failed while U6 is unavailable', async () => {
+    vi.spyOn(workspaceClient, 'listVideoProjects').mockResolvedValue([
+      {videoId: 'sample-video', fileName: 'sample-video.json', filePath: 'input/sample-video.json'},
+    ]);
+    vi.spyOn(workspaceClient, 'loadWorkspace').mockResolvedValue({
+      status: 'opened',
+      workspace: createExistingWorkspace('sample-video', script),
+    });
+    const message = createChatMessage('assistant', 'Validate提案', {
+      id: 'assistant-1',
+      createdAt: '2026-07-25T00:00:00.000Z',
+    });
+    const proposal = extractProposals(
+      message.id,
+      'sample-video',
+      '',
+      [{kind: 'command', operation: 'validate'}],
+      '2026-07-25T00:00:00.000Z',
+    ).proposals[0];
+    vi.spyOn(chatHistoryStore, 'loadChatHistory').mockResolvedValue({
+      messages: [message],
+      proposals: [proposal],
+    });
+    vi.spyOn(chatHistoryStore, 'saveChatHistory').mockResolvedValue();
+
+    render(<StudioApp />);
+    fireEvent.click(await screen.findByTestId('project-list-item-sample-video'));
+    fireEvent.click(await screen.findByTestId('proposal-command-approve'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('proposal-command-status')).toHaveTextContent('failed');
+      expect(screen.getByTestId('proposal-command-card')).toHaveTextContent('Command Runner未接続');
     });
   });
 });
