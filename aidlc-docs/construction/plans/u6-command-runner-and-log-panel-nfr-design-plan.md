@@ -11,43 +11,43 @@
 
 ### Step 1: 実行境界パターン
 
-- [ ] CommandCatalog固定マッピングパターンを設計する。
-- [ ] Rendererから任意シェル文字列を渡さないIPC境界を設計する。
-- [ ] npm scripts spawnの引数配列構築を設計する。
-- [ ] macOS/Electron環境でのnpm実行失敗時の扱いを設計する。
+- [x] CommandCatalog固定マッピングパターンを設計する。
+- [x] Rendererから任意シェル文字列を渡さないIPC境界を設計する。
+- [x] npm scripts spawnの引数配列構築を設計する。
+- [x] macOS/Electron環境でのnpm実行失敗時の扱いを設計する。
 
 ### Step 2: Operation状態管理パターン
 
-- [ ] Operation lifecycle state machineを設計する。
-- [ ] 事前Validateと本コマンドの親子または段階表現を設計する。
-- [ ] 200ms以内の状態反映を満たすRenderer更新パターンを設計する。
-- [ ] 再実行可能状態の扱いを設計する。
+- [x] Operation lifecycle state machineを設計する。
+- [x] 事前Validateと本コマンドの親子または段階表現を設計する。
+- [x] 200ms以内の状態反映を満たすRenderer更新パターンを設計する。
+- [x] 再実行可能状態の扱いを設計する。
 
 ### Step 3: ログ処理パターン
 
-- [ ] stdout/stderr/systemログイベントの形を設計する。
-- [ ] Operationごと最新1,000行のリングバッファを設計する。
-- [ ] ログ自動スクロールとUI負荷抑制パターンを設計する。
-- [ ] Clear Logsの責務を設計する。
+- [x] stdout/stderr/systemログイベントの形を設計する。
+- [x] Operationごと最新1,000行のリングバッファを設計する。
+- [x] ログ自動スクロールとUI負荷抑制パターンを設計する。
+- [x] Clear Logsの責務を設計する。
 
 ### Step 4: 信頼性とStopパターン
 
-- [ ] Stop要求時の `stopping` 状態遷移を設計する。
-- [ ] 10秒猶予後の強制終了タイマーを設計する。
-- [ ] Stop後の生成途中ファイル警告を設計する。
-- [ ] 起動失敗、終了コード失敗、キャンセルの分類を設計する。
+- [x] Stop要求時の `stopping` 状態遷移を設計する。
+- [x] 10秒猶予後の強制終了タイマーを設計する。
+- [x] Stop後の生成途中ファイル警告を設計する。
+- [x] 起動失敗、終了コード失敗、キャンセルの分類を設計する。
 
 ### Step 5: UIと将来連携コンポーネント
 
-- [ ] CommandPanel、StatusBar、LogPanelの論理コンポーネントを設計する。
-- [ ] VOICEVOXやRemotion失敗時の復旧ヒント表示を設計する。
-- [ ] U4 Codex承認からCommandRequestへ接続する将来境界を設計する。
-- [ ] U7 Preview更新判断への将来境界を設計する。
+- [x] CommandPanel、StatusBar、LogPanelの論理コンポーネントを設計する。
+- [x] VOICEVOXやRemotion失敗時の復旧ヒント表示を設計する。
+- [x] U4 Codex承認からCommandRequestへ接続する将来境界を設計する。
+- [x] U7 Preview更新判断への将来境界を設計する。
 
 ### Step 6: NFR Design成果物の生成
 
-- [ ] `aidlc-docs/construction/u6-command-runner-and-log-panel/nfr-design/nfr-design-patterns.md` を作成する。
-- [ ] `aidlc-docs/construction/u6-command-runner-and-log-panel/nfr-design/logical-components.md` を作成する。
+- [x] `aidlc-docs/construction/u6-command-runner-and-log-panel/nfr-design/nfr-design-patterns.md` を作成する。
+- [x] `aidlc-docs/construction/u6-command-runner-and-log-panel/nfr-design/logical-components.md` を作成する。
 
 ## 確認質問
 

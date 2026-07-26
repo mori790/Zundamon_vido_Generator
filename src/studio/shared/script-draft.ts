@@ -34,6 +34,7 @@ export type ScenePatch = Partial<
     | 'type'
     | 'text'
     | 'emotion'
+    | 'visual'
     | 'characterVisible'
     | 'durationBeforeSpeech'
     | 'durationAfterSpeech'
@@ -277,7 +278,7 @@ function cloneScript(script: VideoScript): VideoScript {
   return JSON.parse(JSON.stringify(script)) as VideoScript;
 }
 
-function extractSceneId(parsed: unknown, path: Array<string | number>): string | undefined {
+function extractSceneId(parsed: unknown, path: PropertyKey[]): string | undefined {
   if (path[0] !== 'scenes' || typeof path[1] !== 'number') {
     return undefined;
   }

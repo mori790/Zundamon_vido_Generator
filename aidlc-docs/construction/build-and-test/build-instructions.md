@@ -2,61 +2,36 @@
 
 ## Prerequisites
 
-- **Build Tool**: npm with TypeScript compiler
-- **Runtime**: Any currently supported Node.js LTS version
-- **Dependencies**: npm packages from `package.json`
-- **System Requirements**: macOS, Remotion-compatible Chromium/FFmpeg environment
-- **VOICEVOX**: Required for voice generation and live integration tests
+- Node.js 20、npm。
+- macOS。Electron、Remotion、native Finder revealの確認に使用する。
+- VOICEVOX Engine 0.25系。voice生成とlive integrationで使用する。
 
 ## Build Steps
 
-### 1. Install Dependencies
-
 ```bash
 npm install
-```
-
-### 2. Configure Environment
-
-Optional environment variables:
-
-```bash
-export VOICEVOX_BASE_URL=http://localhost:50021
-export DEFAULT_SPEAKER_ID=3
-export OUTPUT_DIR=output
-export AUDIO_DIR=public/audio
-export DEFAULT_FPS=30
-export DEFAULT_WIDTH=1920
-export DEFAULT_HEIGHT=1080
-```
-
-### 3. Type Check
-
-```bash
 npx tsc --noEmit
+npm run studio:build
 ```
 
-### 4. Verify Build Success
+## Expected Results
 
-- **Expected Output**: `npx tsc --noEmit` exits with code 0 and no TypeScript errors.
-- **Build Artifacts**: No compiled artifact is emitted; runtime uses `tsx` and Remotion.
-- **Runtime Artifacts**: WAV files under `public/audio/`, manifests under `generated/manifests/`, timelines under `generated/timelines/`, MP4 files under `output/`.
+- TypeScriptがerrorなしで終了する。
+- Electron Renderer buildが `dist-studio/` に生成される。
+- Remotion CLIと関連packageは4.0.499、Zodは4.4.3に整合する。
+
+## Runtime Commands
+
+```bash
+npm run studio:dev
+npm run studio:start
+npm run preview -- sample-video
+npm run render -- sample-video
+```
 
 ## Troubleshooting
 
-### Dependency Errors
-
-- Run `npm install`.
-- Confirm Node.js is an active LTS version.
-- If Remotion install scripts are blocked by npm script approval, review with `npm approve-scripts`.
-
-### Compilation Errors
-
-- Run `npx tsc --noEmit`.
-- Fix the file and line reported by TypeScript.
-- Rerun type check before running render commands.
-
-### npm Audit Warnings
-
-`npm install` reported 5 audit vulnerabilities during generation. Do not run `npm audit fix --force` without reviewing breaking changes.
-
+- Previewの実行file解決に失敗する場合は `node_modules/.bin/remotion --version` を確認し、`npm install` を再実行する。
+- `preview:check` handlerがない場合はElectron main processを完全終了して再起動する。
+- VOICEVOX接続失敗時はEngineと `VOICEVOX_BASE_URL` を確認する。
+- `npm audit fix --force` はbreaking change確認なしで実行しない。

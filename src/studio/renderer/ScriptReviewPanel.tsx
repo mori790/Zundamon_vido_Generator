@@ -1,5 +1,12 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {Scene, VideoScript} from '../../types/video';
+import {
+  checkSceneAssets,
+  collectSceneImageReferences,
+  isAssetReferenced,
+  type SceneAssetStatus,
+  type SelectedImage,
+} from '../shared/asset';
 import {applyScriptDraft, type ScriptFileAccess} from '../shared/script-apply';
 import {
   addDraftScene,
@@ -15,11 +22,13 @@ import {
   type ScriptDraft,
 } from '../shared/script-draft';
 import type {JsonDraftProposal} from '../shared/proposal';
+import {createRendererAssetFileAccess, type AssetFileAccess} from './asset-file-access';
 import {createRendererScriptFileAccess} from './script-file-access';
 
 type ScriptReviewPanelProps = {
   videoId: string;
   activeScript: VideoScript | null;
+  assetFileAccess?: AssetFileAccess;
   onApply(script: VideoScript): void;
   fileAccess?: ScriptFileAccess;
   proposal?: JsonDraftProposal | null;
@@ -31,6 +40,7 @@ type ScriptReviewPanelProps = {
 export function ScriptReviewPanel({
   videoId,
   activeScript,
+  assetFileAccess,
   onApply,
   fileAccess,
   proposal,
@@ -44,6 +54,25 @@ export function ScriptReviewPanel({
   const [applyMessage, setApplyMessage] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [loadingProposal, setLoadingProposal] = useState(false);
+  const [assetStatuses, setAssetStatuses] = useState<SceneAssetStatus[]>([]);
+  const [assetBusy, setAssetBusy] = useState(false);
+  const [assetError, setAssetError] = useState<string | null>(null);
+  const [pendingReplacement, setPendingReplacement] = useState<{
+    sceneId: string;
+    selected: SelectedImage;
+  } | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
+  const [retryRequest, setRetryRequest] = useState<{
+    overwrite: boolean;
+    sceneId: string;
+    selected: SelectedImage;
+  } | null>(null);
+  const assetBusyRef = useRef(false);
+  const assetCheckGenerationRef = useRef(0);
+  const resolvedAssetFileAccess = useMemo(
+    () => assetFileAccess ?? createRendererAssetFileAccess(),
+    [assetFileAccess],
+  );
 
   useEffect(() => {
     setDraft(null);
@@ -61,6 +90,23 @@ export function ScriptReviewPanel({
   const displayedScript = draft?.lastValidScript ?? activeScript;
   const selectedScene = displayedScript?.scenes.find((scene) => scene.id === selectedSceneId) ?? displayedScript?.scenes[0] ?? null;
   const canApply = Boolean(draft && draft.validation.status === 'valid' && !applying);
+
+  useEffect(() => {
+    const generation = ++assetCheckGenerationRef.current;
+    if (!displayedScript) {
+      setAssetStatuses((current) => (current.length === 0 ? current : []));
+      return;
+    }
+    if (collectSceneImageReferences(displayedScript).length === 0) {
+      setAssetStatuses((current) => (current.length === 0 ? current : []));
+      return;
+    }
+    void checkSceneAssets(displayedScript, resolvedAssetFileAccess.exists, generation).then((result) => {
+      if (result.generation === assetCheckGenerationRef.current) {
+        setAssetStatuses(result.statuses);
+      }
+    });
+  }, [displayedScript, resolvedAssetFileAccess]);
 
   function createDraft() {
     const nextDraft = activeScript ? createDraftFromScript(videoId, activeScript) : createEmptyScriptDraft(videoId);
@@ -94,6 +140,99 @@ export function ScriptReviewPanel({
     setDraft(nextDraft);
     if (patch.id && typeof patch.id === 'string') {
       setSelectedSceneId(patch.id);
+    }
+  }
+
+  async function selectImage(sceneId: string) {
+    if (assetBusyRef.current) {
+      return;
+    }
+    assetBusyRef.current = true;
+    setAssetBusy(true);
+    setAssetError(null);
+    try {
+      const selected = await resolvedAssetFileAccess.selectImage();
+      assetBusyRef.current = false;
+      setAssetBusy(false);
+      if (selected) {
+        await copyImage(sceneId, selected, false);
+      }
+    } catch (error) {
+      setAssetError(error instanceof Error ? error.message : '画像を選択できませんでした。');
+    } finally {
+      assetBusyRef.current = false;
+      setAssetBusy(false);
+    }
+  }
+
+  async function copyImage(sceneId: string, selected: SelectedImage, overwrite: boolean) {
+    if (assetBusyRef.current) {
+      return;
+    }
+    assetBusyRef.current = true;
+    setAssetBusy(true);
+    setAssetError(null);
+    const result = await resolvedAssetFileAccess.copyImage(videoId, selected, overwrite);
+    assetBusyRef.current = false;
+    setAssetBusy(false);
+
+    if (result.status === 'replacement-required') {
+      setPendingReplacement({sceneId, selected});
+      return;
+    }
+    if (result.status === 'failed') {
+      setRetryRequest({overwrite, sceneId, selected});
+      setAssetError(result.message);
+      return;
+    }
+
+    const current = displayedScript?.scenes.find((scene) => scene.id === sceneId);
+    patchScene(sceneId, {
+      visual: {
+        type: 'image',
+        src: result.publicPath,
+        position: current?.visual?.type === 'image' ? current.visual.position : 'center',
+        fit: current?.visual?.type === 'image' ? current.visual.fit : 'contain',
+      },
+    });
+    setPendingReplacement(null);
+    setRetryRequest(null);
+  }
+
+  function removeImage(sceneId: string) {
+    const script = draft?.lastValidScript;
+    const scene = script?.scenes.find((candidate) => candidate.id === sceneId);
+    if (!script || scene?.visual?.type !== 'image') {
+      return;
+    }
+    const publicPath = scene.visual.src;
+    const nextScript = {
+      ...script,
+      scenes: script.scenes.map((candidate) =>
+        candidate.id === sceneId ? {...candidate, visual: undefined} : candidate,
+      ),
+    };
+    patchScene(sceneId, {visual: undefined});
+    setPendingRemoval(isAssetReferenced(nextScript, publicPath) ? null : publicPath);
+  }
+
+  async function movePendingImageToTrash() {
+    if (!pendingRemoval || assetBusyRef.current) {
+      return;
+    }
+    assetBusyRef.current = true;
+    setAssetBusy(true);
+    setAssetError(null);
+    try {
+      await resolvedAssetFileAccess.trash(pendingRemoval);
+      setPendingRemoval(null);
+    } catch (error) {
+      setAssetError(
+        `${error instanceof Error ? error.message : '画像をTrashへ移動できませんでした。'} ファイルは残っています。`,
+      );
+    } finally {
+      assetBusyRef.current = false;
+      setAssetBusy(false);
     }
   }
 
@@ -157,7 +296,11 @@ export function ScriptReviewPanel({
   }
 
   return (
-    <section className="script-review-panel" data-testid="script-review-panel">
+    <section
+      aria-busy={assetBusy}
+      className="script-review-panel"
+      data-testid="script-review-panel"
+    >
       <header className="script-review-header">
         <div>
           <h2>台本レビュー</h2>
@@ -212,6 +355,78 @@ export function ScriptReviewPanel({
         </div>
       ) : null}
 
+      {pendingReplacement ? (
+        <div className="asset-confirmation" data-testid="asset-replacement-confirmation" role="alertdialog">
+          <strong>同名の画像を置き換えますか？</strong>
+          <p>{pendingReplacement.selected.fileName}</p>
+          <div>
+            <button
+              data-testid="asset-replacement-cancel-button"
+              onClick={() => setPendingReplacement(null)}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              data-testid="asset-replacement-confirm-button"
+              disabled={assetBusy}
+              onClick={() =>
+                void copyImage(pendingReplacement.sceneId, pendingReplacement.selected, true)
+              }
+              type="button"
+            >
+              Replace
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingRemoval ? (
+        <div className="asset-confirmation" data-testid="asset-removal-confirmation" role="alertdialog">
+          <strong>参照されていない画像をTrashへ移動しますか？</strong>
+          <p>{pendingRemoval}</p>
+          <div>
+            <button
+              data-testid="asset-removal-keep-button"
+              onClick={() => setPendingRemoval(null)}
+              type="button"
+            >
+              Keep File
+            </button>
+            <button
+              data-testid="asset-removal-trash-button"
+              disabled={assetBusy}
+              onClick={() => void movePendingImageToTrash()}
+              type="button"
+            >
+              Move to Trash
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {assetError ? (
+        <div className="asset-error" data-testid="asset-operation-error" role="alert">
+          <span>{assetError}</span>
+          {retryRequest ? (
+            <button
+              data-testid="asset-operation-retry-button"
+              disabled={assetBusy}
+              onClick={() =>
+                void copyImage(
+                  retryRequest.sceneId,
+                  retryRequest.selected,
+                  retryRequest.overwrite,
+                )
+              }
+              type="button"
+            >
+              Retry
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {displayedScript ? (
         <>
           <div className="script-review-tabs" role="tablist">
@@ -240,9 +455,13 @@ export function ScriptReviewPanel({
           ) : (
             <StructuredSceneEditor
               draft={draft}
+              assetBusy={assetBusy}
+              assetStatuses={assetStatuses}
               onAdd={addScene}
+              onAttachImage={selectImage}
               onMove={moveScene}
               onPatchScene={patchScene}
+              onRemoveImage={removeImage}
               onRemove={removeScene}
               onSelectScene={setSelectedSceneId}
               script={displayedScript}
@@ -316,19 +535,27 @@ function RawJsonEditor({
 }
 
 function StructuredSceneEditor({
+  assetBusy,
+  assetStatuses,
   draft,
   onAdd,
+  onAttachImage,
   onMove,
   onPatchScene,
+  onRemoveImage,
   onRemove,
   onSelectScene,
   script,
   selectedScene,
 }: {
+  assetBusy: boolean;
+  assetStatuses: SceneAssetStatus[];
   draft: ScriptDraft | null;
   onAdd(): void;
+  onAttachImage(sceneId: string): void;
   onMove(direction: 'up' | 'down'): void;
   onPatchScene(sceneId: string, patch: Parameters<typeof updateDraftScene>[2]): void;
+  onRemoveImage(sceneId: string): void;
   onRemove(): void;
   onSelectScene(sceneId: string): void;
   script: VideoScript;
@@ -364,6 +591,9 @@ function StructuredSceneEditor({
             >
               <span>{scene.id}</span>
               <small>{scene.type}</small>
+              {assetStatuses.some(
+                (status) => status.sceneId === scene.id && status.status !== 'available',
+              ) ? <small className="asset-missing-label">Missing image</small> : null}
             </button>
           ))}
         </div>
@@ -463,9 +693,110 @@ function StructuredSceneEditor({
                 />
               </SceneField>
             </div>
+            <ImageVisualEditor
+              assetBusy={assetBusy}
+              editable={editable}
+              onAttach={() => onAttachImage(selectedScene.id)}
+              onPatch={(visual) => onPatchScene(selectedScene.id, {visual})}
+              onRemove={() => onRemoveImage(selectedScene.id)}
+              scene={selectedScene}
+              status={assetStatuses.find((candidate) => candidate.sceneId === selectedScene.id)}
+            />
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function ImageVisualEditor({
+  assetBusy,
+  editable,
+  onAttach,
+  onPatch,
+  onRemove,
+  scene,
+  status,
+}: {
+  assetBusy: boolean;
+  editable: boolean;
+  onAttach(): void;
+  onPatch(visual: Extract<NonNullable<Scene['visual']>, {type: 'image'}>): void;
+  onRemove(): void;
+  scene: Scene;
+  status?: SceneAssetStatus;
+}): JSX.Element {
+  const visual = scene.visual?.type === 'image' ? scene.visual : null;
+
+  return (
+    <div className="image-visual-editor" data-testid="scene-image-visual-editor">
+      <strong>Image Visual</strong>
+      {!visual ? (
+        <button
+          data-testid="scene-image-select-button"
+          disabled={!editable || assetBusy}
+          onClick={onAttach}
+          type="button"
+        >
+          {assetBusy ? '処理中' : 'Select Image'}
+        </button>
+      ) : (
+        <>
+          <code data-testid="scene-image-path">{visual.src}</code>
+          {status?.status !== 'available' ? (
+            <div className="asset-missing-notice" data-testid="scene-image-missing-notice" role="alert">
+              Missing image: {status?.publicPath ?? visual.src}
+            </div>
+          ) : null}
+          <div className="scene-number-grid">
+            <SceneField label="Position">
+              <select
+                data-testid="scene-image-position-select"
+                disabled={!editable || assetBusy}
+                onChange={(event) =>
+                  onPatch({...visual, position: event.target.value as typeof visual.position})
+                }
+                value={visual.position}
+              >
+                <option value="left">left</option>
+                <option value="center">center</option>
+                <option value="right">right</option>
+              </select>
+            </SceneField>
+            <SceneField label="Fit">
+              <select
+                data-testid="scene-image-fit-select"
+                disabled={!editable || assetBusy}
+                onChange={(event) =>
+                  onPatch({...visual, fit: event.target.value as typeof visual.fit})
+                }
+                value={visual.fit}
+              >
+                <option value="contain">contain</option>
+                <option value="cover">cover</option>
+              </select>
+            </SceneField>
+          </div>
+          <div className="scene-detail-actions">
+            <button
+              data-testid="scene-image-replace-button"
+              disabled={!editable || assetBusy}
+              onClick={onAttach}
+              type="button"
+            >
+              Replace
+            </button>
+            <button
+              data-testid="scene-image-remove-button"
+              disabled={!editable || assetBusy}
+              onClick={onRemove}
+              type="button"
+            >
+              Remove
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

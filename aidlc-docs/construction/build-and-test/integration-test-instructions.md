@@ -1,65 +1,33 @@
 # Integration Test Instructions
 
-## Purpose
-
-Validate interactions between the local CLI, VOICEVOX Engine, generated files, timeline data, and Remotion render flow.
-
-## Test Scenarios
-
-### Scenario 1: Script Validation and Asset Check
-
-- **Description**: Validate the sample script and placeholder assets.
-- **Setup**: Run `npm install`.
-- **Command**:
-
-```bash
-npm run validate -- sample-video
-```
-
-- **Expected Results**:
-  - Script loads successfully.
-  - Four scenes are detected.
-  - Title and ending scenes may warn for missing explanation visuals.
-  - Validation completes successfully.
-
-### Scenario 2: VOICEVOX Live Connection
-
-- **Description**: Confirm the configured VOICEVOX Engine is reachable.
-- **Setup**: Start VOICEVOX Engine at `VOICEVOX_BASE_URL`, default `http://localhost:50021`.
-- **Command**:
+## Automated Boundaries
 
 ```bash
 npm run test:integration
+npm run test:studio:e2e
 ```
 
-- **Expected Results**:
-  - Test passes when VOICEVOX Engine is running.
-  - Test fails when VOICEVOX Engine is not running, by approved NFR design.
+- `test:integration` は起動中のVOICEVOX Engineを検証する。
+- `test:studio:e2e` はElectron main/preloadとasset file access boundaryを検証する。
 
-### Scenario 3: Voice, Timeline, and Render Pipeline
-
-- **Description**: Generate WAV files, timeline JSON, and MP4 output from the sample script.
-- **Setup**: Start VOICEVOX Engine.
-- **Commands**:
+## CLI Pipeline
 
 ```bash
+npm run validate -- sample-video
 npm run voice -- sample-video
 npm run timeline -- sample-video
-npm run video -- sample-video
+npm run preview -- sample-video
+npm run render -- sample-video
 ```
 
-- **Expected Results**:
-  - WAV files are generated under `public/audio/sample-video/`.
-  - Manifest is generated under `generated/manifests/`.
-  - Timeline is generated under `generated/timelines/`.
-  - MP4 is generated at `output/sample-video.mp4`.
+Expected:
 
-## Cleanup
+- WAVは `public/audio/sample-video/`、timelineは `generated/timelines/` に生成される。
+- PreviewはRemotion Studioを起動してbuildを完了する。
+- RenderはprogressとETAを出力し、`output/sample-video.mp4` をnon-zero fileとして検証する。
 
-Generated files may be kept for cache verification. To manually reset generated outputs, remove only generated audio, manifest, timeline, and MP4 files after confirming they are not needed.
+## GUI Workflow
 
-## Last Observed Result
-
-- `npm run validate -- sample-video` passed.
-- `npm run test:integration` failed because VOICEVOX Engine was unavailable or blocked in the execution environment, matching the selected behavior.
-
+1. `npm run studio:dev` と `npm run studio:start` を起動する。
+2. Workspace、draft review、asset selection、Validate、Voice、Timeline、Previewを確認する。
+3. Renderのoverwrite confirm/cancel、progress、ETA、Stop、partial warning、manual retry、Finder revealを確認する。

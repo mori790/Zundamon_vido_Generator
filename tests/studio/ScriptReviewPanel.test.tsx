@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {ScriptReviewPanel} from '../../src/studio/renderer/ScriptReviewPanel';
+import type {AssetFileAccess} from '../../src/studio/renderer/asset-file-access';
 import {formatScriptJson} from '../../src/studio/shared/script-draft';
 import type {ScriptFileAccess} from '../../src/studio/shared/script-apply';
 import {extractProposals, type JsonDraftProposal} from '../../src/studio/shared/proposal';
@@ -67,6 +68,27 @@ function createProposal(): JsonDraftProposal {
     [{kind: 'json-draft', script: {...createScript(), title: 'Codex Proposal'}}],
     '2026-07-25T00:00:00.000Z',
   ).proposals[0] as JsonDraftProposal;
+}
+
+function selectedImage(fileName = 'demo.png') {
+  return {
+    file: new File(['image'], fileName, {type: 'image/png'}),
+    fileName,
+    sourcePath: `/tmp/${fileName}`,
+  };
+}
+
+function createAssetFileAccess(overrides: Partial<AssetFileAccess> = {}): AssetFileAccess {
+  return {
+    copyImage: vi.fn().mockResolvedValue({
+      status: 'copied',
+      publicPath: '/visuals/sample-video/demo.png',
+    }),
+    exists: vi.fn().mockResolvedValue(true),
+    selectImage: vi.fn().mockResolvedValue(selectedImage()),
+    trash: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
 }
 
 describe('ScriptReviewPanel', () => {
@@ -190,5 +212,145 @@ describe('ScriptReviewPanel', () => {
     expect(onDismiss).toHaveBeenCalledWith(proposal.id);
     fireEvent.click(screen.getByTestId('script-review-proposal-confirm-button'));
     await waitFor(() => expect(onAccept).toHaveBeenCalledWith(proposal));
+  });
+
+  it('attaches an image and edits position and fit through the existing draft', async () => {
+    const assetFileAccess = createAssetFileAccess();
+    render(
+      <ScriptReviewPanel
+        activeScript={createScript()}
+        assetFileAccess={assetFileAccess}
+        onApply={vi.fn()}
+        videoId="sample-video"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+    fireEvent.click(screen.getByTestId('scene-image-select-button'));
+    expect(await screen.findByTestId('scene-image-path')).toHaveTextContent(
+      '/visuals/sample-video/demo.png',
+    );
+    fireEvent.change(screen.getByTestId('scene-image-position-select'), {target: {value: 'right'}});
+    fireEvent.change(screen.getByTestId('scene-image-fit-select'), {target: {value: 'cover'}});
+    fireEvent.click(screen.getByTestId('script-review-raw-tab'));
+    const raw = (screen.getByTestId('script-review-raw-json-input') as HTMLTextAreaElement).value;
+    expect(raw).toContain('"position": "right"');
+    expect(raw).toContain('"fit": "cover"');
+    await waitFor(() =>
+      expect(assetFileAccess.exists).toHaveBeenCalledWith('/visuals/sample-video/demo.png'),
+    );
+  });
+
+  it('requires confirmation before replacing a colliding image', async () => {
+    const copyImage = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 'replacement-required',
+        publicPath: '/visuals/sample-video/demo.png',
+      })
+      .mockResolvedValueOnce({
+        status: 'copied',
+        publicPath: '/visuals/sample-video/demo.png',
+      });
+    render(
+      <ScriptReviewPanel
+        activeScript={createScript()}
+        assetFileAccess={createAssetFileAccess({copyImage})}
+        onApply={vi.fn()}
+        videoId="sample-video"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+    fireEvent.click(screen.getByTestId('scene-image-select-button'));
+    expect(await screen.findByTestId('asset-replacement-confirmation')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('asset-replacement-confirm-button'));
+    expect(await screen.findByTestId('scene-image-path')).toBeInTheDocument();
+    expect(copyImage).toHaveBeenLastCalledWith(
+      'sample-video',
+      expect.objectContaining({fileName: 'demo.png'}),
+      true,
+    );
+  });
+
+  it('shows missing assets and preserves a file when Trash fails', async () => {
+    const activeScript = createScript();
+    activeScript.scenes[0].visual = {
+      type: 'image',
+      src: '/visuals/sample-video/missing.png',
+      position: 'center',
+      fit: 'contain',
+    };
+    const trash = vi.fn().mockRejectedValue(new Error('Trash failed'));
+    render(
+      <ScriptReviewPanel
+        activeScript={activeScript}
+        assetFileAccess={createAssetFileAccess({
+          exists: vi.fn().mockResolvedValue(false),
+          trash,
+        })}
+        onApply={vi.fn()}
+        videoId="sample-video"
+      />,
+    );
+
+    expect(await screen.findByTestId('scene-image-missing-notice')).toHaveTextContent('Missing image');
+    expect(screen.getByTestId('scene-row-scene-001')).toHaveTextContent('Missing image');
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+    fireEvent.click(screen.getByTestId('scene-image-remove-button'));
+    expect(screen.getByTestId('asset-removal-confirmation')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('asset-removal-trash-button'));
+    expect(await screen.findByTestId('asset-operation-error')).toHaveTextContent('ファイルは残っています');
+    expect(trash).toHaveBeenCalledWith('/visuals/sample-video/missing.png');
+  });
+
+  it('offers manual retry after copy failure', async () => {
+    const copyImage = vi
+      .fn()
+      .mockResolvedValueOnce({status: 'failed', message: 'Copy failed'})
+      .mockResolvedValueOnce({
+        status: 'copied',
+        publicPath: '/visuals/sample-video/demo.png',
+      });
+    render(
+      <ScriptReviewPanel
+        activeScript={createScript()}
+        assetFileAccess={createAssetFileAccess({copyImage})}
+        onApply={vi.fn()}
+        videoId="sample-video"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+    fireEvent.click(screen.getByTestId('scene-image-select-button'));
+    expect(await screen.findByTestId('asset-operation-error')).toHaveTextContent('Copy failed');
+    fireEvent.click(screen.getByTestId('asset-operation-retry-button'));
+    expect(await screen.findByTestId('scene-image-path')).toBeInTheDocument();
+  });
+
+  it('allows only one asset selection operation at a time', async () => {
+    let finishSelection: ((value: ReturnType<typeof selectedImage> | null) => void) | undefined;
+    const selectImage = vi.fn(
+      () =>
+        new Promise<ReturnType<typeof selectedImage> | null>((resolve) => {
+          finishSelection = resolve;
+        }),
+    );
+    render(
+      <ScriptReviewPanel
+        activeScript={createScript()}
+        assetFileAccess={createAssetFileAccess({selectImage})}
+        onApply={vi.fn()}
+        videoId="sample-video"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('script-review-create-draft-button'));
+    const selectButton = screen.getByTestId('scene-image-select-button');
+    fireEvent.click(selectButton);
+    fireEvent.click(selectButton);
+    expect(selectImage).toHaveBeenCalledOnce();
+    finishSelection?.(null);
+    await waitFor(() => expect(selectButton).not.toBeDisabled());
   });
 });

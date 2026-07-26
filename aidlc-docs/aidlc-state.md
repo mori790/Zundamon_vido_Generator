@@ -4,14 +4,14 @@
 - **Project Type**: Brownfield
 - **Start Date**: 2026-07-25T04:13:23Z
 - **Current Phase**: CONSTRUCTION
-- **Current Stage**: Code Generation - U4 Review Required
-- **Last Completed**: Code Generation Part 2 - U4 Codex Proposal and Approval Flow
-- **Next Step**: Review generated U4 code and approve or request changes
+- **Current Stage**: Operations Approval Required
+- **Last Completed**: Build and Test - U1 through U8
+- **Next Step**: Obtain explicit approval to proceed to Operations placeholder
 
 ## Workspace State
 - **Existing Code**: Yes
 - **Reverse Engineering Needed**: Completed
-- **Workspace Root**: /Users/tomimorichiharu/Zundamon_vido_Generator
+- **Workspace Root**: /Users/tomimorisatoshihare/Zundamon_vido_Generator
 - **Programming Languages Detected**: TypeScript, TSX, JSON
 - **Build System Detected**: npm
 - **Project Structure**: Brownfield local CLI and Remotion application
@@ -40,15 +40,17 @@
 - [x] CONSTRUCTION - NFR Design
 - [x] CONSTRUCTION - Code Generation
 - [x] CONSTRUCTION - Build and Test
-- [x] OPERATIONS - Operations (placeholder)
+- [ ] OPERATIONS - Operations (placeholder)
 
 ## Active Change Request
 - **Request**: Add a video production GUI with an embedded Codex panel for planning, JSON generation review, validation, preview, and rendering workflows.
-- **Mode**: Ideation and requirements only at this point.
-- **Status**: U4 implementation and verification complete. Generated code awaiting explicit review approval.
+- **Mode**: Construction implementation in progress.
+- **Status**: U5 through U8 Code Generation are complete and approved. Build and Test instructions and verification summary are current; Operations approval is pending.
 
 ## Parallel Workstreams
-- **U6 Command Runner and Log Panel**: NFR Requirements approved; NFR Design plan created and awaiting answers in `aidlc-docs/construction/plans/u6-command-runner-and-log-panel-nfr-design-plan.md`.
+- **U6 Command Runner and Log Panel**: Code Generation approved.
+- **U7 Embedded Remotion Preview**: Code Generation approved.
+- **U8 Render Workflow and CLI Compatibility Verification**: Code Generation approved. Automated, CLI, Preview, native overwrite, Stop/partial, and reveal verification complete.
 
 ## Reverse Engineering Status
 - [x] Reverse Engineering - Completed on 2026-07-25T06:52:49Z

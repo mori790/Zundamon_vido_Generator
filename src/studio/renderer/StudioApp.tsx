@@ -1,15 +1,21 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {CodexPanel} from './CodexPanel';
+import {ProductionCommandPanel, type ProductionCommandPanelHandle} from './ProductionCommandPanel';
+import {PreviewPanel} from './PreviewPanel';
+import {PreviewCoordinator} from './preview-coordinator';
+import {previewClient} from './preview-client';
 import {ScriptReviewPanel} from './ScriptReviewPanel';
+import type {AssetFileAccess} from './asset-file-access';
 import {loadChatHistory, saveChatHistory} from './chat-history-store';
 import {listVideoProjects, loadWorkspace} from './workspace-client';
 import type {ChatHistory} from '../shared/chat';
+import type {Operation} from '../shared/command';
 import {transitionProposal, type JsonDraftProposal, type Proposal} from '../shared/proposal';
 import type {VideoProjectSummary, WorkspaceError, WorkspaceState} from '../shared/workspace';
 
 type Screen = 'start' | 'workspace';
 
-export function StudioApp(): JSX.Element {
+export function StudioApp({assetFileAccess}: {assetFileAccess?: AssetFileAccess} = {}): JSX.Element {
   const [screen, setScreen] = useState<Screen>('start');
   const [projects, setProjects] = useState<VideoProjectSummary[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -51,6 +57,7 @@ export function StudioApp(): JSX.Element {
   if (screen === 'workspace' && workspace) {
     return (
       <WorkspaceShell
+        assetFileAccess={assetFileAccess}
         workspace={workspace}
         onApplyScript={(activeScript) => {
           setWorkspace({
@@ -173,10 +180,12 @@ function WorkspaceOpenError({error}: {error: WorkspaceError}): JSX.Element {
 }
 
 function WorkspaceShell({
+  assetFileAccess,
   workspace,
   onApplyScript,
   onBack,
 }: {
+  assetFileAccess?: AssetFileAccess;
   workspace: WorkspaceState;
   onApplyScript(activeScript: NonNullable<WorkspaceState['activeScript']>): void;
   onBack(): void;
@@ -187,6 +196,18 @@ function WorkspaceShell({
   const [proposalError, setProposalError] = useState<string | null>(null);
   const historyRef = useRef(history);
   const busyProposalIdsRef = useRef(new Set<string>());
+  const commandPanelRef = useRef<ProductionCommandPanelHandle>(null);
+  const commandProposalIdsRef = useRef(new Map<string, string>());
+  const previewCoordinator = useMemo(
+    () => new PreviewCoordinator(
+      workspace.videoId,
+      previewClient,
+      (command) => commandPanelRef.current!.run(command),
+    ),
+    [workspace.videoId],
+  );
+
+  useEffect(() => () => previewCoordinator.dispose(), [previewCoordinator]);
 
   useEffect(() => {
     let active = true;
@@ -258,7 +279,7 @@ function WorkspaceShell({
       setSelectedProposal(proposal);
       return;
     }
-    void failUnavailableCommand(proposal);
+    void runCommandProposal(proposal);
   }
 
   async function acceptJsonProposal(proposal: JsonDraftProposal): Promise<boolean> {
@@ -274,16 +295,46 @@ function WorkspaceShell({
     setSelectedProposal(null);
   }
 
-  async function failUnavailableCommand(proposal: Proposal) {
+  async function runCommandProposal(proposal: Proposal) {
     const approved = transitionProposal(proposal, 'approved');
     if (!(await saveProposalTransition(proposal, approved))) {
       return;
     }
-    await saveProposalTransition(
-      approved,
-      transitionProposal(approved, 'failed', {error: 'Command Runner未接続'}),
-    );
+    try {
+      if (approved.kind !== 'command') {
+        return;
+      }
+      const operation = await commandPanelRef.current!.start(approved.operation);
+      commandProposalIdsRef.current.set(operation.id, approved.id);
+    } catch (caught) {
+      await saveProposalTransition(
+        approved,
+        transitionProposal(approved, 'failed', {
+          error: caught instanceof Error ? caught.message : String(caught),
+        }),
+      );
+    }
   }
+
+  const finishCommandProposal = useCallback((operation: Operation) => {
+    if (operation.status === 'succeeded' && (operation.command === 'voice' || operation.command === 'timeline')) {
+      void previewCoordinator.refresh();
+    }
+    const proposalId = commandProposalIdsRef.current.get(operation.id);
+    if (!proposalId) {
+      return;
+    }
+    commandProposalIdsRef.current.delete(operation.id);
+    const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
+    if (!proposal || proposal.status !== 'approved') {
+      return;
+    }
+    const status = operation.status === 'succeeded' ? 'completed' : 'failed';
+    void saveProposalTransition(
+      proposal,
+      transitionProposal(proposal, status, status === 'failed' ? {error: operation.error ?? 'コマンドが失敗しました。'} : {}),
+    );
+  }, [previewCoordinator]);
 
   async function retryProposal(proposalId: string) {
     const proposal = historyRef.current.proposals.find((item) => item.id === proposalId);
@@ -310,15 +361,30 @@ function WorkspaceShell({
       <section className="workspace-panel">
         <WorkspaceHeader workspace={workspace} onBack={onBack} />
         <div className="workspace-body">
-          <ScriptReviewPanel
-            activeScript={workspace.activeScript}
-            onAcceptProposal={acceptJsonProposal}
-            onApply={onApplyScript}
-            onDismissProposal={() => setSelectedProposal(null)}
-            onProposalLoaded={completeJsonProposal}
-            proposal={selectedProposal}
-            videoId={workspace.videoId}
-          />
+          <div className="workspace-main">
+            <ScriptReviewPanel
+              activeScript={workspace.activeScript}
+              assetFileAccess={assetFileAccess}
+              onAcceptProposal={acceptJsonProposal}
+              onApply={(script) => {
+                onApplyScript(script);
+                void previewCoordinator.refresh();
+              }}
+              onDismissProposal={() => setSelectedProposal(null)}
+              onProposalLoaded={completeJsonProposal}
+              proposal={selectedProposal}
+              videoId={workspace.videoId}
+            />
+            <PreviewPanel
+              coordinator={previewCoordinator}
+              runFallback={(command) => void commandPanelRef.current?.start(command)}
+            />
+            <ProductionCommandPanel
+              onOperationFinished={finishCommandProposal}
+              ref={commandPanelRef}
+              videoId={workspace.videoId}
+            />
+          </div>
           <CodexPanel
             busyProposalIds={busyProposalIds}
             history={history}

@@ -39,6 +39,24 @@
       "characterVisible": true
     },
     {
+      "id": "scene-007",
+      "type": "explanation",
+      "text": "新しいシーンなのだ。",
+      "emotion": "normal",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
+    },
+    {
+      "id": "scene-005",
+      "type": "explanation",
+      "text": "新しいシーンなのだ。",
+      "emotion": "normal",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
+    },
+    {
       "id": "scene-002",
       "type": "explanation",
       "text": "Podを削除したのに、勝手に復活したことはないのだ？",
@@ -75,6 +93,15 @@
       "emotion": "happy",
       "durationBeforeSpeech": 0.2,
       "durationAfterSpeech": 1,
+      "characterVisible": true
+    },
+    {
+      "id": "scene-006",
+      "type": "explanation",
+      "text": "新しい",
+      "emotion": "normal",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
       "characterVisible": true
     }
   ]

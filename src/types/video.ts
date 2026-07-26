@@ -131,6 +131,7 @@ export type VoiceGenerationResult = {
 
 export type RenderOptions = {
   verbose?: boolean;
+  onProgress?(progress: import('../studio/shared/command').RenderProgress): void;
 };
 
 export type RenderResult = {

@@ -8,6 +8,7 @@ import {resolveOutputPath, resolveWorkspacePath} from './path-resolver';
 import {buildRenderData} from './render-data-builder';
 import type {RenderOptions, RenderResult} from '../types/video';
 import {ensureDir} from '../utils/file';
+import {createRenderProgressReporter} from './render-progress';
 
 export async function renderVideo(videoId: string, options: RenderOptions = {}): Promise<RenderResult> {
   const logger = new Logger(options.verbose);
@@ -27,12 +28,18 @@ export async function renderVideo(videoId: string, options: RenderOptions = {}):
     });
 
     await ensureDir(path.dirname(outputPath));
+    const reportProgress = options.onProgress
+      ? createRenderProgressReporter(composition.durationInFrames, options.onProgress)
+      : undefined;
     await renderMedia({
       composition,
       serveUrl,
       codec: 'h264',
       outputLocation: outputPath,
       inputProps,
+      onProgress: reportProgress
+        ? ({progress, renderedFrames}) => reportProgress(renderedFrames, progress)
+        : undefined,
     });
 
     logger.info(`出力完了: ${path.relative(directories.output, outputPath).startsWith('..') ? outputPath : `output/${path.basename(outputPath)}`}`);

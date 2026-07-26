@@ -179,3 +179,15 @@ This is a single-package repository. When implementation is approved later, the 
 - **Resiliency Baseline**: Disabled by user choice; skipped.
 - **Property-Based Testing**: Disabled by user choice; skipped.
 
+## Implementation Continuation
+
+This section supersedes the original defer-only planning snapshot above.
+
+- Application Design and Units Generation were completed.
+- The user subsequently approved implementation.
+- U1 through U7 completed their selected construction stages and code generation.
+- U8 is the final MVP integration unit and is currently in Code Generation.
+- Infrastructure Design remains skipped because the product is a local Electron application.
+- Operations remains a placeholder.
+
+The unchecked boxes above preserve the original ideation decisions; they are not current execution status. Current status is tracked in `aidlc-docs/aidlc-state.md` and the per-unit construction plans.

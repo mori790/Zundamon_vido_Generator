@@ -1,37 +1,24 @@
 # Unit Test Execution
 
-## Run Unit Tests
-
-### 1. Execute All Default Unit Tests
+## Default Suite
 
 ```bash
 npm test
 ```
 
-Default tests exclude the live VOICEVOX integration test.
+## Expected Result
 
-### 2. Review Test Results
+- 28 test files、112 tests、0 failures。
+- CLI core、draft review、assets、Codex proposal、Command Runner、Preview、Render output、React panelsを検証する。
+- Live VOICEVOX testはdefault suiteから除外される。
 
-- **Expected**: 7 test files pass, 13 tests pass, 0 failures.
-- **Coverage Areas**:
-  - JSON validation
-  - Subtitle splitting
-  - Seconds-to-frames conversion
-  - Timeline calculation
-  - Cache hash generation
-  - Path and asset checks
-  - Character asset selection
-- **Test Report Location**: Console output.
+## Focused Checks
 
-### 3. Fix Failing Tests
+```bash
+npx vitest run tests/studio/script-draft.test.ts
+npx vitest run tests/studio/command-runner.test.ts
+npx vitest run tests/studio/PreviewPanel.test.tsx
+npx vitest run tests/studio/ProductionCommandPanel.test.tsx
+```
 
-1. Review the failing test output.
-2. Identify the source module under `src/`.
-3. Fix the implementation or test expectation.
-4. Run `npx tsc --noEmit`.
-5. Rerun `npm test`.
-
-## Last Observed Result
-
-`npm test` passed with 7 files and 13 tests.
-
+失敗時は最初のfailureを修正し、`npx tsc --noEmit` と `npm test` を再実行する。

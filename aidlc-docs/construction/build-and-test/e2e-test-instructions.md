@@ -1,47 +1,18 @@
 # E2E Test Instructions
 
-## Purpose
+## Creator Workflow
 
-Validate the complete creator workflow from script JSON to MP4.
+1. Electron Studioを起動してWorkspaceを選択する。
+2. Codex proposalを承認し、JSON draftを編集、検証、保存する。
+3. Scene assetsを選択し、VoiceとTimelineを生成する。
+4. Embedded Previewで映像、音声、字幕、素材を確認する。
+5. Renderし、progress、ETA、完了pathを確認する。
+6. Finder revealからMP4を開き、音声、字幕、scene transition、末尾cutoffを確認する。
 
-## Scenario: Sample Video End to End
+## Failure Workflow
 
-### Setup
+1. Existing outputのoverwriteをcancelし、Renderが開始されないことを確認する。
+2. RenderをStopし、partial output warningが表示されることを確認する。
+3. Render buttonからmanual retryできることを確認する。
 
-1. Install dependencies.
-2. Start VOICEVOX Engine.
-3. Confirm `input/sample-video.json` exists.
-
-```bash
-npm install
-```
-
-### Execution
-
-```bash
-npm run video -- sample-video
-```
-
-### Expected Results
-
-- The sample script is validated.
-- VOICEVOX connection is confirmed.
-- WAV files are generated or reused.
-- Timeline JSON is generated.
-- Remotion renders `output/sample-video.mp4`.
-- Logs include INFO messages for major steps and final output.
-
-### Manual Video Checks
-
-- MP4 opens and plays.
-- Audio is present.
-- Subtitles are visible during narration.
-- Character art is visible.
-- Scene expressions change.
-- Explanation image/code/text visuals render where configured.
-- Video does not cut off before the ending scene.
-
-## Notes
-
-This E2E check is manual for MVP because Remotion rendering is environment-heavy and not part of default `npm test`.
-
+Environment依存のため、GUI E2Eは手動確認を正とする。
