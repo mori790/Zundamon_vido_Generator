@@ -1,7 +1,9 @@
 import path from 'node:path';
 import {env} from './env';
 
-export let workspaceRoot = process.cwd();
+export let workspaceRoot = process.env.ZUNDAMON_WORKSPACE_ROOT
+  ? path.resolve(process.env.ZUNDAMON_WORKSPACE_ROOT)
+  : process.cwd();
 
 export {env};
 

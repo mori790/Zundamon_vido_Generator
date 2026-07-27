@@ -35,6 +35,14 @@ export class CodexAppServerService {
     private readonly approvalTimeoutMs = 5 * 60_000,
   ) {}
 
+  get isConnected(): boolean {
+    return this.threadId !== null;
+  }
+
+  getDiagnostics(): string[] {
+    return [...this.diagnostics];
+  }
+
   onEvent(listener: (event: CodexEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -139,7 +147,14 @@ export class CodexAppServerService {
     this.child = child;
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => this.consume(chunk));
-    child.stderr.on('data', () => undefined);
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk: string) => {
+      const text = chunk.trim();
+      if (text) {
+        this.record(`[stderr] ${text}`);
+        console.error('[codex-app-server stderr]', text);
+      }
+    });
     child.on('exit', () => {
       if (this.child === child) void this.handleExit();
     });
@@ -232,10 +247,17 @@ export class CodexAppServerService {
       return;
     }
     if (method === 'turn/completed') {
-      const failed = readTurnStatus(params) !== 'completed';
+      const status = readTurnStatus(params);
+      const failed = status !== 'completed';
+      this.record(`[turn/completed] status=${status}`);
+      console.log('[codex-app-server turn/completed]', JSON.stringify(params));
       this.turnId = null;
-      if (failed) this.emit({type: 'turn-failed', message: 'Codex turn did not complete.'});
-      else this.emit({type: 'turn-completed', message: createChatMessage('assistant', this.assistant)});
+      if (failed) {
+        const errorMessage = readTurnError(params);
+        this.emit({type: 'turn-failed', message: errorMessage ?? 'Codex turn did not complete.'});
+      } else {
+        this.emit({type: 'turn-completed', message: createChatMessage('assistant', this.assistant)});
+      }
     }
   }
 
@@ -307,6 +329,14 @@ function readTurnStatus(value: unknown): string {
   return turn && typeof turn === 'object' && typeof (turn as {status?: unknown}).status === 'string'
     ? String((turn as {status: string}).status)
     : 'completed';
+}
+
+function readTurnError(value: unknown): string | null {
+  const turn = value && typeof value === 'object' ? (value as {turn?: unknown}).turn : undefined;
+  const error = turn && typeof turn === 'object' ? (turn as {error?: unknown}).error : undefined;
+  return error && typeof error === 'object' && typeof (error as {message?: unknown}).message === 'string'
+    ? (error as {message: string}).message
+    : null;
 }
 
 function approvalSummary(params: unknown): string {

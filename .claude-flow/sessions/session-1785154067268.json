@@ -1,0 +1,14 @@
+{
+  "id": "session-1785154067268",
+  "startedAt": "2026-07-27T12:07:47.268Z",
+  "cwd": "/Users/tomimorichiharu/Zundamon_vido_Generator",
+  "context": {},
+  "metrics": {
+    "edits": 0,
+    "commands": 0,
+    "tasks": 0,
+    "errors": 0
+  },
+  "endedAt": "2026-07-27T12:07:54.160Z",
+  "duration": 6893
+}

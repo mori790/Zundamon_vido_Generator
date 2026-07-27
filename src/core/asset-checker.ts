@@ -1,5 +1,4 @@
 import path from 'node:path';
-import {sampleVideoIds} from './config';
 import {resolvePublicReference} from './path-resolver';
 import type {AssetCheckResult, Emotion, ValidationIssue, VideoScript} from '../types/video';
 import {pathExists} from '../utils/file';
@@ -65,20 +64,18 @@ async function publicAssetExists(publicPath: string): Promise<boolean> {
 
 async function checkCharacterAssets(videoId: string): Promise<ValidationIssue[]> {
   const errors: ValidationIssue[] = [];
-  const allowSvgPlaceholder = sampleVideoIds.has(videoId);
-
   for (const emotion of emotions) {
     for (const mouth of ['open', 'close'] as const) {
       const png = `/characters/zundamon/${emotion}-${mouth}.png`;
       const svg = `/characters/zundamon/${emotion}-${mouth}.svg`;
       const pngExists = await pathExists(resolvePublicReference(png));
-      const svgExists = allowSvgPlaceholder ? await pathExists(resolvePublicReference(svg)) : false;
+      const svgExists = await pathExists(resolvePublicReference(svg));
       if (!pngExists && !svgExists) {
         errors.push({
           code: 'CHARACTER_ASSET_NOT_FOUND',
           message: '立ち絵ファイルが見つかりません',
           videoId,
-          targetPath: allowSvgPlaceholder ? `${png} または ${svg}` : png,
+          targetPath: `${png} または ${svg}`,
         });
       }
     }

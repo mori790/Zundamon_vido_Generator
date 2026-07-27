@@ -1,6 +1,11 @@
 import path from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {readFile, stat} from 'node:fs/promises';
-import {app, BrowserWindow, dialog, ipcMain, shell} from 'electron';
+import {pathToFileURL} from 'node:url';
+
+const execFileAsync = promisify(execFile);
+import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from 'electron';
 import {CommandRunner} from './command-runner';
 import {checkPreview, loadPreview} from './preview-data-service';
 import {createRenderOutputService} from './render-output-service';
@@ -11,7 +16,11 @@ import {buildSegmentationPrompt, parseSegmentationResponse, type SegmentationRes
 import {WorkspaceRootService} from './workspace-root-service';
 import {createDependencyDiagnosisService} from './dependency-diagnosis-service';
 import {resolveRuntimeResources} from './runtime-resources';
-import {setWorkspaceRoot} from '../../core/config';
+import {directories, setWorkspaceRoot} from '../../core/config';
+
+protocol.registerSchemesAsPrivileged([
+  {scheme: 'ws-public', privileges: {standard: true, secure: true, bypassCSP: true, stream: true, supportFetchAPI: true}},
+]);
 
 const studioDevServerUrl = process.env.STUDIO_DEV_SERVER_URL;
 const isDev = !app.isPackaged && Boolean(studioDevServerUrl);
@@ -41,10 +50,13 @@ const renderOutputService = createRenderOutputService({
   },
   reveal: (outputPath) => shell.showItemInFolder(outputPath),
 });
-let runnerRoot = process.cwd();
+const sourceRoot = process.cwd();
+let runnerRoot = sourceRoot;
 let runner = createRunner(runnerRoot);
-function createRunner(root: string): CommandRunner {
-  return new CommandRunner(root, {
+function createRunner(workspaceRoot: string): CommandRunner {
+  const runnerCwd = app.isPackaged ? workspaceRoot : sourceRoot;
+  const baseEnv = app.isPackaged ? undefined : {ZUNDAMON_WORKSPACE_ROOT: workspaceRoot};
+  return new CommandRunner(runnerCwd, {
   operation(operation) {
     BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('command:operation', operation));
   },
@@ -67,7 +79,9 @@ function createRunner(root: string): CommandRunner {
           ),
         },
       })
-    : undefined);
+    : undefined,
+    baseEnv,
+  );
 }
 async function useWorkspaceRoot(): Promise<string> {
   const root = await workspaceRoots.requireRoot();
@@ -119,8 +133,15 @@ ipcMain.handle('render-output:status', (_event, videoId: string) => renderOutput
 ipcMain.handle('render-output:confirm-overwrite', (_event, videoId: string) =>
   renderOutputService.confirmOverwrite(videoId));
 ipcMain.handle('render-output:reveal', (_event, videoId: string) => renderOutputService.reveal(videoId));
+let _localFilesRoot: string | null = null;
+let _localFilesInstance: ReturnType<typeof createLocalFileService> | null = null;
 async function localFiles() {
-  return createLocalFileService(await useWorkspaceRoot());
+  const root = await useWorkspaceRoot();
+  if (root !== _localFilesRoot) {
+    _localFilesRoot = root;
+    _localFilesInstance = createLocalFileService(root);
+  }
+  return _localFilesInstance!;
 }
 ipcMain.handle('local-file:list-input', async () => (await localFiles()).workspace.listInput());
 ipcMain.handle('local-file:read-script', async (_event, fileName: string) =>
@@ -167,52 +188,27 @@ ipcMain.handle('codex:start-new-thread', (_event, videoId: string) => codex.star
 ipcMain.handle('codex:respond-approval', (_event, id: string, approved: boolean) =>
   codex.respondApproval(id, approved));
 ipcMain.handle('codex:disconnect', () => codex.disconnect());
-ipcMain.handle('scene-segmentation:segment', (_event, draftText: string, videoId: string): Promise<SegmentationResult> => {
+ipcMain.handle('codex:diagnostics', () => codex.getDiagnostics());
+ipcMain.handle('scene-segmentation:segment', async (_event, draftText: string, _videoId: string): Promise<SegmentationResult> => {
   const prompt = buildSegmentationPrompt(draftText);
-  return new Promise<SegmentationResult>((resolve) => {
-    let settled = false;
-    let unsub: () => void = () => undefined;
-    const timeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      unsub();
-      resolve({ok: false, reason: 'timeout', message: 'シーン分割がタイムアウトしました（120秒）。再試行してください。'});
-    }, 120_000);
-
-    unsub = codex.onEvent((event) => {
-      if (settled) return;
-      if (event.type === 'turn-completed') {
-        settled = true;
-        clearTimeout(timeout);
-        unsub();
-        resolve(parseSegmentationResponse(event.message.content));
-      } else if (event.type === 'turn-failed') {
-        settled = true;
-        clearTimeout(timeout);
-        unsub();
-        resolve({ok: false, reason: 'turn-failed', message: 'シーン分割に失敗しました。再試行してください。'});
-      }
-    });
-
-    codex.send({videoId, message: prompt, context: {workspaceMode: 'empty-draft'}}).catch((err: unknown) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      unsub();
-      const msg = err instanceof Error ? err.message : String(err);
-      const isNotConnected = msg.includes('not connected');
-      const isAlreadyActive = msg.includes('already active');
-      resolve({
-        ok: false,
-        reason: isNotConnected ? 'codex-not-connected' : isAlreadyActive ? 'codex-turn-active' : 'turn-failed',
-        message: isNotConnected
-          ? 'Codexに接続されていません。Workspaceを開いてください。'
-          : isAlreadyActive
-          ? 'Codexは別の処理中です。完了後に再試行してください。'
-          : `シーン分割に失敗しました: ${msg}`,
-      });
-    });
-  });
+  try {
+    const {stdout} = await execFileAsync(
+      'claude',
+      ['-p', '--no-session-persistence', prompt],
+      {timeout: 120_000},
+    );
+    return parseSegmentationResponse(stdout);
+  } catch (err) {
+    const killed = (err as {killed?: boolean}).killed === true;
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      reason: killed ? 'timeout' : 'turn-failed',
+      message: killed
+        ? 'シーン分割がタイムアウトしました（120秒）。再試行してください。'
+        : `シーン分割に失敗しました: ${msg}`,
+    };
+  }
 });
 
 async function createMainWindow(): Promise<void> {
@@ -237,7 +233,15 @@ async function createMainWindow(): Promise<void> {
   await window.loadFile(resources.rendererHtml);
 }
 
-app.whenReady().then(createMainWindow);
+app.whenReady().then(async () => {
+  protocol.handle('ws-public', (request) => {
+    const url = new URL(request.url);
+    const relativePath = url.pathname.replace(/^\/+/, '');
+    const filePath = path.join(directories.public, relativePath);
+    return net.fetch(pathToFileURL(filePath).href);
+  });
+  await createMainWindow();
+});
 
 app.on('window-all-closed', () => {
   void codex.disconnect();

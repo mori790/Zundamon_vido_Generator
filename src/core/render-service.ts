@@ -57,5 +57,8 @@ export async function renderVideo(videoId: string, options: RenderOptions = {}):
 
 async function bundleDevelopmentEntry(): Promise<string> {
   const {bundle} = await import('@remotion/bundler');
-  return bundle({entryPoint: resolveWorkspacePath('src', 'Root.tsx')});
+  return bundle({
+    entryPoint: path.join(process.cwd(), 'src', 'Root.tsx'),
+    publicDir: directories.public,
+  });
 }

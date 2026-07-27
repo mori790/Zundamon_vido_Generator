@@ -40,6 +40,7 @@ export class CommandRunner {
     private readonly spawnCommand: SpawnCommand = spawn,
     private readonly verifyOutput?: (videoId: string) => Promise<unknown>,
     private readonly resolveInvocation?: (script: string, videoId: string) => Invocation,
+    private readonly baseEnv?: NodeJS.ProcessEnv,
   ) {}
 
   start(request: StartCommandRequest): Operation {
@@ -145,7 +146,7 @@ export class CommandRunner {
         cwd: this.cwd,
         detached: process.platform !== 'win32',
         shell: false,
-        env: {...process.env, ...invocation.env},
+        env: {...process.env, ...this.baseEnv, ...invocation.env},
       });
       this.child = child;
       this.pipeLines(child.stdout, 'stdout');

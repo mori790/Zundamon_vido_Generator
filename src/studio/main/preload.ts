@@ -1,4 +1,6 @@
 import {contextBridge, ipcRenderer} from 'electron';
+
+contextBridge.exposeInMainWorld('remotion_publicFolderUrl', 'ws-public://host/');
 import type {CommandApi, LogEntry, Operation, StartCommandRequest} from '../shared/command';
 import type {PreviewApi} from '../shared/preview';
 import type {RenderOutputApi} from '../shared/render';

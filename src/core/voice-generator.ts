@@ -81,5 +81,6 @@ export async function generateVoices(
     }
   }
 
+  await saveManifest(videoId, manifest);
   return {videoId, generated, cached, manifest};
 }
