@@ -3,15 +3,15 @@
 ## Project Information
 - **Project Type**: Brownfield
 - **Start Date**: 2026-07-27T05:06:07Z
-- **Current Phase**: INCEPTION
-- **Current Stage**: Paused - User Stories Plan Approval Required - U11
-- **Last Completed**: Requirements Analysis - U11 Internal Adoption and Post-MVP Planning
-- **Next Step**: Resume U11 and wait for explicit approval of the User Stories generation plan
+- **Current Phase**: OPERATIONS
+- **Current Stage**: OPERATIONS - Complete - U11
+- **Last Completed**: Operations placeholder - U11 Internal Adoption and Post-MVP Planning
+- **Next Step**: U11 workflow complete. Real-artifact preflight passed; proceed to clean-profile smoke on target Mac/user profile.
 
 ## Workspace State
 - **Existing Code**: Yes
 - **Reverse Engineering Needed**: Completed
-- **Workspace Root**: /Users/tomimorisatoshihare/Zundamon_vido_Generator
+- **Workspace Root**: /Users/tomimorichiharu/Zundamon_vido_Generator
 - **Programming Languages Detected**: TypeScript, TSX, JSON
 - **Build System Detected**: npm
 - **Project Structure**: Brownfield local CLI and Remotion application
@@ -51,17 +51,17 @@
 - [x] INCEPTION - Workspace Detection
 - [x] INCEPTION - Reverse Engineering
 - [x] INCEPTION - Requirements Analysis
-- [ ] INCEPTION - User Stories
-- [ ] INCEPTION - Workflow Planning
-- [ ] INCEPTION - Application Design
-- [ ] INCEPTION - Units Generation
-- [ ] CONSTRUCTION - Functional Design
-- [ ] CONSTRUCTION - NFR Requirements
-- [ ] CONSTRUCTION - NFR Design
-- [ ] CONSTRUCTION - Infrastructure Design
-- [ ] CONSTRUCTION - Code Generation
-- [ ] CONSTRUCTION - Build and Test
-- [ ] OPERATIONS - Operations (placeholder)
+- [x] INCEPTION - User Stories
+- [x] INCEPTION - Workflow Planning
+- [x] INCEPTION - Application Design
+- [x] INCEPTION - Units Generation (skipped)
+- [x] CONSTRUCTION - Functional Design
+- [x] CONSTRUCTION - NFR Requirements
+- [x] CONSTRUCTION - NFR Design
+- [x] CONSTRUCTION - Infrastructure Design (skipped)
+- [x] CONSTRUCTION - Code Generation
+- [x] CONSTRUCTION - Build and Test
+- [x] OPERATIONS - Operations (placeholder)
 
 ## U9 Stage Progress
 - [x] INCEPTION - Workspace Detection
@@ -93,7 +93,7 @@
 ## Active Change Request
 - **Request**: U11 README update, internal-user clean-Mac acceptance, and planning/requirements/specification for post-MVP features.
 - **Mode**: New U11 workflow in progress.
-- **Status**: Paused by user after U11 User Stories Part 1 answer validation; explicit plan approval remains required.
+- **Status**: U11 workflow complete. Real-artifact `npm run acceptance:preflight` passed; clean-profile smoke is next.
 
 ## Parallel Workstreams
 - **U6 Command Runner and Log Panel**: Code Generation approved.

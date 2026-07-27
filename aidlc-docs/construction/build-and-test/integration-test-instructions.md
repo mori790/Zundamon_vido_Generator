@@ -1,19 +1,48 @@
 # Integration Test Instructions
 
-## Electron Boundary
+## Internal Acceptance Preflight Integration
+
+Generate local artifacts first:
 
 ```bash
-npm run test:studio:e2e
+npm run release:local
 ```
 
-context-isolated Preload、Workspace API、dependency degraded state、local file access、asset選択を確認する。期待値は`U5_ELECTRON_E2E_OK`とexit code 0である。
-
-## CLI Pipeline
-
-VOICEVOX Engineを起動した場合:
+Then run:
 
 ```bash
+npm run acceptance:preflight
+```
+
+Expected result:
+
+- all artifact gates pass.
+- production dependency audit, typecheck, default tests, and Studio build all run.
+- exit code is 0.
+
+If `out/release-manifest.json` is absent, expected behavior is fail-closed with downstream gates marked `NOT RUN`.
+
+## VOICEVOX Live Integration
+
+Start VOICEVOX Engine on the default endpoint:
+
+```bash
+VOICEVOX_BASE_URL=http://localhost:50021
 npm run test:integration
+```
+
+Expected result:
+
+- live VOICEVOX connection succeeds.
+- integration suite exits with code 0.
+
+This test is environment-dependent and is not part of the default unit test suite.
+
+## CLI Pipeline Integration
+
+With VOICEVOX available:
+
+```bash
 npm run validate -- sample-video
 npm run voice -- sample-video
 npm run timeline -- sample-video
@@ -21,22 +50,31 @@ npm run preview -- sample-video
 npm run render -- sample-video
 ```
 
-VOICEVOXなしのrender確認:
+Without VOICEVOX, use the developer-assisted smoke path:
 
 ```bash
 npm run test:render
 ```
 
-期待結果はWAV、timeline、Preview、non-zero MP4、単調増加するprogress、最終100%である。
+Expected result:
 
-## Packaged Runtime
+- script validation succeeds.
+- timeline and preview generation succeed.
+- MP4 output exists and is not 0 bytes.
 
-1. `npm run package`を実行する。
-2. `.app`を起動し、Workspaceを選択する。
-3. Validate、Timeline、Preview、Renderを実行する。
-4. RendererがTypeScript source、dev server、repository cwdへ依存しないことを確認する。
-5. Render後にFinder revealとMP4再生を確認する。
+## Packaged Runtime Integration
+
+1. Run `npm run release:local`.
+2. Open the local `.app` from the generated package output.
+3. Select a clean Workspace folder.
+4. Open `sample-video`.
+5. Run Preview and Render.
+6. Confirm output MP4 exists and can be played.
+7. Record results in `docs/internal-acceptance/acceptance-evidence-template.md`.
 
 ## Cleanup
 
-Test用Workspaceだけを削除する。生成途中のMP4は障害調査に使うため自動削除しない。
+- Remove only disposable test Workspace folders.
+- Preserve failed output artifacts when they are needed for debugging.
+- Do not delete a user's real Workspace during integration cleanup.
+

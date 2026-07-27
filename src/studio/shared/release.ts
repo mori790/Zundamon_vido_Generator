@@ -25,9 +25,33 @@ export const releaseManifestSchema = z.object({
 });
 
 export type ReleaseManifest = z.infer<typeof releaseManifestSchema>;
+export const acceptanceReleaseManifestSchema = releaseManifestSchema.extend({
+  architecture: z.string().min(1),
+});
+export type AcceptanceReleaseManifest = z.infer<typeof acceptanceReleaseManifestSchema>;
+
+export type AcceptanceReleaseIssue = {
+  code: 'wrong-architecture' | 'wrong-release-state';
+  messageJa: string;
+  actionJa: string;
+};
+
+export type AcceptanceReleaseSummary = {
+  ok: boolean;
+  state: ReleaseState;
+  architecture: string;
+  publishable: false;
+  messageJa: string;
+  actionJa?: string;
+  issues: AcceptanceReleaseIssue[];
+};
 
 export function normalizeReleaseManifest(value: ReleaseManifest): ReleaseManifest {
   return releaseManifestSchema.parse({...value, artifact: value.artifact.trim(), sbom: value.sbom.trim()});
+}
+
+export function normalizeAcceptanceReleaseManifest(value: AcceptanceReleaseManifest): AcceptanceReleaseManifest {
+  return acceptanceReleaseManifestSchema.parse({...value, artifact: value.artifact.trim(), sbom: value.sbom.trim()});
 }
 
 export function classifyRelease(evidence: ReleaseEvidence): ReleaseState {
@@ -47,4 +71,49 @@ export function isAllowedArtifactPath(path: string): boolean {
     /(^|\/)\.env(?:\.|$)/,
     /(^|\/)(input|generated|output)(\/|$)/,
   ].some((pattern) => pattern.test(normalized));
+}
+
+export function summarizeAcceptanceRelease(manifest: AcceptanceReleaseManifest): AcceptanceReleaseSummary {
+  const normalized = normalizeAcceptanceReleaseManifest(manifest);
+  const issues: AcceptanceReleaseIssue[] = [];
+  if (normalized.architecture !== 'arm64') {
+    issues.push({
+      code: 'wrong-architecture',
+      messageJa: `artifact architectureがarm64ではありません: ${normalized.architecture}`,
+      actionJa: 'arm64向けlocal-acceptance artifactを生成し直してください。',
+    });
+  }
+  if (normalized.state !== 'local-acceptance') {
+    issues.push({
+      code: 'wrong-release-state',
+      messageJa: `release stateがlocal-acceptanceではありません: ${normalized.state}`,
+      actionJa: '内部受入用manifestを確認し、local-acceptance artifactとして再検証してください。',
+    });
+  }
+  return {
+    ok: issues.length === 0,
+    state: normalized.state,
+    architecture: normalized.architecture,
+    publishable: false,
+    messageJa:
+      issues.length === 0
+        ? '内部受入用local-acceptance artifactです。一般配布はできません。'
+        : '内部受入preflightを通過できません。一般配布はできません。',
+    actionJa: issues[0]?.actionJa,
+    issues,
+  };
+}
+
+export function sanitizeEvidencePathForReport(value: string, workspaceRoot?: string): string {
+  const normalizedValue = value.trim().replaceAll('\\', '/');
+  const normalizedRoot = workspaceRoot?.trim().replaceAll('\\', '/').replace(/\/+$/, '');
+  const rootRelative =
+    normalizedRoot && normalizedValue === normalizedRoot
+      ? '.'
+      : normalizedRoot && normalizedValue.startsWith(`${normalizedRoot}/`)
+        ? normalizedValue.slice(normalizedRoot.length + 1)
+        : normalizedValue;
+  return rootRelative
+    .replace(/^\/Users\/[^/]+/, '/Users/[user]')
+    .replace(/((?:api[_-]?key|token|credential|password|secret)=)[^&\s]+/gi, '$1[redacted]');
 }

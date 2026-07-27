@@ -1,14 +1,104 @@
 # Zundamon Video Generator
 
-台本JSONから、VOICEVOX音声、字幕、ずんだもん立ち絵、説明素材、タイムラインを組み合わせてRemotionでMP4を生成するローカルCLIツールです。
+ずんだもん動画をローカルMacで作るためのDesktopアプリ兼CLIです。台本JSON、VOICEVOX音声、字幕、立ち絵、説明素材、Remotion renderを組み合わせてMP4を生成します。
 
-## Requirements
+## 身内向けDesktop利用
 
-- macOS
-- Node.js LTS
-- npm
-- VOICEVOX Engine running at `http://localhost:50021`
-- FFmpeg/Chromium dependencies required by Remotion
+### 対象
+
+- Apple Silicon Mac。
+- macOS 13以降。
+- 開発者から直接受け取った`local-acceptance` ZIP。
+- 一般配布ではなく、身内向けの受入確認。
+
+`local-acceptance`は、署名や公証が完全に揃っていない内部確認用artifactです。一般公開、第三者配布、公開releaseとしての利用は禁止です。
+
+### 受け取るもの
+
+開発者から次を受け取ります。
+
+```text
+Zundamon Video Generator のZIP
+ZIPのSHA-256
+```
+
+SHA-256が一致しない場合は起動せず、開発者へ再送付を依頼してください。
+
+### 初回起動
+
+1. ZIPを展開します。
+2. アプリを起動します。
+3. 空のfolderをWorkspaceとして選択します。
+4. `sample-video`を開きます。
+5. VOICEVOX Engineを用意できる場合はRenderを実行します。
+6. `output/sample-video.mp4` が作成され、0 byteではないことを確認します。
+
+VOICEVOX Engineを用意できない場合は、利用者単独の通常手順ではなく、開発者支援の既存音声またはskip-voice相当手順として確認します。
+
+### CodexとVOICEVOX
+
+- Codexは台本作成支援に使います。使えない場合でも、台本確認、素材、Preview、Renderなど利用可能な機能は続けられます。
+- VOICEVOXは音声生成に使います。標準接続先は次です。
+
+```text
+http://localhost:50021
+```
+
+### 内部受入checklist
+
+身内向け受入では、次の文書を使います。
+
+- [Clean-profile smoke checklist](docs/internal-acceptance/clean-profile-smoke-checklist.md)
+- [Acceptance evidence template](docs/internal-acceptance/acceptance-evidence-template.md)
+
+受入証跡にはtoken、credential、個人情報、不要な絶対pathを含めないでください。pathは相対pathまたは短い説明を優先します。
+
+### Rollback
+
+問題が出た場合は、Workspaceを消さずに直前の既知正常ZIPまたは`.app`へ置き換えます。受入証跡には置き換えたartifact、日時、再試験結果を記録します。
+
+## 開発者向け内部受入preflight
+
+身内へZIPを渡す前に、repository rootで次を実行します。
+
+```bash
+npm run acceptance:preflight
+```
+
+preflightは次を必須gateとして確認します。
+
+- arm64 ZIP、release manifest、SBOMの存在。
+- ZIP SHA-256とmanifestの一致。
+- architectureが`arm64`。
+- release stateが`local-acceptance`。
+- production dependency audit。
+- TypeScript typecheck。
+- default tests。
+- Studio build。
+
+artifact gateが失敗した場合、重いbuild/test gateへは進まず非0で終了します。artifactがない場合は、先に次を実行してlocal-acceptance artifactを作成します。
+
+```bash
+npm run release:local
+```
+
+## Post-MVP計画
+
+MVP対象外機能は、U11では仕様文書までで製品コードへ実装しません。
+
+- [Backlog](docs/post-mvp/backlog.md)
+- [Roadmap](docs/post-mvp/roadmap.md)
+- [シリーズ管理 仕様](docs/post-mvp/series-management-spec.md)
+- [テンプレートライブラリ 仕様](docs/post-mvp/template-library-spec.md)
+- [複数Workspace管理 仕様](docs/post-mvp/multiple-workspaces-spec.md)
+
+## CLI / 開発者向けRequirements
+
+- macOS。
+- Node.js 20以上。
+- npm。
+- VOICEVOX Engine running at `http://localhost:50021`。
+- FFmpeg/Chromium dependencies required by Remotion。
 
 ## Setup
 
@@ -22,7 +112,7 @@ VOICEVOX Engineの接続先は環境変数で変更できます。
 VOICEVOX_BASE_URL=http://localhost:50021
 ```
 
-## Quick Start
+## CLI Quick Start
 
 まず同梱の `sample-video` で、VOICEVOXなしで確認できる範囲を実行します。
 
@@ -158,9 +248,15 @@ output/my-video.mp4
 | `npm run video -- {videoId}` | 検証、音声生成、タイムライン生成、MP4出力を一括実行する |
 | `npm run video -- {videoId} --force` | 音声キャッシュを使わずに一括生成する |
 | `npm run video -- {videoId} --verbose` | 詳細ログ付きで一括生成する |
+| `npm run typecheck` | TypeScript typecheckを実行する |
 | `npm test` | 通常の単体テストを実行する |
+| `npm run test:pbt` | property-based testsを実行する |
+| `npm run test:pbt:release` | release関連PBTをrun数多めで実行する |
 | `npm run test:integration` | VOICEVOX接続を含む結合テストを実行する |
 | `npm run test:render` | サンプル動画の任意render検証を実行する |
+| `npm run studio:build` | Desktop Studioをproduction buildする |
+| `npm run release:local` | local-acceptance ZIP、SBOM、manifestを生成する |
+| `npm run acceptance:preflight` | 内部受入前のartifactとbuild/test gateを確認する |
 
 `npm run test:integration` はVOICEVOX Engineが起動していない場合に失敗します。`npm run test:render` は任意の重い検証コマンドで、通常の `npm test` には含めません。
 
@@ -183,6 +279,8 @@ src/schemas/            Zod schemas
 src/types/              Shared TypeScript types
 src/utils/              Helpers
 tests/                  Unit and integration tests
+docs/internal-acceptance/ Internal acceptance checklist and evidence template
+docs/post-mvp/          Post-MVP backlog, roadmap, and future specs
 ```
 
 ## Script Input

@@ -1,29 +1,38 @@
 # End-to-End Test Instructions
 
-## First Run
+## Clean-Profile Internal Acceptance
 
-1. 新規macOS user profileで未署名local acceptance `.app`を起動する。
-2. First Run画面が操作をblockingすることを確認する。
-3. 空のtest directoryをWorkspaceとして選択する。
-4. `input/`、`public/`、`generated/`、`output/`が作成されることを確認する。
-5. 再起動し、Workspace参照が復元されることを確認する。
+Use `docs/internal-acceptance/clean-profile-smoke-checklist.md` as the authoritative checklist.
 
-## Dependency Diagnosis
+1. Prepare a new macOS user profile or a clean Apple Silicon Mac.
+2. Receive the `local-acceptance` ZIP and SHA-256 directly from the developer.
+3. Verify the ZIP SHA-256.
+4. Expand the ZIP and launch the app.
+5. Select an empty Workspace folder.
+6. Open `sample-video`.
+7. Run Preview.
+8. Run Render if VOICEVOX Engine is available.
+9. Confirm `output/sample-video.mp4` exists and is not 0 bytes.
+10. Record evidence using `docs/internal-acceptance/acceptance-evidence-template.md`.
 
-1. Codex CLI未導入、VOICEVOX停止状態で日本語actionが独立表示されることを確認する。
-2. Codexをloginし、VOICEVOXを起動して再診断する。
-3. 一方の失敗が他方のready状態を隠さないことを確認する。
+## Developer-Assisted VOICEVOX-Absent Path
 
-## Creator Workflow
+If VOICEVOX cannot be prepared by the internal user:
 
-1. 台本を作成または読込し、素材を選択する。
-2. Validate、Voice、Timeline、Previewを実行する。
-3. Renderのprogress、ETA、Stop、manual retryを確認する。
-4. Finder revealからMP4を再生し、映像、音声、字幕、末尾を確認する。
+1. Mark the normal VOICEVOX render step as `Not Run`.
+2. Use a developer-provided Workspace with existing audio, or run the skip-voice render path under developer supervision.
+3. Record the path as developer-assisted evidence.
 
-## Release Workflow
+## Rollback Path
 
-1. `npm run release:local`で`.app`、ZIP、SBOM、manifestを生成する。
-2. manifestのversion、architecture、SHA-256、`local-acceptance`を確認する。
-3. credentialなしの`npm run verify:release`が失敗することを確認する。
-4. Apple credentialがあるrelease担当者だけが署名・公証済みpublic workflowを実行する。
+1. Keep the user's Workspace unchanged.
+2. Replace only the app artifact with the previous known-good ZIP or `.app`.
+3. Re-run the minimum smoke check.
+4. Record the replaced artifact, timestamp, result, and remaining issue.
+
+## Expected Result
+
+- Internal user can reach sample Preview and, when VOICEVOX is available, a non-empty MP4.
+- Evidence contains no token, credential, API key, or unnecessary absolute user path.
+- Artifact remains classified as `local-acceptance` and not public distribution.
+

@@ -3,12 +3,12 @@
 ## Question 1
 今回どの作業を進めますか？
 
-A) U3 の Code Summary 作成と Verification を続行する
+A) Clean-profile smoke checklistを実行し、証跡を記録する（target Macで実行済みの場合、結果を報告してください）
 
-B) U6 の NFR Design を続行する
+B) 新しいユーザーリクエストを入力して新たなAI-DLCワークフローを開始する
 
-C) 完了済みステージまたは現在の成果物をレビューする
+C) 既存のU11成果物をレビューする
 
-D) Other（希望する作業を [Answer]: の後に記載してください）
+X) Other（希望する作業を [Answer]: の後に記載してください）
 
-[Answer]:a
+[Answer]: 

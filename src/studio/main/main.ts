@@ -11,7 +11,8 @@ import {createDependencyDiagnosisService} from './dependency-diagnosis-service';
 import {resolveRuntimeResources} from './runtime-resources';
 import {setWorkspaceRoot} from '../../core/config';
 
-const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+const studioDevServerUrl = process.env.STUDIO_DEV_SERVER_URL;
+const isDev = !app.isPackaged && Boolean(studioDevServerUrl);
 const resources = resolveRuntimeResources(app);
 const workspaceRoots = new WorkspaceRootService({
   userData: app.getPath('userData'),
@@ -161,8 +162,8 @@ async function createMainWindow(): Promise<void> {
     },
   });
 
-  if (isDev) {
-    await window.loadURL(process.env.STUDIO_DEV_SERVER_URL ?? 'http://localhost:5173/studio.html');
+  if (isDev && studioDevServerUrl) {
+    await window.loadURL(studioDevServerUrl);
     return;
   }
 

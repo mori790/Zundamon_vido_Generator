@@ -11,3 +11,5 @@ generated/manifests/*.json
 generated/timelines/*.json
 generated/studio/
 .env
+
+dist-remotion

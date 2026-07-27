@@ -1,30 +1,56 @@
 # Unit Test Execution Instructions
 
-## Default Suite
+## Default Unit Test Suite
 
 ```bash
 npm test
 ```
 
-期待値は37 files、135 tests、0 failuresである。CLI core、Workspace、First Run、dependency diagnosis、release policy、Command Runner、Preview、Render、Codex、React UIを検証する。VOICEVOX live testはdefault suiteから除外される。
+Expected result for the current U11 state:
+
+- 38 test files pass.
+- 143 tests pass.
+- 0 failures.
+
+The default suite excludes the live VOICEVOX integration test.
+
+## Focused U11 Tests
+
+```bash
+npx vitest run tests/studio/acceptance-preflight.test.ts
+```
+
+Expected result:
+
+- 1 test file passes.
+- 8 tests pass.
+- artifact missing, checksum mismatch, wrong architecture, wrong release state, downstream gate failure, all-gates-pass, and helper properties are covered.
 
 ## Property-Based Tests
 
-通常は各propertyを100 run、release gateでは1,000 run実行する。
-
 ```bash
 npm run test:pbt
+```
+
+For higher release confidence:
+
+```bash
 npm run test:pbt:release
 ```
 
-fast-checkは失敗時にseed、path、shrunk counterexampleを表示する。報告されたseedを使って再現する。
+Seed replay uses the seed reported by fast-check:
 
 ```bash
 PBT_SEED='<reported seed>' PBT_RUNS=1000 npm run test:pbt
 ```
 
-PBTはWorkspace round-trip／idempotence、release state invariant、manifest normalization、artifact allowlistを対象とする。具体的なbusiness regressionはexample testで併用する。
-
 ## Failure Handling
 
-最初のfailureとshrunk counterexampleを修正し、focused test、`npx tsc --noEmit`、default suite、release PBTの順に再実行する。失敗をretryだけで抑制しない。
+1. Fix the first failing assertion or smallest shrunk counterexample.
+2. Run the focused test for the changed area.
+3. Run `npm run typecheck`.
+4. Run `npm test`.
+5. For release-sensitive helper changes, run `npm run test:pbt:release`.
+
+Do not mark flaky or property failures as accepted without a concrete reason and recorded risk.
+

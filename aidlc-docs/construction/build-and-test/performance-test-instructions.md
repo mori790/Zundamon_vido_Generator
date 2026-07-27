@@ -1,36 +1,53 @@
 # Performance Test Instructions
 
-## Requirements
+## Applicable Requirements
 
-- cold start p95: 5秒以内
-- Workspace復元 p95: 2秒以内
-- Codex診断timeout: 5秒
-- VOICEVOX診断timeout: 3秒
-- ZIP: 200 MiB超で警告、300 MiB超で失敗
-- 同時Render: 1
+- Internal acceptance preflight artifact gates should fail quickly before heavier commands when release artifacts are missing or invalid.
+- Desktop app usage is local and single-user.
+- Concurrent render remains limited to one render at a time.
+- Large ZIP artifacts should remain reviewable before internal handoff.
 
-## Measurement
+## Measurement Commands
 
-同一Apple Silicon端末でcold startとWorkspace復元を各20回測定し、昇順19番目をp95として記録する。Activity Monitorでpeak memoryも記録する。
-
-Renderは次でwall timeと成果物sizeを測る。
+Measure sample render wall time:
 
 ```bash
 time npm run test:render
 ls -lh output/sample-video.mp4
 ```
 
-Local releaseの容量gateは次で確認する。
+Measure local release package size:
 
 ```bash
-npm run verify:package
+npm run release:local
+ls -lh out/make/zip/darwin/arm64/*.zip
 ```
 
-## Current Evidence
+Run preflight after artifacts exist:
 
-- パッケージ内CLIで742 framesのrender成功
-- ZIP 261 MiB: warning、blockingなし
-- Codex／VOICEVOX timeoutはfake adapter testで確認
-- cold startとWorkspace復元の20回p95実測は未実行
+```bash
+npm run acceptance:preflight
+```
 
-Local single-user applicationのためmulti-user throughput／stress testはN/Aである。対象hardwareを変更する場合はcold start、Workspace復元、render time、peak memoryを再測定する。
+## Manual Desktop Measurements
+
+On an Apple Silicon Mac:
+
+1. Launch the packaged `.app` 20 times from a clean state.
+2. Record cold start time for each run.
+3. Reopen an existing Workspace 20 times.
+4. Record Workspace restore time for each run.
+5. Sort each measurement set and use the 19th value as p95.
+6. Record peak memory during Preview and Render using Activity Monitor.
+
+## Current U11 Evidence
+
+- `npm run acceptance:preflight` fail-closed path completed before heavy gates when `out/release-manifest.json` was absent.
+- Focused tests cover all-gates-pass behavior through injected command runners.
+- Full real-artifact preflight performance was not run because local release artifacts were not present.
+
+## N/A Items
+
+- Multi-user throughput is N/A for a local single-user desktop app.
+- Cloud load, regional failover, and distributed stress tests are N/A because U11 adds no cloud infrastructure.
+

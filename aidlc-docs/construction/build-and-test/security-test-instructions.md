@@ -1,37 +1,62 @@
 # Security Test Instructions
 
-## Automated Checks
+## Automated Security Gates
+
+Run after local release artifacts exist:
 
 ```bash
-npm audit --omit=dev --audit-level=high
-npx tsc --noEmit
-npm test
-npm run verify:package
-npm run verify:release
+npm run acceptance:preflight
 ```
 
-期待結果:
+This command includes:
 
-- production dependency vulnerabilitiesは0
-- Workspace外pathと無効video IDは拒否
-- RendererはNode builtin、raw Electron、child processへ直接accessしない
-- `contextIsolation: true`、`nodeIntegration: false`
-- secret／credentialをmanifest、log、packageへ含めない
-- local packageは`local-acceptance`
-- 未署名packageへの`verify:release`は非0でfail closed
+- release manifest presence and schema validation.
+- ZIP existence and SHA-256 match.
+- SBOM presence.
+- `arm64` architecture check.
+- `local-acceptance` release state check.
+- production dependency audit through `npm audit --omit=dev`.
+- typecheck.
+- default tests.
+- Studio build.
 
-## Artifact Review
+## Focused Security Checks
+
+```bash
+npx vitest run tests/studio/acceptance-preflight.test.ts
+```
+
+Expected coverage:
+
+- missing artifact fails closed.
+- checksum mismatch fails closed.
+- wrong architecture fails closed.
+- wrong release state fails closed.
+- reports never mark internal acceptance artifacts as publishable.
+- credential-like query values are redacted.
+- `/Users/<name>` paths are redacted in evidence output.
+
+## Manual Artifact Review
+
+```bash
+shasum -a 256 out/make/zip/darwin/arm64/*.zip
+```
+
+Compare the output with `out/release-manifest.json`.
+
+For future public release only:
 
 ```bash
 codesign --verify --deep --strict 'out/Zundamon Video Generator-darwin-arm64/Zundamon Video Generator.app'
 xcrun stapler validate 'out/Zundamon Video Generator-darwin-arm64/Zundamon Video Generator.app'
 spctl --assess --type execute --verbose=2 'out/Zundamon Video Generator-darwin-arm64/Zundamon Video Generator.app'
-shasum -a 256 out/make/zip/darwin/arm64/*.zip
 ```
 
-一般配布では署名、公証ticket、staple、Gatekeeper、manifest SHA-256がすべて成功しなければならない。`com.apple.security.get-task-allow`は禁止する。
+U11 internal adoption does not approve public distribution. Public release remains blocked until signing, notarization, stapling, Gatekeeper assessment, manifest, checksum, and SBOM evidence all pass.
 
-## Applicability
+## Secret Handling
 
-- SECURITY-05、09、10、12、13、15: applicable、検証対象
-- SECURITY-01〜04、06〜08、11、14: network service、cloud IAM、authentication、central monitoringを持たないlocal desktop appのためN/A
+- Do not paste Apple credentials, Codex tokens, API keys, or user personal paths into evidence files.
+- Prefer relative paths in evidence.
+- When an absolute macOS user path is necessary, redact the username segment.
+

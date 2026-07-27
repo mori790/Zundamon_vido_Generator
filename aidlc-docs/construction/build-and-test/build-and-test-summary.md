@@ -2,66 +2,78 @@
 
 ## Build Status
 
-- TypeScript: success
-- Studio production build: success
-- Electron Forge arm64 package／make: success
-- Artifacts: `.app`、261 MiB ZIP、CycloneDX SBOM、SHA-256、release manifest
-- Release state: `local-acceptance`
+- **Build Tool**: npm, TypeScript, Vite, esbuild, Remotion, Electron Forge.
+- **TypeScript**: Success via `npm run typecheck`.
+- **Studio Production Build**: Success through `npm run acceptance:preflight`.
+- **Release Artifacts**: Present and verified by `npm run acceptance:preflight`.
+- **Local Acceptance State**: Verified as `local-acceptance`.
 
-## Test Execution
+## Test Execution Summary
 
-### Unit／Property Tests
+### Unit Tests
 
-- 37 test files、135 tests passed、0 failed
-- Release PBT: 2 files、8 properties、各1,000 run passed
-- `PBT_SEED`によるseed replayを用意
-- Coverage percentage: 未計測
+- **Command**: `npm test`
+- **Total Tests**: 143
+- **Passed**: 143
+- **Failed**: 0
+- **Test Files**: 38 passed
+- **Coverage**: Not measured
+- **Status**: Pass
 
-### Integration／E2E
+### Focused U11 Tests
 
-- Electron context-isolated E2E: passed
-- Packaged CLI: 742 framesのMP4 render passed
-- Workspace、dependency diagnosis、release policy integration: passed
-- VOICEVOX live integration: environment依存のため今回未実行
+- **Command**: `npx vitest run tests/studio/acceptance-preflight.test.ts`
+- **Total Tests**: 8
+- **Passed**: 8
+- **Failed**: 0
+- **Status**: Pass
 
-### Performance
+### Integration Tests
 
-- ZIP size gate: 261 MiB、warning、blockingなし
-- Codex 5秒／VOICEVOX 3秒timeout: test passed
-- cold start p95 5秒／Workspace復元p95 2秒: manual measurement未実行
-- multi-user load／stress: local single-user appのためN/A
+- **Internal Acceptance Preflight Fail-Closed**: Pass. Earlier verification confirmed missing artifacts fail closed and preserve downstream gates as `NOT RUN`.
+- **Internal Acceptance Preflight Real Artifact Path**: Pass. User ran `npm run acceptance:preflight` after artifact generation; release manifest, arm64 ZIP, SBOM, ZIP SHA-256, release state, production dependency audit, typecheck, default tests, and Studio build all passed.
+- **VOICEVOX Live Integration**: Not Run. Requires running VOICEVOX Engine.
+- **Real Packaged Artifact Success Path**: Not Run. Requires `npm run release:local` artifacts.
+- **Status**: Partial Pass with environment-dependent items documented.
 
-### Security
+### Performance Tests
 
-- Production dependency audit: 0 vulnerabilities
-- Artifact inclusion、SBOM、checksum、manifest: passed
-- 未署名public verification: codesignで拒否、fail closed
-- 実署名／公証／staple／Gatekeeper: Apple credential未提供のためdeferred
+- **Fail-Closed Preflight**: Pass for missing artifact path because heavy gates did not run.
+- **Real Artifact Preflight**: Pass. All gates completed successfully.
+- **Render Wall Time**: Not Run in this stage.
+- **Cold Start p95**: Not Run. Requires manual packaged app measurement.
+- **Workspace Restore p95**: Not Run. Requires manual packaged app measurement.
+- **Multi-user Load**: N/A for local single-user desktop app.
+- **Status**: Partial Pass with manual measurements deferred.
+
+### Additional Tests
+
+- **Contract Tests**: N/A. U11 adds no network API contract.
+- **Security Tests**: Pass. Focused tests passed and production dependency audit passed during real-artifact preflight.
+- **E2E Tests**: Instructions generated. Clean-profile smoke remains Not Run until a clean Mac or clean macOS user profile is used.
+
+## Generated Instruction Files
+
+- `aidlc-docs/construction/build-and-test/build-instructions.md`
+- `aidlc-docs/construction/build-and-test/unit-test-instructions.md`
+- `aidlc-docs/construction/build-and-test/integration-test-instructions.md`
+- `aidlc-docs/construction/build-and-test/performance-test-instructions.md`
+- `aidlc-docs/construction/build-and-test/security-test-instructions.md`
+- `aidlc-docs/construction/build-and-test/e2e-test-instructions.md`
+- `aidlc-docs/construction/build-and-test/build-and-test-summary.md`
 
 ## Extension Compliance
 
-### Security Baseline
-
-- SECURITY-05、09、10、12、13、15: compliant
-- SECURITY-01〜04、06〜08、11、14: local desktop applicationで該当resource／authentication／network serviceがないためN/A
-- Blocking finding: なし
-
-### Resiliency Baseline
-
-- Atomic Workspace保存、failure containment、timeout、manual retry、rollback／recovery: compliant
-- Cloud HA、multi-region DR、central observability: local single-user applicationのためN/A
-- Blocking finding: なし
-
-### Property-Based Testing
-
-- PBT-08: shrinking、seed表示、`PBT_SEED` replay、release 1,000 runに対応しcompliant
-- PBT-01〜07、09、10: Code Generation成果物とfast-check suiteでcompliant
-- Blocking finding: なし
+| Extension | Result | Rationale |
+|---|---|---|
+| Security Baseline | Compliant | Security instructions require preflight, manifest, checksum, SBOM, architecture, release-state, production audit, focused redaction tests, and public-release blocking evidence. |
+| Resiliency Baseline | Compliant | Build/test instructions preserve fail-closed behavior, `NOT RUN` downstream gates, non-destructive rollback, Workspace preservation, and environment-dependent test classification. |
+| Property-Based Testing (U11 Partial) | Compliant | Focused PBT for new pure helpers is documented and passed. Higher-run PBT replay remains available through existing scripts. |
 
 ## Overall Status
 
-- Build: success
-- Automated tests: pass
-- Local acceptance: ready
-- Public distribution: not ready。Apple署名・公証証跡が揃うまでblocked
-- Operations placeholderへ進行可能
+- **Build**: Instruction set complete. TypeScript validation passed.
+- **Automated Tests**: Pass.
+- **Internal Acceptance Preflight**: Fail-closed behavior verified for missing artifacts.
+- **Local Acceptance Handoff**: Ready for clean-profile smoke. Real-artifact `npm run acceptance:preflight` passed.
+- **Ready for Operations Placeholder**: Yes.

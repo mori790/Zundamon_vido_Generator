@@ -2671,3 +2671,379 @@ stderr npm error A complete log of this run can be found in: /Users/tomimorisato
 **Context**: INCEPTION - U11 User Stories Part 1中断。
 
 ---
+
+## Workspace Detection / Session Resume
+**Timestamp**: 2026-07-27T05:59:52Z
+**User Input**: "Using-AIDLC"
+**AI Response**: "AI-DLC workflow start requestとして受領した。`.aidlc-rule-details`を規則ディレクトリとして解決し、common rules、welcome message、workspace detection、session continuity、U11 User Stories規則、有効なSecurity／Resiliency／Partial PBT拡張、既存stateとU11関連成果物を読み込んだ。既存aidlc-state.mdによりBrownfieldの再開セッションで、現在位置はU11 User Stories生成計画の明示承認待ちと判定した。"
+**Context**: INCEPTION - Workspace Detection complete; resume checkpoint identified.
+
+---
+
+## Session Continuity Prompt
+**Timestamp**: 2026-07-27T06:00:44Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/session-continuity-questions.mdを更新した。選択肢はA) U11 User Stories生成計画を承認し、personas.mdとstories.mdの生成へ進む、B) U11 RequirementsまたはUser Stories生成計画をレビューする、C) 完了済みステージまたは現在の成果物をレビューする、X) Other。"
+**Context**: INCEPTION - Session continuity prompt logged before requesting user decision.
+
+---
+
+## U11 User Stories生成計画承認
+**Timestamp**: 2026-07-27T06:02:11Z
+**User Input**: "done"
+**AI Response**: "aidlc-docs/session-continuity-questions.mdの回答を検証した。Question 1はAで、U11 User Stories生成計画を承認し、personas.mdとstories.mdの生成へ進む選択として有効。U11 User Stories Part 2を開始する。"
+**Context**: INCEPTION - U11 User Stories Part 1 approval recorded; Part 2 generation begins.
+
+---
+
+## U11 User Stories生成完了
+**Timestamp**: 2026-07-27T06:05:14Z
+**User Input**: ""
+**AI Response**: "U11 personas.mdとstories.mdを生成した。内部受入ジャーニー6件、Post-MVP機能エピック5件、3ペルソナ、要件・ペルソナ・ストーリー対応、INVEST確認、Security／Resiliency／Partial PBT準拠を記録した。Mermaid／ASCII diagramは含まず、Markdown tableとcode spanの構文を確認した。blocking findingなし。"
+**Context**: INCEPTION - U11 User Stories Part 2 complete; explicit approval required before Workflow Planning.
+
+---
+
+## U11 User Stories承認プロンプト
+**Timestamp**: 2026-07-27T06:05:14Z
+**User Input**: ""
+**AI Response**: "U11 User Stories completion messageを提示し、aidlc-docs/inception/user-stories/stories.mdとpersonas.mdのレビューを依頼する。選択肢はRequest ChangesまたはApprove & Continue。"
+**Context**: INCEPTION - U11 User Stories approval prompt logged before asking user.
+
+---
+
+## U11 User Stories承認・Workflow Planning開始
+**Timestamp**: 2026-07-27T06:06:14Z
+**User Input**: "Approve & Continue"
+**AI Response**: "U11 User Storiesの明示承認として記録した。Workflow Planning規則、content validation規則、reverse engineering artifacts、U11 requirements、U11 personas、U11 stories、有効なSecurity／Resiliency／Partial PBT拡張を読み込み、U11 execution plan作成を開始した。"
+**Context**: INCEPTION - U11 User Stories approved; Workflow Planning started.
+
+---
+
+## U11 Workflow Planning完了
+**Timestamp**: 2026-07-27T06:07:56Z
+**User Input**: ""
+**AI Response**: "U11 execution-plan.mdとworkflow-planning-approval.mdを生成した。推奨はApplication Design、Functional Design、NFR Requirements、NFR Design、Code Generation、Build and Testを実行し、Units GenerationとInfrastructure Designをskipする。Mermaid node IDs、flowchart connections、Markdown table、text alternativeを確認した。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: INCEPTION - U11 Workflow Planning generated; explicit approval required before Application Design.
+
+---
+
+## U11 Workflow Planning承認プロンプト
+**Timestamp**: 2026-07-27T06:07:56Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/inception/plans/workflow-planning-approval.mdへ承認質問を作成した。選択肢はA) 承認してApplication Designへ進む、B) 変更を依頼する、X) Other。"
+**Context**: INCEPTION - Workflow Planning approval prompt logged before requesting user decision.
+
+---
+
+## U11 Workflow Planning承認・Application Design開始
+**Timestamp**: 2026-07-27T06:08:51Z
+**User Input**: "done"
+**AI Response**: "workflow-planning-approval.mdの回答を検証した。Question 1はAで、U11 Execution Planを承認してApplication Designへ進む選択として有効。U11 Application Design規則、requirements、stories、execution plan、reverse engineering artifacts、有効なSecurity／Resiliency／Partial PBT拡張を読み込み、Application Design計画作成を開始した。"
+**Context**: INCEPTION - U11 Workflow Planning approved; Application Design Part 1 started.
+
+---
+
+## U11 Application Design質問プロンプト
+**Timestamp**: 2026-07-27T06:09:44Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/inception/plans/u11-application-design-plan.mdを作成した。preflight実装境界、受入docs配置、Post-MVP docs配置、build／test gate扱い、将来機能仕様の詳細度について5問を提示し、すべての[Answer]入力を依頼する。"
+**Context**: INCEPTION - U11 Application Design Part 1; user input required before design artifact generation.
+
+---
+
+## U11 Application Design回答検証
+**Timestamp**: 2026-07-27T06:23:16Z
+**User Input**: "done"
+**AI Response**: "u11-application-design-plan.mdの5問を検証した。すべてAで、preflightは既存release verifier再利用の薄いwrapper、受入docsはdocs/internal-acceptance/、Post-MVP docsはdocs/post-mvp/、preflightはartifact検証とbuild/test gateを扱う、Next上位3件はcomponent/method/service/dependency観点までApplication Designへ含める方針として有効。欠落・無効・矛盾・曖昧さはない。"
+**Context**: INCEPTION - U11 Application Design Part 1 answers validated; design artifact generation begins.
+
+---
+
+## U11 Application Design完了
+**Timestamp**: 2026-07-27T06:26:14Z
+**User Input**: ""
+**AI Response**: "U11 Application Design artifactsを生成した。components.md、component-methods.md、services.md、component-dependency.md、application-design.mdをU11向けに更新し、Thin preflight wrapper、docs/internal-acceptance/、docs/post-mvp/、release evidence reuse、Next上位3件のspecification-only境界を設計した。Mermaid／ASCII diagramは含まず、Markdown構文とextension complianceを確認した。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: INCEPTION - U11 Application Design generated; explicit approval required.
+
+---
+
+## U11 Application Design承認プロンプト
+**Timestamp**: 2026-07-27T06:26:14Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/inception/plans/u11-application-design-approval.mdへ承認質問を作成した。選択肢はA) 承認してConstruction PhaseのFunctional Designへ進む、B) Units Generationを追加してからConstruction Phaseへ進む、C) 変更を依頼する、X) Other。"
+**Context**: INCEPTION - Application Design approval prompt logged before requesting user decision.
+
+---
+
+## U11 Application Design承認・Functional Design開始
+**Timestamp**: 2026-07-27T06:27:49Z
+**User Input**: "done"
+**AI Response**: "u11-application-design-approval.mdの回答を検証した。Question 1はAで、U11 Application Designを承認し、Units Generationを追加せずConstruction PhaseのFunctional Designへ進む選択として有効。Functional Design規則、U11 Application Design、requirements、stories、execution plan、有効なSecurity／Resiliency／Partial PBT拡張を読み込み、U11 Functional Design plan作成を開始した。"
+**Context**: CONSTRUCTION - U11 Functional Design planning started.
+
+---
+
+## U11 Functional Design質問プロンプト
+**Timestamp**: 2026-07-27T06:28:42Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/construction/plans/u11-internal-adoption-and-post-mvp-planning-functional-design-plan.mdを作成した。preflight成功条件、artifact missing時の扱い、VOICEVOXなしsmoke経路、証跡path粒度、Post-MVP top-three仕様のPBT記載粒度について5問を提示し、すべての[Answer]入力を依頼する。"
+**Context**: CONSTRUCTION - U11 Functional Design Plan; user input required before artifact generation.
+
+---
+
+## U11 Functional Design回答検証
+**Timestamp**: 2026-07-27T06:34:52Z
+**User Input**: "done"
+**AI Response**: "u11-internal-adoption-and-post-mvp-planning-functional-design-plan.mdの5問を検証した。すべてAで、preflight成功条件は全gate必須、artifact missingは非0で生成actionを提示、VOICEVOXなし経路は開発者支援として分離、証跡pathは相対pathまたは伏せ字化、Post-MVP top-three仕様はproperty名・entity・generator制約・seed replay方針まで記載する方針として有効。欠落・無効・矛盾・曖昧さはない。"
+**Context**: CONSTRUCTION - U11 Functional Design answers validated; artifact generation begins.
+
+---
+
+## U11 Functional Design完了
+**Timestamp**: 2026-07-27T06:37:12Z
+**User Input**: ""
+**AI Response**: "U11 Functional Design artifactsを生成した。business-logic-model.md、business-rules.md、domain-entities.md、frontend-components.mdにpreflight flow、evidence flow、README/checklist rules、Post-MVP specification-only entities、future PBT properties、user-facing documentation surfacesを記録した。Blank answer、TODO、Mermaid、ASCII diagram問題は検出されなかった。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: CONSTRUCTION - U11 Functional Design complete; explicit approval required before NFR Requirements.
+
+---
+
+## U11 Functional Design承認プロンプト
+**Timestamp**: 2026-07-27T06:37:12Z
+**User Input**: ""
+**AI Response**: "U11 Functional Design completion messageを提示し、aidlc-docs/construction/u11-internal-adoption-and-post-mvp-planning/functional-design/のレビューを依頼する。選択肢はRequest ChangesまたはContinue to Next Stage。"
+**Context**: CONSTRUCTION - Functional Design approval prompt logged before requesting user decision.
+
+---
+
+## U11 Functional Design承認・NFR Requirements開始
+**Timestamp**: 2026-07-27T06:38:01Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "U11 Functional Designの明示承認として記録した。NFR Requirements規則、U11 functional design artifacts、application design、requirements、stories、有効なSecurity／Resiliency／Partial PBT拡張を読み込み、U11 NFR Requirements plan作成を開始した。"
+**Context**: CONSTRUCTION - U11 Functional Design approved; NFR Requirements planning started.
+
+---
+
+## U11 NFR Requirements質問プロンプト
+**Timestamp**: 2026-07-27T06:38:43Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/construction/plans/u11-internal-adoption-and-post-mvp-planning-nfr-requirements-plan.mdを作成した。preflight実行時間目標、production dependency audit扱い、preflight report秘匿情報対策、rollback evidence、Partial PBT要求について5問を提示し、すべての[Answer]入力を依頼する。"
+**Context**: CONSTRUCTION - U11 NFR Requirements Plan; user input required before artifact generation.
+
+---
+
+## U11 NFR Requirements回答検証
+**Timestamp**: 2026-07-27T06:40:39Z
+**User Input**: "done
+questionやその選択肢が所々英語でわかりにくいから、以後日本語で説明できるところは日本語で説明、表示せよ。"
+**AI Response**: "以後、AI-DLCの質問、選択肢、完了メッセージ、説明は、規則で固定されている英語表記やファイル名を除き日本語中心で書く方針を記録した。u11-internal-adoption-and-post-mvp-planning-nfr-requirements-plan.mdの5問を検証した。すべてAで、preflightは数分以内目安で進行表示、production dependency auditは必須gate、reportは相対pathと短い説明を優先し秘匿情報を表示しない、rollback evidenceはU11成果物へ含める、fast-checkをPartial PBTで継続採用する方針として有効。欠落・無効・矛盾・曖昧さはない。"
+**Context**: CONSTRUCTION - U11 NFR Requirements answers validated; Japanese-first communication preference recorded.
+
+---
+
+## U11 NFR Requirements完了
+**Timestamp**: 2026-07-27T06:42:18Z
+**User Input**: ""
+**AI Response**: "U11 NFR Requirements artifactsを生成した。nfr-requirements.mdとtech-stack-decisions.mdにSecurity、Resiliency、Performance、Usability、Maintainability、Testability/PBT、既存TypeScript/npm/Vitest/fast-check継続、preflight必須gate、production audit必須、秘匿情報非表示、rollback evidenceを記録した。Blank answer、TODO、Mermaid、ASCII diagram問題は検出されなかった。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: CONSTRUCTION - U11 NFR Requirements complete; explicit approval required before NFR Design.
+
+---
+
+## U11 NFR Requirements承認プロンプト
+**Timestamp**: 2026-07-27T06:42:18Z
+**User Input**: ""
+**AI Response**: "U11 NFR Requirements completion messageを提示し、aidlc-docs/construction/u11-internal-adoption-and-post-mvp-planning/nfr-requirements/のレビューを依頼する。選択肢はRequest ChangesまたはContinue to Next Stage。"
+**Context**: CONSTRUCTION - NFR Requirements approval prompt logged before requesting user decision.
+
+---
+
+## U11 NFR Requirements承認・NFR Design開始
+**Timestamp**: 2026-07-27T06:43:01Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "U11 NFR Requirementsの明示承認として記録した。NFR Design規則、U11 NFR Requirements artifacts、Functional Design artifacts、有効なSecurity／Resiliency／Partial PBT拡張を読み込み、U11 NFR Design plan作成を開始した。"
+**Context**: CONSTRUCTION - U11 NFR Requirements approved; NFR Design planning started.
+
+---
+
+## U11 NFR Design質問プロンプト
+**Timestamp**: 2026-07-27T06:43:46Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/construction/plans/u11-internal-adoption-and-post-mvp-planning-nfr-design-plan.mdを作成した。preflight gate実行順序、進行表示粒度、秘匿情報対策、logical components分割、PBT設計パターンについて日本語中心の5問を提示し、すべての[Answer]入力を依頼する。"
+**Context**: CONSTRUCTION - U11 NFR Design Plan; user input required before artifact generation.
+
+---
+
+## U11 NFR Design回答検証
+**Timestamp**: 2026-07-27T06:44:47Z
+**User Input**: "done"
+**AI Response**: "u11-internal-adoption-and-post-mvp-planning-nfr-design-plan.mdの5問を検証した。すべてAで、軽いartifact検証を先に行い失敗時は早期終了、gate単位で開始・成功・失敗・証跡path・次actionを表示、preflight report helperで相対path化・伏せ字化、Artifact Evidence Reader／Gate Runner／Report Formatter／Documentation Generator／Post-MVP Spec Writerへ分割、PBT設計はproperty名・pure helper・generator制約・seed replay・example test分担まで含める方針として有効。欠落・無効・矛盾・曖昧さはない。"
+**Context**: CONSTRUCTION - U11 NFR Design answers validated; artifact generation begins.
+
+---
+
+## U11 NFR Design完了
+**Timestamp**: 2026-07-27T06:46:32Z
+**User Input**: ""
+**AI Response**: "U11 NFR Design artifactsを生成した。nfr-design-patterns.mdとlogical-components.mdにFail-Closed Preflight、Release Boundary Reuse、Non-Destructive Rerun、Gate Progress Reporting、Secret-Safe Evidence、Not Run Preservation、Documentation Boundary、Partial PBT Design、Artifact Evidence Reader、Gate Runner、Report Formatter、Documentation Generator、Post-MVP Spec Writerを記録した。Blank answer、TODO、Mermaid、ASCII diagram問題は検出されなかった。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: CONSTRUCTION - U11 NFR Design complete; explicit approval required before Code Generation.
+
+---
+
+## U11 NFR Design承認プロンプト
+**Timestamp**: 2026-07-27T06:46:32Z
+**User Input**: ""
+**AI Response**: "U11 NFR Design completion messageを提示し、aidlc-docs/construction/u11-internal-adoption-and-post-mvp-planning/nfr-design/のレビューを依頼する。選択肢はRequest ChangesまたはContinue to Next Stage。"
+**Context**: CONSTRUCTION - NFR Design approval prompt logged before requesting user decision.
+
+---
+
+## U11 NFR Design承認・Code Generation計画開始
+**Timestamp**: 2026-07-27T06:47:27Z
+**User Input**: "Continue to Next Stage"
+**AI Response**: "U11 NFR Designの明示承認として記録した。Code Generation規則、U11 NFR Design artifacts、NFR Requirements、Functional Design、Application Design、既存release script、shared release contract、README、test構造を読み込み、U11 Code Generation Part 1計画作成を開始した。"
+**Context**: CONSTRUCTION - U11 NFR Design approved; Code Generation planning started.
+
+---
+
+## U11 Code Generation計画完了
+**Timestamp**: 2026-07-27T06:48:58Z
+**User Input**: ""
+**AI Response**: "aidlc-docs/construction/plans/u11-internal-adoption-and-post-mvp-planning-code-generation-plan.mdを作成した。対象はREADME、package.json、src/studio/shared/release.ts、scripts/acceptance-preflight.ts、tests/studio/acceptance-preflight.test.ts、docs/internal-acceptance/、docs/post-mvp/、code summary。Step 1からStep 10までの実装順、story対応、受入条件、Security／Resiliency／Partial PBT準拠を記録した。Blank answer、TODO、Mermaid、ASCII diagram問題は検出されなかった。"
+**Context**: CONSTRUCTION - U11 Code Generation Part 1 planning complete; explicit approval required before implementation.
+
+---
+
+## U11 Code Generation計画承認プロンプト
+**Timestamp**: 2026-07-27T06:48:58Z
+**User Input**: ""
+**AI Response**: "U11 Code Generation計画のレビューを依頼する。承認する場合は『承認して実装を開始』または同等の明示承認、変更が必要な場合は修正内容の提示を依頼する。"
+**Context**: CONSTRUCTION - Code Generation plan approval prompt logged before requesting user decision.
+
+---
+
+## U11 Code Generation計画承認・実装開始
+**Timestamp**: 2026-07-27T06:50:34Z
+**User Input**: "承認して実装を開始"
+**AI Response**: "U11 Code Generation計画の明示承認として記録した。計画Step 1から順に、release helper、acceptance preflight command、npm scripts、focused tests、内部受入docs、Post-MVP docs、README、summary、検証を実行する。"
+**Context**: CONSTRUCTION - U11 Code Generation Part 2 implementation started.
+
+---
+
+## U11 Code Generation完了
+**Timestamp**: 2026-07-27T07:06:48Z
+**User Input**: ""
+**AI Response**: "U11 Code Generation実装を完了した。README、package scripts、acceptance preflight command、release helper、focused tests、内部受入docs、Post-MVP docs、code summaryを作成または更新した。`npm run typecheck`、追加test、`npm test`は成功。`npm run acceptance:preflight`はartifact未作成状態で想定どおりfail-closedし、後続gateをNOT RUNにした。Security／Resiliency／Partial PBTにblocking findingなし。"
+**Context**: CONSTRUCTION - U11 Code Generation complete; explicit approval required before Build and Test.
+
+---
+
+## U11 Code Generation承認プロンプト
+**Timestamp**: 2026-07-27T07:07:54Z
+**User Input**: ""
+**AI Response**: "U11 Code Generation completion messageを日本語中心で提示し、実装内容、検証結果、Extension準拠を示したうえで、Request ChangesまたはContinue to Next Stageの2択で明示承認を依頼する。"
+**Context**: CONSTRUCTION - Code Generation approval prompt logged before requesting user decision.
+
+---
+
+## U11 Code Generation承認・Build and Test開始
+**Timestamp**: 2026-07-27T07:09:46Z
+**User Input**: "b"
+**AI Response**: "BをCode Generationの明示承認として記録した。Build and Test規則、content validation規則、現在のU11 Code Generation summary、既存build-and-test files、package scriptsを確認し、U11向けBuild and Test instruction生成を開始した。"
+**Context**: CONSTRUCTION - U11 Code Generation approved; Build and Test started.
+
+---
+
+## Build and Test Stage
+**Timestamp**: 2026-07-27T07:09:46Z
+**Build Status**: Instruction set complete; `npm run typecheck` passed during U11 Code Generation verification.
+**Test Status**: Pass for automated tests; `npm test` passed with 38 files and 143 tests. `npm run acceptance:preflight` fail-closed behavior verified for missing artifacts.
+**Files Generated**:
+- build-instructions.md
+- unit-test-instructions.md
+- integration-test-instructions.md
+- performance-test-instructions.md
+- security-test-instructions.md
+- e2e-test-instructions.md
+- build-and-test-summary.md
+
+---
+
+## U11 Build and Test承認プロンプト
+**Timestamp**: 2026-07-27T07:09:46Z
+**User Input**: ""
+**AI Response**: "Build and Test completion messageを日本語中心で提示し、生成済みinstruction files、実行済み検証結果、Extension準拠を示したうえで、Request ChangesまたはApprove & Continueの2択で明示承認を依頼する。"
+**Context**: CONSTRUCTION - Build and Test approval prompt logged before requesting user decision.
+
+---
+
+## U11 Build and Test承認・Operations開始
+**Timestamp**: 2026-07-27T07:12:52Z
+**User Input**: "Approve & Continue"
+**AI Response**: "Build and Testの明示承認として記録した。Operations rule fileを読み込み、現行workflowではOperationsがplaceholderであり追加deploy／monitoring作業はないことを確認した。"
+**Context**: CONSTRUCTION to OPERATIONS - U11 Build and Test approved; Operations placeholder started.
+
+---
+
+## U11 Operations完了
+**Timestamp**: 2026-07-27T07:12:52Z
+**User Input**: ""
+**AI Response**: "U11 Operations placeholderを完了として記録した。U11 workflow全体は完了。次の実務actionは、handoff準備時に`npm run release:local`でlocal-acceptance artifactsを作成し、`npm run acceptance:preflight`を実artifactに対して成功させること。"
+**Context**: OPERATIONS - U11 workflow complete.
+
+---
+
+## Post-U11 Bug Report
+**Timestamp**: 2026-07-27T07:16:53Z
+**User Input**: "Failed to load resource: net::ERR_FILE_NOT_FOUND"
+**AI Response**: "Electron file loading failureとして調査を開始した。`dist-studio/studio.html`が`/assets/...`を参照しており、`loadFile()`時に`file:///assets/...`として解決されるため、Vite `base`を相対pathへ変更する。"
+**Context**: Post-U11 implementation fix - Studio packaged/static asset loading.
+
+---
+
+## Post-U11 Bug Fix Complete
+**Timestamp**: 2026-07-27T07:17:45Z
+**User Input**: ""
+**AI Response**: "`vite.studio.config.ts`へ`base: './'`を追加し、Studio production build後の`dist-studio/studio.html`が`./assets/...`を参照することを確認した。`npm run typecheck`、`npm run studio:build`、`npm test`は成功した。"
+**Context**: Post-U11 implementation fix complete - packaged/static Studio asset loading.
+
+---
+
+## Post-U11 Bug Report
+**Timestamp**: 2026-07-27T07:20:30Z
+**User Input**: "(index):1 Unsafe attempt to load URL http://localhost:5173/studio.html from frame with URL chrome-error://chromewebdata/. Domains, protocols and ports must match.\nRequest URL\nhttp://localhost:5173/studio.html\nReferrer Policy\nstrict-origin-when-cross-origin"
+**AI Response**: "`npm run studio:start`でElectronが未packaged状態をdev扱いし、起動していないVite dev serverの`http://localhost:5173/studio.html`へfallbackしていることを確認した。`STUDIO_DEV_SERVER_URL`が明示された時だけdev serverを読むようにMain processの判定を修正する。"
+**Context**: Post-U11 implementation fix - Studio start should load built file unless dev server URL is explicit.
+
+---
+
+## Post-U11 Bug Fix Complete
+**Timestamp**: 2026-07-27T07:21:08Z
+**User Input**: ""
+**AI Response**: "`src/studio/main/main.ts`のdev判定を`STUDIO_DEV_SERVER_URL`明示時だけに変更し、`npm run studio:start`がbuild済み`dist-studio/studio.html`を読むようにした。`npm run typecheck`、`npm run studio:build`、`npm test`は成功。生成後の`dist-studio/studio.html`は`./assets/...`を参照し、`dist-studio/main.cjs`にもlocalhost fallbackが残っていないことを確認した。"
+**Context**: Post-U11 implementation fix complete - Studio start loads built renderer unless dev server URL is explicit.
+
+---
+
+## Post-U11 User Verification
+**Timestamp**: 2026-07-27T07:22:40Z
+**User Input**: "成功していた。確認ずみ"
+**AI Response**: "ユーザー環境で`npm run studio:start`または同等の起動確認が成功し、localhost fallbackおよびfile resource loading問題が解消していることを記録した。"
+**Context**: Post-U11 bug fix verified by user.
+
+---
+
+## Post-U11 Next Step Inquiry
+**Timestamp**: 2026-07-27T07:24:55Z
+**User Input**: "次は？"
+**AI Response**: "U11 workflow完了後の次の実務候補として、local-acceptance artifacts作成、実artifact preflight、clean-profile smoke、変更のcommit/PR化を案内する。"
+**Context**: Post-U11 workflow follow-up guidance.
+
+---
+
+## U11 Real Artifact Preflight Verified
+**Timestamp**: 2026-07-27T07:40:35Z
+**User Input**: "~/Zundamon_vido_Generator $ npm run acceptance:preflight\n\n> zundamon-video-generator@0.1.0 acceptance:preflight\n> tsx scripts/acceptance-preflight.ts\n\n開始: 軽量artifact gate\n成功: 軽量artifact gate\n開始: production dependency audit\n成功: production dependency audit\n開始: TypeScript typecheck\n成功: TypeScript typecheck\n開始: default tests\n成功: default tests\n開始: Studio build\n成功: Studio build\n# 内部受入preflight結果\n\n結果: 成功。内部受入用local-acceptance artifactとして確認できます。一般配布はできません。\n\n- PASS: release manifest\n  - 証跡: out/release-manifest.json\n- PASS: arm64 ZIP\n  - 証跡: out/make/zip/darwin/arm64/Zundamon Video Generator-darwin-arm64-0.1.0.zip\n- PASS: SBOM\n  - 証跡: out/release-sbom.cdx.json\n- PASS: ZIP SHA-256\n  - 証跡: out/make/zip/darwin/arm64/Zundamon Video Generator-darwin-arm64-0.1.0.zip\n- PASS: release state\n  - 内容: 内部受入用local-acceptance artifactです。一般配布はできません。\n- PASS: production dependency audit\n- PASS: TypeScript typecheck\n- PASS: default tests\n- PASS: Studio build"
+**AI Response**: "実artifactに対する`npm run acceptance:preflight`成功として記録した。release manifest、arm64 ZIP、SBOM、ZIP SHA-256、local-acceptance release state、production dependency audit、TypeScript typecheck、default tests、Studio buildがすべてPASS。Build/Test summaryとstateをhandoff-ready状態へ更新する。"
+**Context**: Post-U11 local-acceptance real artifact preflight passed.
+
+---
