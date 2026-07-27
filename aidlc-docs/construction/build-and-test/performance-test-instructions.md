@@ -1,51 +1,36 @@
 # Performance Test Instructions
 
-## Purpose
+## Requirements
 
-Validate MVP performance for local video generation.
+- cold start p95: 5秒以内
+- Workspace復元 p95: 2秒以内
+- Codex診断timeout: 5秒
+- VOICEVOX診断timeout: 3秒
+- ZIP: 200 MiB超で警告、300 MiB超で失敗
+- 同時Render: 1
 
-## Performance Requirements
+## Measurement
 
-- A 3-minute video should render in under 10 minutes on a typical modern Mac.
-- The architecture should support roughly 10-minute videos without redesign.
-- Re-running unchanged scripts should reuse cached WAV files.
+同一Apple Silicon端末でcold startとWorkspace復元を各20回測定し、昇順19番目をp95として記録する。Activity Monitorでpeak memoryも記録する。
 
-## Setup
-
-1. Start VOICEVOX Engine.
-2. Prepare a 3-minute script JSON with representative scenes and visuals.
-3. Confirm dependencies are installed.
-
-```bash
-npm install
-npm run validate -- sample-video
-```
-
-## Run Performance Test
-
-Use shell timing around the full video command:
+Renderは次でwall timeと成果物sizeを測る。
 
 ```bash
-time npm run video -- sample-video
+time npm run test:render
+ls -lh output/sample-video.mp4
 ```
 
-Run the command twice:
+Local releaseの容量gateは次で確認する。
 
-1. First run measures full generation cost.
-2. Second run measures cached voice behavior.
+```bash
+npm run verify:package
+```
 
-## Analyze Results
+## Current Evidence
 
-- Confirm total wall-clock time for a 3-minute script is under 10 minutes.
-- Confirm the second run logs cache hits for unchanged voice files.
-- Confirm output MP4 is complete and playable.
+- パッケージ内CLIで742 framesのrender成功
+- ZIP 261 MiB: warning、blockingなし
+- Codex／VOICEVOX timeoutはfake adapter testで確認
+- cold startとWorkspace復元の20回p95実測は未実行
 
-## Optimization Follow-Up
-
-If the target is not met:
-
-1. Confirm cache hits are working.
-2. Check whether VOICEVOX synthesis or Remotion render is the bottleneck.
-3. Reduce unnecessary render attempts before validation and timeline success.
-4. Consider future parallel voice generation outside MVP.
-
+Local single-user applicationのためmulti-user throughput／stress testはN/Aである。対象hardwareを変更する場合はcold start、Workspace復元、render time、peak memoryを再測定する。

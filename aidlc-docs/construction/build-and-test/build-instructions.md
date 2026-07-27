@@ -2,61 +2,51 @@
 
 ## Prerequisites
 
-- **Build Tool**: npm with TypeScript compiler
-- **Runtime**: Any currently supported Node.js LTS version
-- **Dependencies**: npm packages from `package.json`
-- **System Requirements**: macOS, Remotion-compatible Chromium/FFmpeg environment
-- **VOICEVOX**: Required for voice generation and live integration tests
+- macOS 13以降、Apple Silicon
+- Node.js 20以降、npm 11系
+- package取得とElectron初回取得用のnetwork
+- 実音声test時のみVOICEVOX Engine 0.25系
+- 実Codex test時のみCodex CLI 0.145.0以降とChatGPT login
+- 一般配布時のみApple Developer署名identityとnotarytool Keychain profile
 
 ## Build Steps
 
-### 1. Install Dependencies
-
 ```bash
-npm install
-```
-
-### 2. Configure Environment
-
-Optional environment variables:
-
-```bash
-export VOICEVOX_BASE_URL=http://localhost:50021
-export DEFAULT_SPEAKER_ID=3
-export OUTPUT_DIR=output
-export AUDIO_DIR=public/audio
-export DEFAULT_FPS=30
-export DEFAULT_WIDTH=1920
-export DEFAULT_HEIGHT=1080
-```
-
-### 3. Type Check
-
-```bash
+npm ci
 npx tsc --noEmit
+npm run studio:build
+npm run package
 ```
 
-### 4. Verify Build Success
+Local acceptance用のarm64 `.app`、ZIP、SBOM、checksum、manifestは次で生成する。
 
-- **Expected Output**: `npx tsc --noEmit` exits with code 0 and no TypeScript errors.
-- **Build Artifacts**: No compiled artifact is emitted; runtime uses `tsx` and Remotion.
-- **Runtime Artifacts**: WAV files under `public/audio/`, manifests under `generated/manifests/`, timelines under `generated/timelines/`, MP4 files under `output/`.
+```bash
+npm run release:local
+```
+
+一般配布用buildはApple credentialを設定したrelease担当者だけが実行する。
+
+```bash
+export APPLE_NOTARY_KEYCHAIN_PROFILE='<keychain profile name>'
+npm run release:public
+```
+
+## Expected Output
+
+- `dist-studio/`: Renderer、Main、Preload
+- `dist-cli/`: production CLI
+- `dist-remotion/`:事前生成Remotion bundle
+- `out/Zundamon Video Generator-darwin-arm64/`: arm64 `.app`
+- `out/make/zip/darwin/arm64/`: ZIP
+- `out/release-sbom.cdx.json`: CycloneDX SBOM
+- `out/release-manifest.json`: version、revision、SHA-256、release state
+
+261 MiBの現行ZIPは200 MiB警告対象だが300 MiB遮断値未満である。未署名buildの正常な状態は`local-acceptance`であり、一般配布は禁止される。
 
 ## Troubleshooting
 
-### Dependency Errors
-
-- Run `npm install`.
-- Confirm Node.js is an active LTS version.
-- If Remotion install scripts are blocked by npm script approval, review with `npm approve-scripts`.
-
-### Compilation Errors
-
-- Run `npx tsc --noEmit`.
-- Fix the file and line reported by TypeScript.
-- Rerun type check before running render commands.
-
-### npm Audit Warnings
-
-`npm install` reported 5 audit vulnerabilities during generation. Do not run `npm audit fix --force` without reviewing breaking changes.
-
+- GitHub取得失敗: networkを確認して`npm run package`を再実行する。
+- Remotion binary失敗: `.app/Contents/Resources/app.asar.unpacked/node_modules/@remotion/compositor-darwin-arm64/`を確認する。
+- `preview:check`未登録: Electron Mainを完全終了し、最新buildで再起動する。
+- 署名失敗: credentialをlogへ貼らず、Keychain profileとApple Developer identityを確認する。
+- 強制的な`npm audit fix --force`は実行しない。

@@ -1,4 +1,5 @@
 import {spawn} from 'node:child_process';
+import {join} from 'node:path';
 import {checkAssets} from '../src/core/asset-checker';
 import {formatError} from '../src/core/errors';
 import {Logger} from '../src/core/logger';
@@ -24,7 +25,8 @@ export async function runPreviewCommand(argv: string[] = process.argv.slice(2)):
 
   logger.info(`Remotion Studioを起動します: ${videoId}`);
   const props = await buildRenderData(videoId);
-  const child = spawn('npx', ['remotion', 'studio', 'src/Root.tsx', '--props', JSON.stringify(props)], {
+  const remotion = join(process.cwd(), 'node_modules', '.bin', process.platform === 'win32' ? 'remotion.cmd' : 'remotion');
+  const child = spawn(remotion, ['studio', 'src/Root.tsx', '--props', JSON.stringify(props)], {
     stdio: 'inherit',
     shell: false,
   });

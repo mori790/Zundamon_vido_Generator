@@ -1,64 +1,50 @@
-# Execution Plan
+# U10 実行計画
 
-## Detailed Analysis Summary
+## 詳細分析
 
-### Change Impact Assessment
+- **変更種別**: 単一Electronアプリの配布モデル追加
+- **主変更**: production build、Forge、Workspace選択、依存診断、署名・公証、release gate
+- **維持する境界**: 既存CLI、context isolation、Codex、VOICEVOX、Remotion制作フロー
+- **利用者影響**: 初回起動、依存不足案内、手動更新、復旧
+- **データ影響**: 制作schemaは不変。`userData`へWorkspace参照だけを保存する。
+- **API影響**: 外部APIなし。Workspace選択と診断用の限定IPCを追加する。
+- **NFR影響**: path境界、secret、署名・公証、supply chain、fail-closed、復旧、PBT
 
-- **User-facing changes**: Yes. The project creates a new CLI workflow for video creators.
-- **Structural changes**: Yes. A new TypeScript, Node.js, React, and Remotion application will be created.
-- **Data model changes**: Yes. New script, scene, speaker, video, subtitle, visual, manifest, and timeline models are required.
-- **API changes**: Yes. The system integrates with VOICEVOX Engine HTTP APIs.
-- **NFR impact**: Yes. Maintainability, caching performance, safe file path handling, portability, and testability affect the design.
+## Component関係
 
-### Risk Assessment
+- **主対象**: Electron Main、Preload、Renderer bootstrap、package configuration
+- **上流**: npm lockfile、Electron Forge、Apple signing／notarytool、Codex CLI、VOICEVOX
+- **共有境界**: Workspace path、command execution、release manifest、packaged resource path
+- **下流**: Script、asset、Validate、Voice、Preview、Render、Stop、Finder reveal
+- **支援成果物**: icon、日本語文書、release checklist、SBOM、checksum
 
-- **Risk Level**: Medium
-- **Rollback Complexity**: Easy while greenfield, because no production code exists yet.
-- **Testing Complexity**: Moderate. Unit tests are straightforward, while VOICEVOX and Remotion require lightweight integration checks and local environment dependencies.
+## リスク評価
 
-### Primary Components
+- **水準**: 高
+- **理由**: path／権限境界、secret、署名・公証、未署名成果物の誤配布を扱う。
+- **ロールバック**: 中。既知正常revisionと開発起動を維持し、成果物をversion別に分離する。
+- **テスト**: 高。unit、PBT、packaged Electron E2E、新規macOS利用者プロファイル確認が必要。
 
-- Script validation and loading.
-- Asset checking and path safety.
-- VOICEVOX client and voice generation.
-- Audio duration measurement.
-- Manifest and cache management.
-- Timeline generation.
-- Remotion React composition and components.
-- CLI orchestration.
-- Tests and build scripts.
-
-## Workflow Visualization
-
-### Mermaid Diagram
+## ワークフロー
 
 ```mermaid
 flowchart TD
-    Start([User Request])
-
-    subgraph INCEPTION[INCEPTION PHASE]
-        WD[Workspace Detection COMPLETED]
-        RE[Reverse Engineering SKIP]
-        RA[Requirements Analysis COMPLETED]
-        US[User Stories COMPLETED]
-        WP[Workflow Planning COMPLETED]
-        AD[Application Design EXECUTE]
-        UG[Units Generation EXECUTE]
-    end
-
-    subgraph CONSTRUCTION[CONSTRUCTION PHASE]
-        FD[Functional Design EXECUTE]
-        NFRA[NFR Requirements EXECUTE]
-        NFRD[NFR Design EXECUTE]
-        ID[Infrastructure Design SKIP]
-        CG[Code Generation EXECUTE]
-        BT[Build and Test EXECUTE]
-    end
-
-    subgraph OPERATIONS[OPERATIONS PHASE]
-        OPS[Operations PLACEHOLDER]
-    end
-
+    Start(["U10開始"])
+    WD["Workspace Detection<br/><b>完了</b>"]
+    RE["Reverse Engineering<br/><b>完了</b>"]
+    RA["Requirements Analysis<br/><b>完了</b>"]
+    US["User Stories<br/><b>完了</b>"]
+    WP["Workflow Planning<br/><b>レビュー</b>"]
+    AD["Application Design<br/><b>実施</b>"]
+    UG["Units Generation<br/><b>省略</b>"]
+    FD["Functional Design<br/><b>実施</b>"]
+    NFRA["NFR Requirements<br/><b>実施</b>"]
+    NFRD["NFR Design<br/><b>実施</b>"]
+    ID["Infrastructure Design<br/><b>省略</b>"]
+    CG["Code Generation<br/><b>実施</b>"]
+    BT["Build and Test<br/><b>実施</b>"]
+    OPS["Operations<br/><b>プレースホルダー</b>"]
+    End(["U10完了"])
     Start --> WD
     WD --> RE
     RE --> RA
@@ -69,98 +55,72 @@ flowchart TD
     UG --> FD
     FD --> NFRA
     NFRA --> NFRD
-    NFRD --> CG
+    NFRD --> ID
+    ID --> CG
     CG --> BT
-    BT --> End([Complete])
-
+    BT --> OPS
+    OPS --> End
     style WD fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style RE fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style RA fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style US fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style WP fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
-    style RE fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
-    style AD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style UG fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style FD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style NFRA fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style NFRD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray: 5 5,color:#000
-    style ID fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style AD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray:5 5,color:#000
+    style FD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray:5 5,color:#000
+    style NFRA fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray:5 5,color:#000
+    style NFRD fill:#FFA726,stroke:#E65100,stroke-width:3px,stroke-dasharray:5 5,color:#000
     style CG fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style BT fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
-    style OPS fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray: 5 5,color:#000
+    style UG fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray:5 5,color:#000
+    style ID fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray:5 5,color:#000
+    style OPS fill:#BDBDBD,stroke:#424242,stroke-width:2px,stroke-dasharray:5 5,color:#000
     style Start fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
     style End fill:#CE93D8,stroke:#6A1B9A,stroke-width:3px,color:#000
-    style INCEPTION fill:#BBDEFB,stroke:#1565C0,stroke-width:3px,color:#000
-    style CONSTRUCTION fill:#C8E6C9,stroke:#2E7D32,stroke-width:3px,color:#000
-    style OPERATIONS fill:#FFF59D,stroke:#F57F17,stroke-width:3px,color:#000
     linkStyle default stroke:#333,stroke-width:2px
 ```
 
-### Text Alternative
+### テキスト代替
 
-- INCEPTION: Workspace Detection completed, Reverse Engineering skipped, Requirements Analysis completed, User Stories completed, Workflow Planning completed, Application Design executes next, Units Generation executes after design.
-- CONSTRUCTION: Functional Design executes, NFR Requirements executes, NFR Design executes, Infrastructure Design is skipped, Code Generation executes, Build and Test executes.
-- OPERATIONS: Operations remains a placeholder and is not part of this MVP workflow.
+完了済み4段階とWorkflow Planningの後、Application Designを実施しUnits Generationを省略する。Functional Design、NFR Requirements、NFR Designを実施しInfrastructure Designを省略する。Code Generation、Build and Test、Operationsプレースホルダーの順に進む。
 
-## Phases to Execute
+## 段階判断
 
-### INCEPTION PHASE
+- [x] Workspace Detection - 完了
+- [x] Reverse Engineering - 完了
+- [x] Requirements Analysis - 完了・承認済み
+- [x] User Stories - 完了・承認済み
+- [x] Workflow Planning - 完了、承認待ち
+- [ ] Application Design - 実施。Workspace、依存診断、packaged command、release IPC責務を定義する。
+- [x] Units Generation - 省略。単一packageの1成果物であり分割価値がない。
+- [ ] Functional Design - 実施。Workspace、診断、release状態遷移を定義する。
+- [ ] NFR Requirements - 実施。Security、Resiliency、性能計測、完全PBTを具体化する。
+- [ ] NFR Design - 実施。path allowlist、fail-closed、secret redaction、cleanup、rollbackを設計する。
+- [x] Infrastructure Design - 省略。Cloud／network infrastructure変更なし。
+- [ ] Code Generation - 実施。コード、テスト、文書、release設定を生成する。
+- [ ] Build and Test - 実施。回帰、PBT、package smoke、Electron E2E、release検証を行う。
+- [ ] Operations - プレースホルダー。外部deployやrelease uploadは行わない。
 
-- [x] Workspace Detection - COMPLETED
-- [x] Reverse Engineering - SKIPPED
-  - **Rationale**: No existing application codebase was detected.
-- [x] Requirements Analysis - COMPLETED
-- [x] User Stories - COMPLETED
-- [x] Workflow Planning - IN PROGRESS
-- [ ] Application Design - EXECUTE
-  - **Rationale**: New components, service boundaries, shared models, CLI flows, and rendering responsibilities need definition.
-- [ ] Units Generation - EXECUTE
-  - **Rationale**: The MVP spans multiple logical units and needs a structured implementation sequence.
+## 変更順序
 
-### CONSTRUCTION PHASE
+1. Package identity、production entry、Forge設定、icon
+2. Packaged resource resolverとWorkspace選択・永続化
+3. Packaged commandとCodex／VOICEVOX診断
+4. 署名・公証、release state、配布禁止gate
+5. SBOM、checksum、manifest、inclusion検査
+6. 日本語文書とclean-profile checklist
+7. 例示テスト、完全PBT、package E2E、release検証
 
-- [ ] Functional Design - EXECUTE
-  - **Rationale**: Script validation, cache hashing, subtitle splitting, timeline math, and asset path handling require detailed business logic design.
-- [ ] NFR Requirements - EXECUTE
-  - **Rationale**: Maintainability, safe path handling, performance through caching, portability, and testability affect the implementation.
-- [ ] NFR Design - EXECUTE
-  - **Rationale**: NFR requirements must be reflected in module boundaries, error handling, validation, tests, and local runtime assumptions.
-- [ ] Infrastructure Design - SKIP
-  - **Rationale**: MVP is a local macOS CLI and Remotion project with no cloud infrastructure or deployment architecture.
-- [ ] Code Generation - EXECUTE
-  - **Rationale**: Application code, scripts, sample inputs, assets, tests, and documentation need to be generated.
-- [ ] Build and Test - EXECUTE
-  - **Rationale**: Build instructions, unit tests, lightweight integration tests, and manual render verification are required.
+## 成功条件
 
-### OPERATIONS PHASE
+- arm64 `.app`とZIPがproduction codeだけで起動する。
+- Workspaceを安全に保存・再検証し、packaged環境で制作できる。
+- 外部依存不足を区別し、日本語で復旧案内できる。
+- 未署名成果物をlocal acceptanceに限定し、一般配布をfail closedで禁止できる。
+- 署名・公証・Gatekeeper・ticket・checksumを検証できる。
+- SBOM、manifest、文書、checklistと全テストが完成する。
 
-- [ ] Operations - PLACEHOLDER
-  - **Rationale**: Deployment and monitoring workflows are out of scope for the current AIDLC implementation.
+## Extension準拠
 
-## Recommended Unit Sequence
-
-1. Project foundation and shared types.
-2. Script loading, validation, asset checks, and path safety.
-3. VOICEVOX client, voice generation, cache manifest, and audio duration.
-4. Timeline generation.
-5. Remotion composition and scene components.
-6. CLI orchestration and render integration.
-7. Tests, placeholders, sample data, and README.
-
-## Estimated Timeline
-
-- **Total Stages to Execute After Workflow Planning**: 7
-- **Estimated Duration**: Multi-stage implementation session with approval gates between design, unit planning, code generation, and build/test.
-
-## Success Criteria
-
-- Requirements, stories, design, unit plan, implementation plan, generated code, and build/test instructions are traceable.
-- `npm run video -- {videoId}` supports the MVP flow when VOICEVOX Engine is available.
-- Unit tests and lightweight integration tests cover the approved test scope.
-- Placeholder assets allow Remotion preview/render verification before real Zundamon assets are added.
-
-## Extension Compliance Summary
-
-- Security Baseline: N/A. Disabled during Requirements Analysis.
-- Resiliency Baseline: N/A. Disabled during Requirements Analysis.
-- Property-Based Testing: N/A. Disabled during Requirements Analysis.
-
+- **Security Baseline**: path検証、最小権限IPC、credential非保存、CSP、署名、公証、SBOM、checksum、fail-closedを全段階で追跡する。Cloud固有規則は適用外。阻害事項なし。
+- **Resiliency Baseline**: Workspace保護、依存障害、package／公証失敗、rollback、fault injection、recoveryを追跡する。Cloud HA／DRは適用外。阻害事項なし。
+- **Property-Based Testing**: path、config、manifest、release状態遷移を設計、実装、build gateで追跡する。阻害事項なし。

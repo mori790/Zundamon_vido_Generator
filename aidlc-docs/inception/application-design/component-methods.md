@@ -1,98 +1,48 @@
-# Component Methods
+# U10 Component Method設計
 
-## Script and Validation
+詳細な検証規則と状態遷移はFunctional Designで定義する。
 
-```ts
-export function loadVideoScript(videoId: string, options?: LoadScriptOptions): Promise<VideoScript>;
-export function parseVideoScript(input: unknown): VideoScript;
-export function validateVideoId(videoId: string): void;
-export function collectScriptWarnings(script: VideoScript): ValidationWarning[];
-```
+## Workspace Service
 
-- `loadVideoScript` reads and validates `input/{videoId}.json`.
-- `parseVideoScript` is the Zod-backed runtime boundary.
-- `validateVideoId` prevents unsafe IDs and mismatched input.
-- `collectScriptWarnings` reports non-blocking script concerns.
+- `get(): Promise<WorkspaceState>` — 保存済み参照を読み、再検証した状態を返す。
+- `select(): Promise<WorkspaceState>` — native dialogでfolderを選択し、検証後に保存する。
+- `clear(): Promise<void>` — 保存済み参照だけを削除する。
+- `requireRoot(): Promise<string>` — 有効なcanonical rootを返し、無効ならtyped errorにする。
 
-## Asset and Path Handling
+## Packaged Resource Resolver
 
-```ts
-export function resolveWorkspacePath(...segments: string[]): string;
-export function resolveInputScriptPath(videoId: string): string;
-export function resolvePublicReference(publicPath: string): string;
-export function resolveAudioPath(videoId: string, sceneId: string): AudioPathInfo;
-export function checkAssets(script: VideoScript): Promise<AssetCheckResult>;
-```
+- `resolveRuntime(): RuntimeResources` — Main、CLI、Remotion、public resourceの絶対pathを返す。
+- `resolveWorkspacePath(root: string, relative: string): string` — root外を拒否してWorkspace pathを返す。
+- `resolveResourcePath(relative: string): string` — allowlist内の読み取り専用resourceを返す。
 
-- `resolvePublicReference` accepts paths like `/visuals/topic/image.png` and maps them inside `public`.
-- `checkAssets` validates visuals, background, BGM, and character assets.
+## Dependency Diagnosis Service
 
-## VOICEVOX and Voice Cache
+- `checkCodex(): Promise<DependencyStatus>` — executable、version、login状態を分類する。
+- `checkVoicevox(): Promise<DependencyStatus>` — 接続、version、engine状態を分類する。
+- `checkAll(): Promise<DependencyReport>` — 両診断を独立実行して共通reportを返す。
 
-```ts
-export function createVoicevoxClient(config: VoicevoxConfig): VoicevoxClient;
-export function checkVoicevoxConnection(client: VoicevoxClient): Promise<void>;
-export function createAudioQuery(client: VoicevoxClient, text: string, speakerId: number): Promise<VoicevoxAudioQuery>;
-export function synthesizeSpeech(client: VoicevoxClient, query: VoicevoxAudioQuery, speakerId: number): Promise<ArrayBuffer>;
-export function buildVoiceCacheHash(text: string, speaker: SpeakerConfig): string;
-export function loadManifest(videoId: string): Promise<VoiceManifest>;
-export function saveManifest(videoId: string, manifest: VoiceManifest): Promise<void>;
-export function generateVoices(videoId: string, options?: VoiceGenerationOptions): Promise<VoiceGenerationResult>;
-```
+## Packaged Command Adapter
 
-- `createVoicevoxClient` centralizes base URL configuration.
-- `generateVoices` owns cache decisions and sequential generation.
-- `buildVoiceCacheHash` is deterministic and independent of file paths.
+- `createInvocation(request: StartCommandRequest): CommandInvocation` — 固定実行対象、引数、cwdを構築する。
+- `assertAvailable(kind: CommandKind): Promise<void>` — commandに必要なresourceと依存を確認する。
 
-## Audio and Timeline
+## Release Module
 
-```ts
-export function measureWavDuration(filePath: string): Promise<number>;
-export function secondsToFrames(seconds: number, fps: number): number;
-export function generateTimeline(script: VideoScript, manifest: VoiceManifest): Timeline;
-export function saveTimeline(videoId: string, timeline: Timeline): Promise<void>;
-export function loadTimeline(videoId: string): Promise<Timeline>;
-```
+- `createManifest(input: ReleaseInput): Promise<ReleaseManifest>` — version、revision、architecture、artifact、checksumを生成する。
+- `classifyArtifact(evidence: ReleaseEvidence): ReleaseState` — 証跡から状態を純粋判定する。
+- `verifyLocalAcceptance(input: ArtifactInput): Promise<VerificationResult>` — package内容、起動、checksumを検証する。
+- `verifyPublishable(input: ArtifactInput): Promise<VerificationResult>` — 署名、公証、Gatekeeper、ticketを追加検証する。
 
-- `measureWavDuration` returns seconds.
-- `secondsToFrames` rounds `seconds * fps`.
-- `generateTimeline` produces ordered scene frame data.
+## Preload API
 
-## Render Data and Remotion
+- `workspaceApi.get(): Promise<WorkspaceState>`
+- `workspaceApi.select(): Promise<WorkspaceState>`
+- `workspaceApi.clear(): Promise<void>`
+- `dependencyApi.checkAll(): Promise<DependencyReport>`
 
-```ts
-export function buildRenderData(videoId: string): Promise<ZundamonRenderData>;
-export function renderVideo(videoId: string, options?: RenderOptions): Promise<RenderResult>;
-export function getCompositionProps(videoId: string): Promise<ZundamonCompositionProps>;
-```
+## 共有型
 
-- `buildRenderData` combines script, manifest, and timeline.
-- `renderVideo` uses Remotion Node APIs.
-- `getCompositionProps` returns props suitable for Remotion Studio or render.
-
-## CLI
-
-```ts
-export function runValidateCommand(argv: string[]): Promise<void>;
-export function runVoiceCommand(argv: string[]): Promise<void>;
-export function runTimelineCommand(argv: string[]): Promise<void>;
-export function runPreviewCommand(argv: string[]): Promise<void>;
-export function runVideoCommand(argv: string[]): Promise<void>;
-```
-
-- CLI functions parse arguments, call services, log results, and map failures to user-facing messages.
-
-## React Components
-
-```tsx
-export function ZundamonVideo(props: ZundamonCompositionProps): JSX.Element;
-export function Scene(props: SceneProps): JSX.Element;
-export function Character(props: CharacterProps): JSX.Element;
-export function Subtitle(props: SubtitleProps): JSX.Element | null;
-export function Visual(props: VisualProps): JSX.Element | null;
-export function TitleScene(props: TitleSceneProps): JSX.Element;
-export function EndingScene(props: EndingSceneProps): JSX.Element;
-```
-
-- React components render data only and do not perform file system or network work.
-
+- `WorkspaceState`: `unconfigured | ready | missing | denied | invalid`
+- `DependencyStatus`: dependency名、状態code、検出version、action code
+- `ReleaseState`: `local-acceptance | signed | notarized | verified | publishable`
+- すべての外部入力はruntime validation後にdomain型へ変換する。

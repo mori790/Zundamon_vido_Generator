@@ -1,178 +1,173 @@
-# Units of Work
+# Units of Work: GUI with Embedded Codex Panel
 
-## Decomposition Decision
+## Decomposition Summary
 
-The MVP will be implemented as one application package with seven logical units. Work proceeds sequentially in dependency order from shared types through tests and documentation.
+The GUI is a single Electron desktop application. Units are logical implementation modules inside that app, not independently deployable services.
 
-## Greenfield Code Organization Strategy
+The decomposition uses fine-grained units because the selected MVP should support incremental vertical slices. The first implementation slice should open a video ID, connect to Codex, discuss a plan, and show a JSON draft.
 
-Application code will live in the workspace root, not under `aidlc-docs/`.
+## Recommended Implementation Order
 
-| Area | Directory |
-|---|---|
-| CLI entry points | `scripts/` |
-| Shared core modules | `src/core/` |
-| Remotion composition | `src/compositions/` |
-| React scene components | `src/components/` |
-| Runtime schemas | `src/schemas/` |
-| Shared types | `src/types/` |
-| Utilities | `src/utils/` |
-| User scripts | `input/` |
-| Static assets and generated audio | `public/` |
-| Generated manifests and timelines | `generated/` |
-| Rendered MP4 output | `output/` |
-| Tests | `tests/` or colocated `*.test.ts` files, chosen during Code Generation based on tool defaults |
+1. U1: Electron App Shell and Workspace Foundation.
+2. U2: Codex App Server Connection.
+3. U3: JSON Draft Review and Scene Editing.
+4. U4: Codex Proposal and Approval Flow.
+5. U5: Asset Selection and Visual Attachment.
+6. U6: Command Runner and Log Panel.
+7. U7: Embedded Remotion Preview.
+8. U8: Render Workflow and CLI Compatibility Verification.
 
-## Unit U1: Project Foundation and Shared Types
+## U1: Electron App Shell and Workspace Foundation
 
-### Purpose
+- **Priority**: Must.
+- **Purpose**: Establish the desktop app and single-video workspace.
+- **Responsibilities**:
+  - Start Electron main and React renderer.
+  - Open or create a single video workspace by video ID.
+  - Load existing `input/{videoId}.json` when present.
+  - Track active script and artifact readiness state.
+  - Expose controlled IPC for file and process operations.
+- **Primary Components**:
+  - Electron App Shell.
+  - Workspace Controller.
+  - Script Repository Adapter.
+- **Deliverables**:
+  - Desktop app opens.
+  - Video ID workspace loads.
+  - Existing script can be read without breaking CLI compatibility.
 
-Create the TypeScript, Node.js, React, and Remotion foundation for the MVP and define shared domain types.
+## U2: Codex App Server Connection
 
-### Responsibilities
+- **Priority**: Must.
+- **Purpose**: Enable chat-based planning with Codex.
+- **Responsibilities**:
+  - Connect GUI renderer directly to Codex App Server.
+  - Surface authentication and connection state.
+  - Send creator messages and receive streamed Codex responses.
+  - Keep non-Codex UI usable if Codex is unavailable.
+- **Primary Components**:
+  - Codex Panel.
+  - Codex App Server Client.
+- **Deliverables**:
+  - Creator can discuss a video idea.
+  - Codex connection failures are visible and recoverable.
 
-- Create `package.json`, `tsconfig.json`, Remotion configuration, and project folders.
-- Define `VideoScript`, scene, visual, speaker, manifest, timeline, and render prop types.
-- Establish shared constants and environment defaults.
-- Provide base file and frame utilities used by later units.
+## U3: JSON Draft Review and Scene Editing
 
-### Primary Outputs
+- **Priority**: Must.
+- **Purpose**: Let the creator review and edit generated or manual script drafts before applying them.
+- **Responsibilities**:
+  - Store draft JSON in memory.
+  - Show raw JSON and structured scene views.
+  - Add, remove, reorder, and edit scenes.
+  - Validate drafts before application.
+  - Apply approved JSON to `input/{videoId}.json`.
+- **Primary Components**:
+  - Draft State Store.
+  - JSON Review UI.
+  - Scene Editor.
+  - Validation Adapter.
+  - Script Repository Adapter.
+- **Deliverables**:
+  - Drafts are not saved until approved.
+  - Active scripts remain compatible with existing schema and CLI commands.
 
-- Project configuration.
-- `src/types/video.ts`.
-- Initial `src/utils/` modules.
+## U4: Codex Proposal and Approval Flow
 
-## Unit U2: Script Validation, Assets, and Path Safety
+- **Priority**: Must.
+- **Purpose**: Turn Codex output into reviewable drafts and approved actions.
+- **Responsibilities**:
+  - Detect JSON draft proposals from Codex.
+  - Register proposed save or command actions.
+  - Show inline approval buttons in Codex messages.
+  - Prevent unapproved file changes and command execution.
+  - Route approved actions to draft, script, or command services.
+- **Primary Components**:
+  - Codex Panel.
+  - Action Approval Controller.
+  - Draft State Store.
+  - Command Runner.
+- **Deliverables**:
+  - Codex can help, but creator remains in control.
+  - Proposed actions have clear states: pending, approved, rejected, completed, failed.
 
-### Purpose
+## U5: Asset Selection and Visual Attachment
 
-Implement safe script loading, Zod validation, warnings, and asset checks.
+- **Priority**: Must.
+- **Purpose**: Let the creator attach local images to scenes without manual path work.
+- **Responsibilities**:
+  - Open local image selection dialog.
+  - Copy selected image files into `public/visuals/{videoId}/`.
+  - Generate public paths for script JSON.
+  - Attach visual references to scenes.
+  - Mark missing or invalid assets.
+- **Primary Components**:
+  - Asset Manager.
+  - Scene Editor.
+  - Validation Adapter.
+- **Deliverables**:
+  - Scene visuals can be selected and validated in the GUI.
 
-### Responsibilities
+## U6: Command Runner and Log Panel
 
-- Implement `src/schemas/video-script.ts`.
-- Implement script loading and video ID validation.
-- Validate required fields, duplicate scene IDs, unsupported values, invalid numbers, and negative durations.
-- Resolve public references safely and prevent directory traversal.
-- Check visuals, backgrounds, BGM, and character assets.
-- Support development placeholder assets.
+- **Priority**: Must.
+- **Purpose**: Run existing npm commands from the GUI and display logs.
+- **Responsibilities**:
+  - Run validate, voice, timeline, preview, and render operations.
+  - Stream stdout and stderr.
+  - Display operation status.
+  - Prevent conflicting long-running operations.
+  - Provide logs to Codex when the creator asks for diagnosis.
+- **Primary Components**:
+  - Command Runner.
+  - Log Panel.
+  - Electron App Shell.
+- **Deliverables**:
+  - Existing generation pipeline is usable without terminal switching.
 
-### Primary Outputs
+## U7: Embedded Remotion Preview
 
-- Script loader.
-- Asset checker.
-- Path resolver.
-- Validation command support.
+- **Priority**: Should.
+- **Purpose**: Preview the current video inside the GUI.
+- **Responsibilities**:
+  - Embed or host a Remotion preview surface.
+  - Detect stale preview data.
+  - Refresh preview after generation changes.
+  - Provide fallback path if embedded preview is blocked.
+- **Primary Components**:
+  - Preview Panel.
+  - Workspace Controller.
+  - Command Runner.
+- **Deliverables**:
+  - Creator can inspect video timing and layout from the GUI.
 
-## Unit U3: VOICEVOX Audio Generation and Cache
+## U8: Render Workflow and CLI Compatibility Verification
 
-### Purpose
+- **Priority**: Must.
+- **Purpose**: Ensure the GUI can produce MP4 output while preserving existing CLI behavior.
+- **Responsibilities**:
+  - Execute render from GUI.
+  - Show output path and render failures.
+  - Verify CLI commands still work with GUI-created files.
+  - Validate end-to-end project folder compatibility.
+- **Primary Components**:
+  - Command Runner.
+  - Log Panel.
+  - Script Repository Adapter.
+  - Workspace Controller.
+- **Deliverables**:
+  - MP4 output can be generated.
+  - CLI remains a supported fallback.
 
-Generate narration WAV files using VOICEVOX Engine and cache unchanged results.
+## Code Organization Strategy
 
-### Responsibilities
+This is a brownfield single-package project. A later implementation should keep app code in the workspace root and avoid placing application code under `aidlc-docs/`.
 
-- Implement VOICEVOX connection checks and API client.
-- Generate audio query and synthesis requests.
-- Apply speaker voice settings.
-- Write WAV files to `public/audio/{videoId}/{sceneId}.wav`.
-- Compute cache hash.
-- Read and write manifest cache metadata.
-- Implement `--force` behavior.
+Likely future organization:
 
-### Primary Outputs
-
-- VOICEVOX client.
-- Voice generator.
-- Manifest store.
-- Voice command support.
-
-## Unit U4: Audio Measurement and Timeline Generation
-
-### Purpose
-
-Measure WAV duration and generate frame-accurate timeline data.
-
-### Responsibilities
-
-- Measure WAV durations.
-- Convert seconds to frames using configured fps.
-- Apply before and after speech waits.
-- Generate sequential scene frame data.
-- Save timeline JSON to `generated/timelines/{videoId}.timeline.json`.
-
-### Primary Outputs
-
-- Audio analyzer.
-- Timeline generator.
-- Timeline store.
-- Timeline command support.
-
-## Unit U5: Remotion Composition and Scene Rendering
-
-### Purpose
-
-Render scenes, subtitles, character art, visuals, audio, BGM, title, and ending in Remotion.
-
-### Responsibilities
-
-- Register Remotion composition in `src/Root.tsx`.
-- Implement `ZundamonVideo` composition.
-- Implement scene, character, subtitle, visual, title, and ending components.
-- Implement simple lip sync and slight character motion.
-- Implement image, code, and text visuals.
-- Render optional BGM and scene audio.
-
-### Primary Outputs
-
-- Remotion composition.
-- React scene components.
-- Subtitle text helpers.
-
-## Unit U6: CLI Orchestration and Render Integration
-
-### Purpose
-
-Connect validation, voice, timeline, preview, and rendering into user-facing commands.
-
-### Responsibilities
-
-- Implement `scripts/validate-script.ts`.
-- Implement `scripts/generate-voices.ts`.
-- Implement `scripts/generate-timeline.ts`.
-- Implement `scripts/generate-video.ts`.
-- Implement preview and render orchestration using Remotion Node APIs where applicable.
-- Emit consistent INFO, WARN, and ERROR logs.
-- Map domain failures to specified Japanese messages.
-
-### Primary Outputs
-
-- CLI scripts.
-- Render service.
-- End-to-end `npm run video -- {videoId}` flow.
-
-## Unit U7: Tests, Sample Data, Placeholder Assets, and Documentation
-
-### Purpose
-
-Make the MVP verifiable and usable by the creator before real assets are added.
-
-### Responsibilities
-
-- Add sample script JSON.
-- Add development placeholder character, background, and visual assets.
-- Add unit tests for validation, subtitle splitting, frame conversion, timeline, cache hash, file checks, and character image selection.
-- Add lightweight integration tests for VOICEVOX connection behavior and timeline flow.
-- Document setup, commands, directory structure, and manual render verification.
-
-### Primary Outputs
-
-- Tests.
-- Placeholder assets.
-- Sample input.
-- README.
-
-## Construction Stage Application
-
-Functional Design, NFR Requirements, NFR Design, and Code Generation will be applied to the full unit set as one grouped MVP pass. This keeps approval overhead controlled while preserving traceability across all seven units.
+- `src/studio/renderer/` for React GUI components.
+- `src/studio/main/` for Electron main process and IPC.
+- `src/studio/shared/` for GUI state and event types.
+- Existing `src/core/`, `src/schemas/`, and `src/types/` remain shared generation logic.
+- Existing `scripts/` remain CLI entry points.
 

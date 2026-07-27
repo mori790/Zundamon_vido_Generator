@@ -1,112 +1,99 @@
-# Application Design Plan
+# U10 Application Design計画
 
-## Context
+## 実行チェックリスト
 
-This plan defines the high-level application design for Zundamon Video Generator. It focuses on component boundaries, interfaces, service orchestration, and dependencies. Detailed algorithms and business rules will be designed later in Functional Design.
+- [x] U10要件、ストーリー、実行計画、既存architectureを確認する。
+- [x] 追加・変更するcomponent責務の候補を整理する。
+- [x] 設計判断の確認質問を作成する。
+- [x] すべての回答を収集する。
+- [x] 回答の曖昧さ・矛盾・不足を分析する。
+- [x] `components.md`をU10向けに更新する。
+- [x] `component-methods.md`をU10向けに更新する。
+- [x] `services.md`をU10向けに更新する。
+- [x] `component-dependency.md`をU10向けに更新する。
+- [x] `application-design.md`へ統合する。
+- [x] 設計の完全性と整合性を検証する。
 
-## Planning Checklist
+## 最小設計方針
 
-- [x] Load approved requirements.
-- [x] Load approved user stories and persona.
-- [x] Load approved workflow execution plan.
-- [x] Identify key functional areas and component candidates.
-- [x] Collect user answers for application design choices.
-- [x] Analyze answers for ambiguity.
-- [x] Obtain explicit approval of this application design plan.
+- 既存のElectron Main／Preload／Renderer境界を維持する。
+- Workspace、dependency diagnosis、release verificationはMainが所有する。
+- Rendererには目的別の狭いIPCだけを公開する。
+- Forge設定とrelease scriptはruntime serviceへ抽象化しない。
+- 詳細な状態遷移と検証規則はFunctional Designで定義する。
 
-## Design Generation Checklist
+## 確認質問
 
-- [x] Generate `aidlc-docs/inception/application-design/components.md` with component definitions and high-level responsibilities.
-- [x] Generate `aidlc-docs/inception/application-design/component-methods.md` with method signatures and high-level purposes.
-- [x] Generate `aidlc-docs/inception/application-design/services.md` with service definitions and orchestration patterns.
-- [x] Generate `aidlc-docs/inception/application-design/component-dependency.md` with dependency relationships and communication patterns.
-- [x] Generate `aidlc-docs/inception/application-design/application-design.md` as consolidated design documentation.
-- [x] Validate design completeness and consistency.
-- [x] Update this plan's checkboxes immediately after each completed generation step.
+すべての`[Answer]:`へ選択肢の文字を記入してください。
 
-## Candidate Components
+### 質問1: Workspace責務
 
-- Script Loader and Validator
-- Asset Checker and Path Resolver
-- VOICEVOX Client
-- Voice Generation and Cache Manager
-- Audio Duration Reader
-- Timeline Generator
-- Render Data Builder
-- Remotion Composition and Scene Components
-- CLI Orchestrator
-- Logger and Error Formatter
-- Test Utilities
+Workspace選択、検証、保存済み参照の復元をどこへ配置しますか？
 
-## Questions
+A) Electron Mainの1つのWorkspace serviceへ集約する（推奨）
 
-## Question 1
-How should the application code be organized?
+B) 選択はMain、検証と状態管理はRendererへ分ける
 
-A) Use the specification's structure with `scripts/` for CLI entry points and `src/` for shared app code and Remotion components
+C) 既存local-file serviceへすべて追加する
 
-B) Put all TypeScript code under `src/`, including CLI entry points
+D) 新しい独立processへ分離する
 
-C) Split into package-style folders such as `packages/core`, `packages/remotion`, and `packages/cli`
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-X) Other (please describe after [Answer]: tag below)
+[Answer]:a
 
-[Answer]: a
+### 質問2: 外部依存診断
 
-## Question 2
-How should validation be implemented at the component boundary?
+Codex CLIとVOICEVOXの診断componentをどう構成しますか？
 
-A) Use Zod schemas as the runtime source of truth, and infer TypeScript types from them where practical
+A) Main内の1つのDependency Diagnosis serviceで種類別adapterを呼ぶ（推奨）
 
-B) Use TypeScript interfaces plus manual validation functions
+B) CodexとVOICEVOXを完全に別serviceとして実装する
 
-C) Use JSON Schema files plus a validator such as Ajv
+C) 既存Codex serviceとCommand Runnerへ個別に追加する
 
-X) Other (please describe after [Answer]: tag below)
+D) Rendererから直接診断する
 
-[Answer]: a
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Question 3
-How should CLI orchestration call Remotion rendering?
+[Answer]:a
 
-A) Use Remotion's Node APIs from TypeScript scripts for controlled render orchestration
+### 質問3: Release logicの境界
 
-B) Spawn Remotion CLI commands from scripts
+署名・公証、manifest、checksum、配布可否判定をどこへ置きますか？
 
-C) Only generate audio and timeline in custom scripts; let users run Remotion render manually
+A) Build scriptと純粋なrelease moduleへ限定し、通常のアプリruntimeへ含めない（推奨）
 
-X) Other (please describe after [Answer]: tag below)
+B) Electron MainのRelease serviceとしてruntimeへ含める
 
-[Answer]: a
+C) Forge configurationだけへ記述する
 
-## Question 4
-How should generated data be passed into the Remotion composition?
+D) 外部の手動shell手順だけで扱う
 
-A) Load script, manifest, and timeline JSON from files at render time using input props
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-B) Generate a single combined render-data JSON and pass that to Remotion
+[Answer]:a
 
-C) Import input JSON directly from Remotion components
+### 質問4: Rendererへの公開方法
 
-X) Other (please describe after [Answer]: tag below)
+Workspaceと依存診断の結果をRendererへどう公開しますか？
 
-[Answer]: a
+A) 既存preload patternに合わせた目的別typed APIを追加する（推奨）
 
-## Question 5
-How should component dependencies be managed?
+B) 1つの汎用invoke APIを追加する
 
-A) Keep dependency direction one-way: CLI orchestration depends on core modules, Remotion depends on render data/types, core does not depend on Remotion
+C) local-file APIを拡張して兼用する
 
-B) Allow shared utilities to import from Remotion components when convenient
+D) RendererへNode APIを公開する
 
-C) Keep Remotion and CLI completely isolated with duplicated types if needed
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-X) Other (please describe after [Answer]: tag below)
+[Answer]:a
 
-[Answer]: a
+## 必須成果物
 
-## Approval
-
-After answering all questions above, approve or request changes to this application design plan.
-
-[Answer]: approve
+- [x] Component名、目的、責務、interface
+- [x] Method signature、input／output、高水準の目的
+- [x] Service責務とorchestration
+- [x] Dependency matrix、communication、data flow
+- [x] Security、Resiliency、PBT設計制約との整合

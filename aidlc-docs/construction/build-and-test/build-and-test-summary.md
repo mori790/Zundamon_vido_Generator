@@ -2,65 +2,66 @@
 
 ## Build Status
 
-- **Build Tool**: npm, TypeScript
-- **Build Status**: Success for type checking
-- **Build Command**: `npx tsc --noEmit`
-- **Build Artifacts**: No compiled output; runtime uses `tsx` and Remotion
+- TypeScript: success
+- Studio production build: success
+- Electron Forge arm64 package／make: success
+- Artifacts: `.app`、261 MiB ZIP、CycloneDX SBOM、SHA-256、release manifest
+- Release state: `local-acceptance`
 
-## Test Execution Summary
+## Test Execution
 
-### Unit Tests
+### Unit／Property Tests
 
-- **Command**: `npm test`
-- **Total Test Files**: 7
-- **Total Tests**: 13
-- **Passed**: 13
-- **Failed**: 0
-- **Status**: Pass
+- 37 test files、135 tests passed、0 failed
+- Release PBT: 2 files、8 properties、各1,000 run passed
+- `PBT_SEED`によるseed replayを用意
+- Coverage percentage: 未計測
 
-### Integration Tests
+### Integration／E2E
 
-- **VOICEVOX Live Test Command**: `npm run test:integration`
-- **Status**: Not passed in current environment because VOICEVOX Engine was unavailable or blocked.
-- **Expected Behavior**: Fails when VOICEVOX Engine is unavailable, per approved NFR design.
+- Electron context-isolated E2E: passed
+- Packaged CLI: 742 framesのMP4 render passed
+- Workspace、dependency diagnosis、release policy integration: passed
+- VOICEVOX live integration: environment依存のため今回未実行
 
-### Validation Check
+### Performance
 
-- **Command**: `npm run validate -- sample-video`
-- **Status**: Pass
-- **Notes**: Warned that title and ending scenes do not include explanation visuals; generation can continue.
+- ZIP size gate: 261 MiB、warning、blockingなし
+- Codex 5秒／VOICEVOX 3秒timeout: test passed
+- cold start p95 5秒／Workspace復元p95 2秒: manual measurement未実行
+- multi-user load／stress: local single-user appのためN/A
 
-### Performance Tests
+### Security
 
-- **Status**: Instructions generated; not executed.
-- **Target**: 3-minute video renders under 10 minutes on a typical modern Mac.
+- Production dependency audit: 0 vulnerabilities
+- Artifact inclusion、SBOM、checksum、manifest: passed
+- 未署名public verification: codesignで拒否、fail closed
+- 実署名／公証／staple／Gatekeeper: Apple credential未提供のためdeferred
 
-### Additional Tests
+## Extension Compliance
 
-- **Render Verification**: Optional via `npm run test:render`; not executed.
-- **E2E Test**: Manual instructions generated; not executed.
-- **Contract Tests**: N/A, no microservice API contracts.
-- **Security Tests**: Dependency audit warning observed; no dedicated security extension was enabled.
+### Security Baseline
 
-## Generated Instruction Files
+- SECURITY-05、09、10、12、13、15: compliant
+- SECURITY-01〜04、06〜08、11、14: local desktop applicationで該当resource／authentication／network serviceがないためN/A
+- Blocking finding: なし
 
-- `build-instructions.md`
-- `unit-test-instructions.md`
-- `integration-test-instructions.md`
-- `performance-test-instructions.md`
-- `e2e-test-instructions.md`
-- `build-and-test-summary.md`
+### Resiliency Baseline
+
+- Atomic Workspace保存、failure containment、timeout、manual retry、rollback／recovery: compliant
+- Cloud HA、multi-region DR、central observability: local single-user applicationのためN/A
+- Blocking finding: なし
+
+### Property-Based Testing
+
+- PBT-08: shrinking、seed表示、`PBT_SEED` replay、release 1,000 runに対応しcompliant
+- PBT-01〜07、09、10: Code Generation成果物とfast-check suiteでcompliant
+- Blocking finding: なし
 
 ## Overall Status
 
-- **Type Check**: Pass
-- **Default Unit Tests**: Pass
-- **Sample Validation**: Pass
-- **Live VOICEVOX Integration**: Requires running VOICEVOX Engine
-- **Render Verification**: Requires generated audio and local Remotion render environment
-- **Ready for Operations**: Yes for AIDLC placeholder Operations; real deployment is out of scope.
-
-## Known Follow-Up
-
-`npm install` reported 5 audit vulnerabilities. Review `npm audit` output before applying fixes, especially before using `npm audit fix --force`.
-
+- Build: success
+- Automated tests: pass
+- Local acceptance: ready
+- Public distribution: not ready。Apple署名・公証証跡が揃うまでblocked
+- Operations placeholderへ進行可能

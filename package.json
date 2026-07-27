@@ -1,8 +1,13 @@
 {
   "name": "zundamon-video-generator",
+  "productName": "Zundamon Video Generator",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist-studio/main.cjs",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "remotion studio src/Root.tsx",
     "validate": "tsx scripts/validate-script.ts",
@@ -10,25 +15,51 @@
     "timeline": "tsx scripts/generate-timeline.ts",
     "preview": "tsx scripts/preview.ts",
     "render": "tsx scripts/generate-video.ts",
+    "studio:dev": "vite --config vite.studio.config.ts",
+    "studio:build": "vite build --config vite.studio.config.ts && esbuild src/studio/main/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-studio/main.cjs && esbuild src/studio/main/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-studio/preload.cjs && npm run cli:build && npm run remotion:bundle",
+    "cli:build": "esbuild scripts/validate-script.ts scripts/generate-voices.ts scripts/generate-timeline.ts scripts/preview.ts scripts/generate-video.ts --bundle --platform=node --format=cjs --external:@remotion/bundler --external:@remotion/renderer --outdir=dist-cli --out-extension:.js=.cjs",
+    "remotion:bundle": "remotion bundle src/Root.tsx --out-dir=dist-remotion",
+    "studio:start": "npm run studio:build && electron .",
+    "package": "npm run studio:build && electron-forge package --arch=arm64",
+    "make": "npm run studio:build && electron-forge make --arch=arm64",
+    "verify:package": "tsx scripts/release-artifacts.ts local",
+    "verify:release": "tsx scripts/release-artifacts.ts public",
+    "release:local": "npm run make && npm sbom --sbom-format cyclonedx > out/release-sbom.cdx.json && npm run verify:package",
+    "release:public": "RELEASE_PUBLIC=1 npm run make && npm sbom --sbom-format cyclonedx > out/release-sbom.cdx.json && npm run verify:release",
     "video": "tsx scripts/generate-video.ts",
     "test": "vitest run --exclude tests/voicevox.integration.test.ts",
+    "test:pbt": "vitest run tests/studio/*.property.test.ts",
+    "test:pbt:release": "PBT_RUNS=1000 vitest run tests/studio/*.property.test.ts",
+    "test:studio:e2e": "esbuild src/studio/main/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-studio/preload.cjs && esbuild tests/studio/asset-electron.e2e.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-studio/asset-electron.e2e.mjs && electron dist-studio/asset-electron.e2e.mjs",
     "test:integration": "vitest run tests/voicevox.integration.test.ts",
     "test:render": "tsx scripts/generate-video.ts sample-video --skip-voice"
   },
   "dependencies": {
-    "@remotion/bundler": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remotion": "^4.0.0",
-    "zod": "^3.23.8"
+    "remotion": "^4.0.0"
   },
   "devDependencies": {
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-zip": "7.11.2",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "4.0.499",
+    "@remotion/player": "4.0.499",
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^16.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "electron": "41.7.1",
+    "esbuild": "0.28.1",
+    "fast-check": "4.9.0",
+    "jsdom": "^24.1.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0"
+    "vite": "6.4.3",
+    "vitest": "4.1.10",
+    "zod": "4.4.3"
   }
 }

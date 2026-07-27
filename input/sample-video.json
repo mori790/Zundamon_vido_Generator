@@ -14,7 +14,8 @@
     "width": 1920,
     "height": 1080,
     "fps": 30,
-    "background": "/backgrounds/default.svg"
+    "background": "/backgrounds/default.svg",
+    "bgmVolume": 0.1
   },
   "subtitle": {
     "enabled": true,
@@ -22,15 +23,38 @@
     "maxLines": 2,
     "fontSize": 56,
     "bottom": 50,
-    "highlightKeywords": ["Pod", "Deployment"]
+    "highlightKeywords": [
+      "Pod",
+      "Deployment"
+    ]
   },
   "scenes": [
     {
       "id": "scene-001",
       "type": "title",
       "text": "Podを削除しても復活する理由",
+      "emotion": "happy",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.5,
+      "characterVisible": true
+    },
+    {
+      "id": "scene-007",
+      "type": "explanation",
+      "text": "新しいシーンなのだ。",
       "emotion": "normal",
-      "durationAfterSpeech": 0.5
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
+    },
+    {
+      "id": "scene-005",
+      "type": "explanation",
+      "text": "新しいシーンなのだ。",
+      "emotion": "normal",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
     },
     {
       "id": "scene-002",
@@ -40,9 +64,12 @@
       "visual": {
         "type": "image",
         "src": "/visuals/sample-video/pod-recovery.svg",
-        "position": "center"
+        "position": "center",
+        "fit": "contain"
       },
-      "durationAfterSpeech": 0.3
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
     },
     {
       "id": "scene-003",
@@ -52,17 +79,30 @@
       "visual": {
         "type": "code",
         "language": "yaml",
-        "fileName": "deployment.yaml",
-        "code": "spec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: demo"
+        "code": "spec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: demo",
+        "fileName": "deployment.yaml"
       },
-      "durationAfterSpeech": 0.5
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.5,
+      "characterVisible": true
     },
     {
       "id": "scene-004",
       "type": "ending",
       "text": "つまり、PodではなくDeploymentが状態を管理しているのだ。",
       "emotion": "happy",
-      "durationAfterSpeech": 1
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 1,
+      "characterVisible": true
+    },
+    {
+      "id": "scene-006",
+      "type": "explanation",
+      "text": "新しい",
+      "emotion": "normal",
+      "durationBeforeSpeech": 0.2,
+      "durationAfterSpeech": 0.3,
+      "characterVisible": true
     }
   ]
 }

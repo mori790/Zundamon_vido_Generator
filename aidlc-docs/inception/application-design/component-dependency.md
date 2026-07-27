@@ -1,57 +1,40 @@
-# Component Dependencies
-
-## Dependency Direction
-
-Dependencies must flow in one direction:
-
-1. CLI scripts call services and core modules.
-2. Core modules use domain types, schemas, utilities, and external APIs.
-3. Remotion components consume render data and shared types.
-4. Core modules do not import Remotion components.
-5. Remotion components do not perform network or file system mutation.
+# U10 Component依存関係
 
 ## Dependency Matrix
 
-| Component | Depends On | Must Not Depend On |
-|---|---|---|
-| CLI Orchestrator | Services, Logger | React component internals |
-| Validation Service | Script Loader, Asset Checker | VOICEVOX, Remotion render |
-| Voice Service | Script Loader, VOICEVOX Client, Manifest Store, Audio Analyzer | Remotion components |
-| Timeline Service | Script Loader, Manifest Store, Timeline Generator | VOICEVOX Client, Remotion components |
-| Render Service | Render Data Builder, Remotion Node APIs | VOICEVOX synthesis flow |
-| Script Loader | Zod schema, Path Resolver | VOICEVOX, Remotion |
-| Asset Checker | Path Resolver, File utilities | VOICEVOX |
-| VOICEVOX Client | Fetch/HTTP API | File layout decisions |
-| Manifest Store | File utilities, Types | Remotion components |
-| Timeline Generator | Types, Frame utilities | File system, VOICEVOX |
-| Render Data Builder | Script Loader, Manifest Store, Timeline Store | VOICEVOX synthesis |
-| Remotion Components | Render data, Types, UI utilities | File system mutation, VOICEVOX |
-
-## Communication Patterns
-
-- CLI to core: direct TypeScript function calls.
-- Core to VOICEVOX: HTTP requests through one client module.
-- Core to generated files: JSON and WAV file reads/writes through utility-backed stores.
-- Core to Remotion render: typed input props passed through Remotion Node APIs.
-- Remotion to media: public paths referenced through Remotion static asset mechanisms.
+| 呼出元 | 呼出先 | 通信 | 制約 |
+|---|---|---|---|
+| First-Run Renderer | Purpose-Specific Preload APIs | typed IPC | Node／任意invokeなし |
+| Preload APIs | Workspace Service | `ipcRenderer.invoke` | 固定channel |
+| Preload APIs | Dependency Diagnosis Service | `ipcRenderer.invoke` | 安定action code |
+| Local File／Command／Preview／Render | Workspace Service | Main内call | 有効root必須 |
+| Packaged Command Adapter | Resource Resolver | Main内call | allowlist resource |
+| Dependency Diagnosis Service | Codex／VOICEVOX adapter | argv／local HTTP | timeout、redaction |
+| Build Script | Package Build Configuration | npm／Forge | lockfile固定 |
+| Build Script | Release Module | Node API | runtimeから隔離 |
+| Release Module | codesign／notarytool／spctl | argv | shell連結なし |
 
 ## Data Flow
 
-| Step | Input | Output |
-|---|---|---|
-| Script Load | `input/{videoId}.json` | `VideoScript` |
-| Asset Check | `VideoScript` | `AssetCheckResult` |
-| Voice Generation | `VideoScript`, previous manifest | WAV files and `VoiceManifest` |
-| Audio Measurement | WAV files | duration seconds in manifest |
-| Timeline Generation | `VideoScript`, `VoiceManifest` | `Timeline` |
-| Render Data Build | `VideoScript`, `VoiceManifest`, `Timeline` | `ZundamonCompositionProps` |
-| Remotion Render | `ZundamonCompositionProps`, public assets | `output/{videoId}.mp4` |
+```mermaid
+flowchart LR
+    UI["First Run UI"] --> Preload["Typed Preload APIs"]
+    Preload --> Workspace["Workspace Service"]
+    Preload --> Diagnose["Dependency Diagnosis"]
+    Workspace --> Existing["Existing Main Services"]
+    Existing --> Resolver["Resource Resolver"]
+    Build["Build Script"] --> Forge["Forge Configuration"]
+    Build --> Release["Release Module"]
+    Release --> Evidence["Manifest and Verification Evidence"]
+```
 
-## Coupling Rules
+### テキスト代替
 
-- Shared domain types may be imported by both CLI/core and Remotion.
-- Zod parsing stays at input boundaries and should not be repeated inside React components.
-- Cache hashing must not depend on file system timestamps.
-- Timeline generation must not depend on Remotion frame hooks.
-- Rendering must not mutate script, manifest, or timeline files.
+First Run UIはtyped Preload APIだけを介してWorkspace ServiceとDependency Diagnosisへ接続する。Workspace Serviceは既存Main serviceへ検証済みrootを供給し、Resource Resolverはpackaged entryを供給する。Runtimeとは別に、Build ScriptがForgeとRelease Moduleを呼び、manifestと検証証跡を生成する。
 
+## Coupling方針
+
+- 既存Main serviceはWorkspace rootをdependencyとして受け取り、global cwdを参照しない。
+- Release Moduleの純粋判定関数だけをPBT対象として直接importできる。
+- RendererはOS path、credential、command argvを構築しない。
+- Forge固有設定をapplication domain interfaceで包まない。

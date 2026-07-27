@@ -1,188 +1,252 @@
-# Requirements
+# Requirements: GUI with Embedded Codex Panel
 
 ## Intent Analysis
 
-- **Project**: Zundamon Video Generator
-- **Request Type**: New Project
-- **Workspace Type**: Greenfield
-- **Scope Estimate**: System-wide MVP implementation
-- **Complexity Estimate**: Complex
-- **Target Implementation Scope**: Full MVP, including priority A, B, and C items from the supplied specification
-- **Target Platform**: macOS first, with future Linux portability in mind
+- **User Request**: Add a video production GUI to Zundamon Video Generator with an embedded Codex panel. The GUI should let the creator consult with Codex during planning, review AI-generated JSON, manage assets, preview, and render videos.
+- **Request Type**: New user-facing feature on an existing local CLI and Remotion application.
+- **Scope Estimate**: Multiple components. The feature affects project/session state, script editing, Codex App Server integration, asset handling, preview, command execution, and logs.
+- **Complexity Estimate**: Complex. It combines local file operations, long-running media generation, user approval gates, AI proposal review, and GUI interaction design.
+- **Chosen Product Direction**: A video production application is the primary experience. Codex is embedded as a consultation and automation panel, not the only interface.
 
-## User Goal
+## Current System Context
 
-The user wants a semi-automated video generation system for recurring Zundamon technical explanation videos. The system must read a user-authored script JSON, generate VOICEVOX narration, calculate scene timing from audio duration, render subtitles, character art, expressions, explanation assets, title and ending scenes, then output an MP4 video through Remotion.
+The existing MVP is a local TypeScript and Remotion CLI application. It already supports:
 
-## Confirmed Requirement Decisions
+- Loading `input/{videoId}.json`.
+- Validating script JSON and referenced assets.
+- Generating VOICEVOX audio.
+- Caching generated WAV files.
+- Generating timelines.
+- Rendering MP4 through Remotion.
+- Running preview and generation through npm scripts.
 
-- Security Baseline extension: Disabled by user selection.
-- Resiliency Baseline extension: Disabled by user selection.
-- Property-Based Testing extension: Disabled by user selection.
-- Initial implementation target: Full MVP from the supplied specification.
-- Missing visual assets: Provide development placeholder images so the project can be verified before real assets are added.
-- VOICEVOX fallback: No mock generation path. VOICEVOX Engine is required for voice generation and must fail clearly when unavailable.
-- Test strategy: Unit tests plus lightweight integration tests.
+The GUI should sit above this existing pipeline. It should reuse the current script JSON contract and generation services rather than replacing the CLI pipeline.
 
 ## Functional Requirements
 
-### Script Input
+### FR-1: Single Video Project Workspace
 
-- The system must read one JSON script file from `input/{videoId}.json`.
-- The script file name must match the requested video ID.
-- The script must support video-level metadata: `id`, `title`, `description`, `speaker`, `video`, `subtitle`, and `scenes`.
-- The script must support scene types: `title`, `explanation`, `code`, `summary`, and `ending`.
-- The script must support emotions: `normal`, `happy`, `surprised`, and `troubled`.
-- The script must support visual types: image, code, text, and none.
-- The system must support the sample script shape supplied in the specification.
+The MVP GUI shall focus on one video project at a time.
 
-### Validation
+- The project unit is a single video ID.
+- The workflow covers planning, JSON draft creation, review, validation, voice generation, preview, and MP4 output for that video.
+- Series-level management and shared templates are future work.
 
-- The system must validate required fields before generation.
-- The system must stop on invalid or unsafe input.
-- The system must detect duplicate scene IDs.
-- The system must reject empty scene text.
-- The system must reject unsupported emotions and visual types.
-- The system must reject invalid numeric values such as non-positive width, height, or fps.
-- The system must reject negative speech wait durations.
-- The system must verify referenced visual files are under `public`.
-- The system must prevent directory traversal in file references.
-- The system must verify required character images exist, or use included development placeholders when the placeholder setup is active.
-- The system must warn for long subtitles, missing optional visuals, missing description, missing BGM, missing title scene, and missing ending scene.
+### FR-2: Embedded Codex Panel
 
-### VOICEVOX Integration
+The GUI shall include a Codex panel as a persistent assistant area.
 
-- The system must connect to VOICEVOX Engine at `VOICEVOX_BASE_URL`, defaulting to `http://localhost:50021`.
-- The system must call `POST /audio_query` with `text` and `speaker`.
-- The system must call `POST /synthesis` with the generated audio query and selected speaker.
-- The system must override voice parameters from script configuration: speed, pitch, intonation, and volume.
-- The system must write WAV files to `public/audio/{videoId}/{sceneId}.wav`.
-- If VOICEVOX Engine is unavailable, the system must stop with the Japanese error message specified by the user.
-- No mock VOICEVOX generation path is required for MVP runtime.
+- The creator can discuss video ideas, target audience, story structure, tone, scene count, and explanations with Codex.
+- Codex can produce structure proposals, script drafts, and valid `VideoScript` JSON drafts.
+- Codex can revise the draft based on chat feedback.
+- The GUI remains the main production surface; Codex is an assistant inside it.
 
-### Voice Cache
+### FR-3: Chat-Driven Planning Flow
 
-- The system must reuse generated voice files when the text and voice settings are unchanged.
-- The cache key must be a SHA-256 hash of text, speaker ID, speed, pitch, intonation, and volume.
-- The system must persist cache metadata in `generated/manifests/{videoId}.manifest.json`.
-- The `--force` option must bypass the voice cache.
-- Successfully generated partial audio files must not be deleted after a later failure.
+The GUI shall support a planning flow where the creator and Codex iterate before JSON is applied.
 
-### Audio Duration
+Expected flow:
 
-- The system must measure WAV duration in seconds.
-- Audio duration must be used to calculate scene length, subtitle visibility, next scene start, and total video length.
-- Default wait durations must be `durationBeforeSpeech = 0.2` seconds and `durationAfterSpeech = 0.3` seconds.
+1. Creator describes the video idea.
+2. Codex asks clarifying questions or proposes a structure.
+3. Creator requests changes.
+4. Codex generates a JSON draft.
+5. GUI displays the draft for review.
+6. Creator approves, edits, asks Codex for revision, or discards the draft.
 
-### Timeline Generation
+### FR-4: JSON Draft Review
 
-- The system must generate a timeline file at `generated/timelines/{videoId}.timeline.json`.
-- The timeline must include video ID, fps, total frames, and per-scene frame data.
-- Frame values must be calculated as `seconds * fps` and rounded to the nearest integer.
-- Each scene must include start frame, audio start frame, scene frame duration, audio frame duration, and audio path.
+The GUI shall treat Codex-generated JSON as a draft until the creator explicitly applies it.
 
-### Remotion Rendering
+- Draft JSON must not immediately overwrite `input/{videoId}.json`.
+- Drafts should have an explicit status such as `draft`, `reviewing`, or `applied`.
+- The creator must have an `Apply` action before a draft becomes the active video script.
+- The active script remains compatible with the existing `input/{videoId}.json` format.
 
-- The system must render a Remotion composition to MP4.
-- Output must be written to `output/{videoId}.mp4`.
-- The initial render target must be 1920 by 1080 at 30fps.
-- Existing output files with the same name may be overwritten.
-- Rendering failures must produce a clear Japanese error message.
+### FR-5: Dual JSON Review Modes
 
-### Video Composition
+The GUI shall let the creator inspect generated JSON in two ways.
 
-- The system must render title scenes, explanation scenes, code scenes, summary scenes, and ending scenes.
-- The system must display subtitles synchronized to each scene's audio start and audio end.
-- The system must place subtitles at the bottom center with readable white bold text and black outline.
-- The system must split subtitles using Japanese punctuation, particles, approximate character length, then forced splitting as fallbacks.
-- If subtitles exceed configured limits, the system must shrink font size, allow up to 3 lines, then warn.
-- The system must display Zundamon character art in the lower-right by default.
-- The system must switch character expression based on scene emotion.
-- The system must implement simple lip sync by alternating open and closed mouth images during speech.
-- The system must move the character slightly while speaking.
-- The system must support background color or background image.
-- The system must display image visuals with contain or cover fit.
-- The system must display code visuals with file name, code body, line numbers, and syntax highlighting.
-- The system must display text visuals as simple explanation content.
-- The system must support optional BGM when configured.
+- Raw JSON editor view.
+- Structured scene review view showing scene ID, type, text, emotion, visual, and timing fields.
+- The user can switch between both views.
 
-### CLI
+### FR-6: Scene Editing
 
-- `npm run video -- {videoId}` must validate input, check assets, confirm VOICEVOX, generate voices, measure audio, generate timeline, render video, and verify output.
-- `npm run voice -- {videoId}` must generate voice files only.
-- `npm run timeline -- {videoId}` must generate the timeline from existing/generated audio.
-- `npm run validate -- {videoId}` must validate script and assets.
-- `npm run preview -- {videoId}` must open Remotion preview for the selected video.
-- `npm run video -- {videoId} --force` must force voice regeneration.
+The GUI MVP shall include direct editing for a single video's scenes.
 
-### Logging
+- Add, remove, reorder, and edit scenes.
+- Edit scene text, type, emotion, visual configuration, and character visibility.
+- Validate edited scene data before applying it.
+- Preserve compatibility with the current Zod schema.
 
-- Logs must support INFO, WARN, and ERROR.
-- Logs must identify video ID, scene ID, generated files, cache hits, warnings, and failure causes.
-- User-facing error messages must be clear enough to identify the missing input, asset, VOICEVOX connection, voice generation issue, or rendering failure.
+### FR-7: Asset Management
+
+The GUI shall support basic image asset management.
+
+- The creator can select image files from the local machine.
+- Selected visuals are copied or placed into `public/visuals/{videoId}/`.
+- The GUI can show whether referenced assets exist.
+- The GUI can associate an image asset with a scene.
+
+### FR-8: Codex Action Approval
+
+Codex may propose file changes and generation actions, but execution requires explicit creator approval.
+
+Allowed with approval:
+
+- Save JSON to `input/{videoId}.json`.
+- Run validation.
+- Generate voices.
+- Generate timeline.
+- Start preview.
+- Render MP4.
+
+Codex should not silently apply destructive or project-changing operations.
+
+### FR-9: Command Execution and Logs
+
+The GUI shall expose generation commands and their results.
+
+- Validate.
+- Voice generation.
+- Timeline generation.
+- Preview.
+- Render.
+
+The GUI shall display progress and logs for long-running operations, including VOICEVOX errors and Remotion render errors.
+
+### FR-10: Embedded Preview
+
+The GUI MVP should target an embedded Remotion preview experience.
+
+- The creator can preview the current video inside the GUI.
+- The preview should reflect the active script and generated timeline/audio state.
+- If embedded preview becomes a blocker, the fallback is to launch Remotion Studio from the GUI while keeping this requirement as the intended direction.
+
+### FR-11: ChatGPT Managed Authentication
+
+The preferred Codex integration shall use Codex App Server with ChatGPT managed authentication.
+
+- The design should prioritize using the creator's ChatGPT/Codex subscription context where supported by App Server.
+- API-key-based OpenAI integration is not an MVP priority.
+- Authentication details should be isolated behind a Codex integration boundary.
+
+### FR-12: Existing CLI Compatibility
+
+The GUI shall not remove or break the existing CLI workflow.
+
+- `npm run validate -- {videoId}` remains usable.
+- `npm run voice -- {videoId}` remains usable.
+- `npm run timeline -- {videoId}` remains usable.
+- `npm run preview -- {videoId}` remains usable.
+- `npm run video -- {videoId}` remains usable.
 
 ## Non-Functional Requirements
 
-### Maintainability
+### NFR-1: Local-First Operation
 
-- TypeScript types must define the input data model.
-- Runtime validation must be implemented for JSON input.
-- Voice generation, audio measurement, timeline generation, rendering orchestration, and Remotion drawing must be separated.
-- Scene rendering must be componentized into React components.
-- Character assets must be organized so future characters can be added without changing core scene logic.
+The GUI shall operate as a local creator tool on macOS.
 
-### Reusability
+- Project files remain local.
+- Generated assets remain under the existing workspace structure.
+- VOICEVOX continues to run locally.
 
-- Per-video customization must primarily live in JSON and assets.
-- Layout behavior must be shared across videos.
-- Voice settings must be configurable at the video level and should allow scene-level override if implementation cost remains reasonable.
+### NFR-2: Human Approval and Recoverability
 
-### Portability
+AI-generated work shall be reviewable before it changes the active video script.
 
-- The MVP must run on macOS with Node.js.
-- File and process handling should avoid macOS-only assumptions where practical so Linux support remains feasible.
+- Draft JSON must be recoverable or discardable.
+- Applying a draft should be explicit.
+- Validation errors must be visible before generation.
 
-### Performance
+### NFR-3: Responsiveness
 
-- Generated voice files must be cached.
-- Re-running the same script must avoid regenerating unchanged voice files.
-- The system must support approximately 10-minute videos without architectural changes.
-- Voice generation may run sequentially for MVP.
-- The design should allow future parallel voice generation.
+Long-running operations must not freeze the GUI.
 
-### Security
+- VOICEVOX generation and Remotion rendering run asynchronously.
+- Logs and progress update while commands run.
+- The user can see whether the app is idle, validating, generating, previewing, or rendering.
 
-- External input must not be directly interpolated into shell commands.
-- Script-controlled file paths must be normalized and constrained.
-- JSON-referenced files must be restricted to `public`.
-- API keys or secrets must not be hardcoded.
+### NFR-4: Maintainability
 
-### Testability
+The GUI should be layered above the existing pipeline.
 
-- Unit tests are required for JSON validation, subtitle line breaking, seconds-to-frame conversion, timeline calculation, cache hash generation, file existence checks, and character image selection.
-- Lightweight integration tests are required for VOICEVOX connection behavior and timeline generation flow.
-- Full MP4 E2E tests are not required as a blocking MVP test, but build-and-test documentation should describe how to run one manually.
+- Existing core services should be reused where practical.
+- Codex App Server integration should be isolated from rendering and validation logic.
+- GUI state should be separate from canonical script JSON.
+
+### NFR-5: Safety of File Operations
+
+The GUI must avoid accidental overwrites and path mistakes.
+
+- Generated drafts should not overwrite active scripts without approval.
+- Asset paths should remain constrained to `public/` where referenced by video JSON.
+- The GUI should present clear validation messages when files are missing.
+
+### NFR-6: Testability
+
+The MVP should keep tests focused on high-risk logic.
+
+- Script draft state transitions.
+- JSON draft validation and application.
+- Asset path handling.
+- Command orchestration behavior.
+- Codex action approval boundaries.
+
+Property-based testing is not required for MVP.
+
+## Extension Configuration
+
+Based on user answers:
+
+- **Security Baseline**: Disabled. This is treated as a local personal-tool MVP rather than production-grade software.
+- **Resiliency Baseline**: Disabled. Rapid local iteration is prioritized.
+- **Property-Based Testing**: Disabled. Standard unit and integration tests are preferred for MVP.
+
+## MVP Scope
+
+The GUI MVP should include:
+
+- Single-video workspace.
+- Codex panel for planning, drafting, and revisions.
+- Draft JSON review before application.
+- Raw JSON and structured scene views.
+- Scene editing for the active video.
+- Basic image asset selection and placement.
+- User-approved Codex actions.
+- Validation, voice generation, timeline generation, preview, render controls.
+- Log display.
+- Embedded Remotion preview target, with Remotion Studio launch as fallback if embedding blocks progress.
+
+## Out of Scope for MVP
+
+- Multi-video series management.
+- Template library.
+- YouTube upload.
+- Automatic thumbnail generation.
+- API-key-based alternative AI provider setup.
+- Fully autonomous Codex execution without approvals.
+- Cloud collaboration or shared accounts.
+
+## Key Risks and Open Design Points
+
+- **Embedded Remotion Preview**: Desired for MVP, but may require architectural validation. A fallback preview launch path should be kept.
+- **Codex App Server Integration**: Needs proof-of-concept around authentication, message streaming, approvals, and action execution.
+- **Draft State Model**: The app needs a clear distinction between Codex proposals, draft JSON, and active saved script.
+- **Long-Running Process Control**: Rendering, preview, and voice generation need progress and error propagation in the GUI.
 
 ## Acceptance Criteria
 
-1. A JSON script with at least four scenes can be created and validated.
-2. One command can generate narration WAV files for all scenes.
-3. Scene duration is calculated from measured audio length.
-4. Subtitles appear in sync with narration.
-5. Character expression changes per scene.
-6. Scene visuals can be displayed.
-7. A 1920 by 1080, 30fps MP4 can be produced.
-8. Unchanged narration is reused on repeated execution.
-9. Invalid inputs and missing assets produce understandable errors.
-10. A roughly three-minute video can be generated from start to finish.
-
-## User Story Assessment
-
-User Stories should execute. This is a new user-facing application with multiple workflows: first-time setup, script validation, voice generation, preview, rendering, cache behavior, and error recovery. User stories will clarify acceptance criteria for the creator persona and support the larger MVP scope.
-
-## Extension Compliance Summary
-
-- Security Baseline: N/A. User selected disabled, so full rules were not loaded or enforced.
-- Resiliency Baseline: N/A. User selected disabled, so full rules were not loaded or enforced.
-- Property-Based Testing: N/A. User selected disabled, so full rules were not loaded or enforced.
+1. The creator can open a GUI for a single video project.
+2. The creator can chat with Codex about video planning inside the GUI.
+3. Codex can generate a `VideoScript` JSON draft.
+4. The creator can review the generated JSON in raw and structured views.
+5. The generated JSON is not applied until the creator approves it.
+6. The creator can edit scenes in the GUI.
+7. The creator can select image assets and attach them to scenes.
+8. The creator can validate the active script from the GUI.
+9. The creator can trigger voice generation, timeline generation, preview, and render from the GUI.
+10. Logs and errors are visible in the GUI.
+11. The existing CLI commands continue to work.
 

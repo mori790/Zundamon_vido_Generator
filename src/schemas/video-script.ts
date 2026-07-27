@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {env} from '../core/config';
+import {env} from '../core/env';
 
 const emotionSchema = z.enum(['normal', 'happy', 'surprised', 'troubled']);
 

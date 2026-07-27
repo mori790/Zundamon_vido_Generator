@@ -1,120 +1,124 @@
-# Story Generation Plan
+# U10 ユーザーストーリー生成計画
 
-## Context
+## 実行チェックリスト
 
-This plan converts the approved requirements for Zundamon Video Generator into personas and user stories. The recommended approach is a hybrid of user journey-based and feature-based breakdown: organize stories around the creator's workflow, then group implementation-facing capabilities under each workflow step.
+- [x] U10要件と最新のリバースエンジニアリング成果物を確認する。
+- [x] ユーザーストーリーの実施価値を判定する。
+- [x] ストーリー生成方針と確認質問を作成する。
+- [x] すべての回答を収集する。
+- [x] 回答の曖昧さ・矛盾・不足を分析する。
+- [x] ストーリー生成計画の明示承認を得る。
+- [x] `aidlc-docs/inception/user-stories/personas.md`をU10向けに更新する。
+- [x] `aidlc-docs/inception/user-stories/stories.md`をU10向けに更新する。
+- [x] 各ストーリーがINVEST基準を実用上満たすことを確認する。
+- [x] 各ストーリーへ受入条件を付ける。
+- [x] ペルソナとストーリーの対応を確認する。
 
-## Planning Checklist
+## 推奨する構成
 
-- [x] Review approved requirements.
-- [x] Assess whether user stories are needed.
-- [x] Select a story breakdown approach.
-- [x] Collect user answers for story-generation preferences.
-- [x] Analyze answers for ambiguity.
-- [x] Obtain explicit approval of this story generation plan.
+利用者ジャーニーを主軸にし、リリース担当者の作業を別の流れとして分ける。
 
-## Generation Checklist
+- **動画制作者**: インストール、初回起動、Workspace選択、依存診断、制作、更新、復旧
+- **リリース担当者**: ローカル検証用パッケージ、署名・公証、配布可否判定、整合性情報生成
 
-- [x] Generate `aidlc-docs/inception/user-stories/personas.md`.
-- [x] Generate `aidlc-docs/inception/user-stories/stories.md`.
-- [x] Ensure stories follow INVEST criteria.
-- [x] Include acceptance criteria for each story.
-- [x] Map personas to relevant stories.
-- [x] Mark this plan's generation checklist complete.
+機能単位だけで分けるより、一般配布できない成果物を誤って扱う危険と、初回利用時のつまずきを受入条件へ反映しやすい。
 
-## Story Breakdown Options
+## 検討した分割方法
 
-### Option 1: User Journey-Based
+- **利用者ジャーニー別**: 操作の順序と復旧を表現しやすい。推奨する主方式。
+- **機能別**: Forge、Workspace、依存診断など実装境界に対応しやすい。要件対応表で補助的に使う。
+- **ペルソナ別**: 動画制作者とリリース担当者の責務を分離しやすい。章の区分に使う。
+- **ドメイン別**: 配布、制作、復旧を整理できるが、操作順が見えにくい。
+- **エピック別**: 大規模計画には向くが、U10だけでは階層を増やしすぎるため採用しない。
 
-Stories follow the creator workflow from first setup to completed video output. This is useful for validating that the system works as an end-to-end tool.
+## 確認質問
 
-### Option 2: Feature-Based
+すべての`[Answer]:`へ選択肢の文字を記入してください。
 
-Stories are grouped by capability, such as validation, VOICEVOX, timeline, rendering, and logging. This is useful for implementation planning.
+### 質問1: ストーリーの主な整理方法
 
-### Option 3: Persona-Based
+U10のストーリーをどの方法で整理しますか？
 
-Stories are grouped by user type, such as creator and maintainer. This is useful when multiple user groups have distinct goals.
+A) 利用者ジャーニーを主軸にし、動画制作者とリリース担当者を分ける（推奨）
 
-### Option 4: Domain-Based
+B) Electron Forge、Workspace、依存診断などの機能別に整理する
 
-Stories are grouped by domain concepts, such as script, audio, timeline, scene composition, and rendering. This is useful for architecture alignment.
+C) 動画制作者とリリース担当者のペルソナ別に整理する
 
-### Recommended Approach
+D) 配布、制作、復旧などのドメイン別に整理する
 
-Use a hybrid journey-based plus feature-based approach. The primary story flow should follow the creator journey, while acceptance criteria should reference the feature capabilities needed to make each journey step work.
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Questions
+[Answer]:a
 
-## Question 1
-Which story breakdown approach should be used?
+### 質問2: ストーリーの粒度
 
-A) Use the recommended hybrid journey-based plus feature-based approach
+どの粒度で作成しますか？
 
-B) Use purely user journey-based stories
+A) 1つの受入確認で完結する実装可能な粒度（推奨）
 
-C) Use purely feature-based stories
+B) 初回利用やリリース作業をまとめた大きな粒度
 
-D) Use domain-based stories
+C) 要件項目ごとに1件ずつ作成する粒度
 
-X) Other (please describe after [Answer]: tag below)
+D) 主要フローだけを作成する最小粒度
 
-[Answer]: a
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Question 2
-Which personas should be included?
+[Answer]:a
 
-A) Primary creator only
+### 質問3: 受入条件の形式
 
-B) Primary creator plus maintainer/developer
+受入条件をどの形式で記載しますか？
 
-C) Primary creator, maintainer/developer, and future GUI user
+A) Given／When／Then形式（推奨）
 
-X) Other (please describe after [Answer]: tag below)
+B) 確認項目の箇条書き
 
-[Answer]: a
+C) 正常系は箇条書き、失敗系はGiven／When／Then形式
 
-## Question 3
-How detailed should acceptance criteria be?
+D) 新規macOS利用者プロファイル用チェックリストだけに集約する
 
-A) Standard - concise Given/When/Then criteria for each story
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-B) Detailed - include edge cases, failure behavior, and observable outputs for each story
+[Answer]:a
 
-C) Minimal - short bullet acceptance checks only
+### 質問4: 優先度
 
-X) Other (please describe after [Answer]: tag below)
+ストーリーの優先度をどのように示しますか？
 
-[Answer]: a
+A) Must／Should／Couldで示す（推奨）
 
-## Question 4
-Should future extensions such as AI台本生成, GUI, thumbnail generation, and YouTube posting be included in stories now?
+B) 一般配布前／認証情報入手後で示す
 
-A) No - MVP stories only, with future extensions listed as out of scope
+C) 動画制作者向け／リリース担当者向けだけを区別し、優先度は付けない
 
-B) Yes - include separate future-state epics without MVP acceptance criteria
+D) すべて同じ優先度として扱う
 
-C) Yes - include MVP and future extensions with full acceptance criteria
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-X) Other (please describe after [Answer]: tag below)
+[Answer]:a
 
-[Answer]: a
+### 質問5: 認証情報がない状態の扱い
 
-## Question 5
-How should story priority be represented?
+署名・公証用認証情報がない現状をストーリーへどう反映しますか？
 
-A) Use MVP priorities A, B, and C from the specification
+A) ローカル検証用成果物の完成と、一般配布禁止ゲートを別ストーリーにする（推奨）
 
-B) Use MoSCoW labels: Must, Should, Could, Won't
+B) 認証情報入手後の署名・公証だけをストーリー化する
 
-C) Do not assign priority labels
+C) 署名・公証は受入条件から除外し、手順書だけに記載する
 
-X) Other (please describe after [Answer]: tag below)
+D) U10ではローカル検証用成果物だけを扱う
 
-[Answer]: a
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Approval
+[Answer]:a
 
-After answering all questions above, approve or request changes to this story generation plan.
+## 生成する必須成果物
 
-[Answer]: approve
+- [x] `personas.md`: 動画制作者とリリース担当者の目的、制約、成功条件
+- [x] `stories.md`: INVESTを意識したストーリーと受入条件
+- [x] 要件IDとストーリーの対応
+- [x] ペルソナとストーリーの対応
+- [x] 正常系、依存不足、権限不足、署名・公証失敗、更新・復旧の扱い

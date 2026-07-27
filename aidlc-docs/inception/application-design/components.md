@@ -1,83 +1,49 @@
-# Components
+# U10 Component設計
 
-## Design Decisions
+## C1: Package Build Configuration
 
-- Use the specification's structure: `scripts/` for CLI entry points and `src/` for shared application code and Remotion components.
-- Use Zod schemas as the runtime validation boundary and infer TypeScript types where practical.
-- Use Remotion Node APIs from TypeScript scripts for controlled render orchestration.
-- Pass script, manifest, and timeline JSON to Remotion using input props.
-- Keep dependencies one-way: CLI orchestration depends on core modules; Remotion depends on render data and shared types; core modules do not depend on Remotion.
+- **目的**: Main、Preload、Rendererをproduction JavaScriptへbuildし、arm64アプリとZIPを生成する。
+- **責務**: package identity、entry、resource inclusion、icon、Forge maker、署名・公証hook。
+- **境界**: Build時だけ使用し、通常runtimeへrelease credentialやbuild logicを持ち込まない。
 
-## Component List
+## C2: Workspace Service
 
-| Component | Location | Purpose |
-|---|---|---|
-| Script Schema | `src/schemas/video-script.ts` | Define and validate script JSON shape with Zod. |
-| Domain Types | `src/types/video.ts` | Export domain and render data types used by scripts and Remotion. |
-| Script Loader | `src/core/script-loader.ts` | Read `input/{videoId}.json`, parse JSON, and return validated script data. |
-| Asset Checker | `src/core/asset-checker.ts` | Validate referenced public assets and required character placeholders or real assets. |
-| Path Resolver | `src/core/path-resolver.ts` | Normalize paths, constrain public references, and derive project file paths. |
-| VOICEVOX Client | `src/core/voicevox-client.ts` | Wrap VOICEVOX Engine HTTP calls and connection checks. |
-| Voice Generator | `src/core/voice-generator.ts` | Generate WAV files scene by scene using VOICEVOX Client and cache state. |
-| Manifest Store | `src/core/manifest-store.ts` | Read and write generated voice cache metadata. |
-| Audio Analyzer | `src/core/audio-analyzer.ts` | Measure WAV duration in seconds. |
-| Timeline Generator | `src/core/timeline-generator.ts` | Convert scene durations into frame-based timeline data. |
-| Render Data Builder | `src/core/render-data-builder.ts` | Combine script, manifest, and timeline into Remotion input props. |
-| Logger | `src/core/logger.ts` | Emit INFO, WARN, and ERROR messages with consistent formatting. |
-| CLI Orchestrator | `scripts/*.ts` | Implement user commands for validate, voice, timeline, preview, render, and video. |
-| Remotion Root | `src/Root.tsx` | Register the video composition and default props. |
-| Zundamon Composition | `src/compositions/ZundamonVideo.tsx` | Render all scenes using timeline data. |
-| Scene Components | `src/components/*.tsx` | Render scene layout, character, subtitles, visuals, title, and ending. |
-| Utilities | `src/utils/*.ts` | Provide frame, file, text, and subtitle helper functions. |
+- **目的**: 利用者が選択したWorkspaceをMain processで安全に管理する。
+- **責務**: native folder dialog、canonical path検証、構造確認、参照のatomic保存、起動時再検証。
+- **境界**: Workspace内容は既存local-file serviceへ渡し、Rendererにはraw filesystem accessを公開しない。
 
-## Responsibilities
+## C3: Packaged Resource Resolver
 
-### Script Schema
+- **目的**: 開発時とpackaged時の実行resourceを一箇所で解決する。
+- **責務**: `app.isPackaged`に応じた読み取り専用resource root、CLI runtime、Remotion entry、public assetの解決。
+- **境界**: 利用者Workspaceとapplication resourceを混在させない。
 
-- Define allowed scene types, emotions, speaker settings, video settings, subtitle settings, and visual variants.
-- Apply defaults for optional settings where appropriate.
-- Produce typed data for downstream components.
+## C4: Dependency Diagnosis Service
 
-### Script Loader
+- **目的**: Codex CLIとVOICEVOXの利用可能性を共通形式で返す。
+- **責務**: 種類別adapterの呼出し、未導入／未起動／version不足／未loginの分類、復旧codeの返却。
+- **境界**: token、login情報、不要な内部pathを返さない。
 
-- Resolve the input script path from a video ID.
-- Read and parse JSON.
-- Validate the script through Script Schema.
-- Ensure script `id` matches the requested video ID.
+## C5: Packaged Command Adapter
 
-### Asset Checker and Path Resolver
+- **目的**: 既存`CommandRunner`を選択済みWorkspaceとpackaged resourceへ接続する。
+- **責務**: 固定command、検証済み引数、cwd、resource entryの提供。
+- **境界**: shell文字列連結を行わず、既存CLIのrepository cwd動作を変えない。
 
-- Keep JSON-controlled file references inside `public`.
-- Verify visuals, backgrounds, BGM, and character assets.
-- Allow development placeholder assets for character art.
-- Return blocking validation errors and non-blocking warnings.
+## C6: Release Module
 
-### Voice Generation
+- **目的**: 成果物metadataと配布可否を決定的に検証する。
+- **責務**: manifest、SHA-256、SBOM、inclusion policy、release state、codesign／Gatekeeper／ticket検証。
+- **境界**: Build scriptからだけ利用し、通常アプリruntimeやRendererへ公開しない。
 
-- Check VOICEVOX connectivity.
-- Generate audio query and synthesis requests per scene.
-- Persist WAV files under `public/audio/{videoId}`.
-- Reuse generated audio when the cache hash matches.
-- Update manifest duration and hash metadata.
+## C7: Purpose-Specific Preload APIs
 
-### Timeline Generation
+- **目的**: Workspaceと依存診断の最小機能だけをRendererへ公開する。
+- **責務**: typed request／response、IPC channel固定、Main handlerへの転送。
+- **境界**: 汎用invoke、Node API、任意path APIを公開しない。
 
-- Read measured audio durations.
-- Apply scene wait durations.
-- Convert seconds to rounded frames.
-- Write timeline JSON under `generated/timelines`.
+## C8: First-Run Renderer
 
-### Rendering
-
-- Build Remotion input props from script, manifest, and timeline data.
-- Use Remotion Node APIs for render orchestration.
-- Render title, explanation, code, summary, and ending scenes.
-- Render subtitles, character art, visuals, BGM, and audio.
-
-## Non-Responsibilities
-
-- Core modules must not import Remotion components.
-- Remotion components must not call VOICEVOX or mutate generated files.
-- CLI scripts must orchestrate modules but avoid embedding business logic.
-- MVP does not include GUI, YouTube upload, AI script generation, or web image search.
-
+- **目的**: 初回Workspace選択と依存診断結果を日本語で案内する。
+- **責務**: 選択要求、状態表示、再選択、復旧手順への導線。
+- **境界**: path検証やprocess実行を行わない。

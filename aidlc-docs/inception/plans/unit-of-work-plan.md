@@ -1,110 +1,130 @@
-# Unit of Work Plan
+# Unit of Work Plan: GUI with Embedded Codex Panel
 
-## Context
+## Plan Checklist
 
-This plan decomposes the Zundamon Video Generator MVP into logical development units. The project is a greenfield local CLI and Remotion application, not a multi-service deployment. Units are therefore modules of work inside one application.
-
-## Planning Checklist
-
-- [x] Load approved requirements.
-- [x] Load approved user stories.
-- [x] Load approved application design.
-- [x] Identify candidate unit boundaries from components and service flows.
-- [x] Collect user answers for unit decomposition choices.
-- [x] Analyze answers for ambiguity.
-- [x] Obtain explicit approval of this unit of work plan.
-
-## Generation Checklist
-
-- [x] Generate `aidlc-docs/inception/application-design/unit-of-work.md` with unit definitions and responsibilities.
-- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-dependency.md` with dependency matrix.
-- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-story-map.md` mapping stories to units.
-- [x] Document greenfield code organization strategy in `unit-of-work.md`.
+- [x] Load requirements, user stories, application design, and execution plan.
+- [x] Identify decomposition decision points.
+- [x] Collect user answers for unit decomposition.
+- [x] Analyze answers for ambiguity or contradictions.
+- [x] Generate `unit-of-work.md` with unit definitions and responsibilities.
+- [x] Generate `unit-of-work-dependency.md` with dependency matrix.
+- [x] Generate `unit-of-work-story-map.md` mapping stories to units.
 - [x] Validate unit boundaries and dependencies.
 - [x] Ensure all stories are assigned to units.
-- [x] Update this plan's checkboxes immediately after each completed generation step.
 
-## Recommended Decomposition
+## Mandatory Artifacts
 
-Use seven logical units:
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work.md`.
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-dependency.md`.
+- [x] Generate `aidlc-docs/inception/application-design/unit-of-work-story-map.md`.
+- [x] Validate unit boundaries and dependencies.
+- [x] Ensure all stories are assigned to units.
 
-1. Project Foundation and Shared Types
-2. Script Validation, Assets, and Path Safety
-3. VOICEVOX Audio Generation and Cache
-4. Audio Measurement and Timeline Generation
-5. Remotion Composition and Scene Rendering
-6. CLI Orchestration and Render Integration
-7. Tests, Sample Data, Placeholder Assets, and Documentation
+## Initial Decomposition Direction
+
+The application is a single local desktop app, not multiple deployable services. Therefore, units of work should be logical implementation modules inside one app.
+
+Likely units:
+
+- Electron App Shell and Workspace.
+- Script Draft and Review.
+- Codex Panel and Approval.
+- Scene and Asset Editing.
+- Command Runner and Logs.
+- Preview and Render Integration.
+- Compatibility and Verification.
 
 ## Questions
 
+Please answer every `[Answer]:` tag below before unit artifacts are generated.
+
 ## Question 1
-How should the MVP work be decomposed?
+ユニット分解の粒度はどれがよいですか？
 
-A) Use the recommended seven logical units
+A) 実装しやすい細かめのユニットに分ける
 
-B) Use fewer coarse units: core generation, rendering, tests/docs
+B) 大きめの機能単位にまとめる
 
-C) Use more granular units matching each component
+C) 最初は大きめに分け、Codex/Preview/Command Runnerだけ独立ユニットにする
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 2
-How should implementation order be handled?
+Codex App Server連携は独立ユニットにしますか？
 
-A) Sequential dependency order from shared types through tests/docs
+A) 独立ユニットにする
 
-B) Build a minimal vertical slice first, then fill in remaining features
+B) GUI全体の一部としてまとめる
 
-C) Prioritize MVP A stories first, then B, then C
+C) Codex接続と承認フローを同じ独立ユニットにする
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 3
-How should stories be assigned to units?
+Remotionプレビューは独立ユニットにしますか？
 
-A) Assign each story to its primary owning unit, with secondary dependencies listed separately
+A) 独立ユニットにする
 
-B) Duplicate stories across every unit they touch
+B) レンダー/コマンド実行と同じユニットにする
 
-C) Assign stories only to user-visible units and omit foundation/test units from story mapping
+C) MVPではプレビューをShould扱いにし、独立ユニットだが後回し可能にする
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 4
-Should all units be implemented inside one application package?
+npmコマンド実行とログ表示はどう分けますか？
 
-A) Yes - one package with `scripts/`, `src/`, `input/`, `public/`, `generated/`, and `output/`
+A) Command RunnerとLog Panelを同じユニットにする
 
-B) No - split into multiple packages now
+B) Command RunnerとLog Panelを別ユニットにする
 
-C) Keep one package but isolate modules as if they may become packages later
+C) Command Runnerを先に作り、Log Panelは最低限から始める
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
 ## Question 5
-How should construction design stages apply to units?
+JSON下書きレビューとシーン編集はどう分けますか？
 
-A) Apply Functional Design, NFR Requirements, NFR Design, and Code Generation to the full unit set as one grouped MVP pass
+A) 同じユニットにする
 
-B) Execute all construction design stages separately for each of the seven units
+B) JSON下書きレビューとシーン編集を別ユニットにする
 
-C) Apply detailed construction design only to algorithmic units, then code-generate the rest
+C) 下書き状態管理を土台ユニットにし、JSONレビューとシーン編集をその上に分ける
 
 X) Other (please describe after [Answer]: tag below)
 
 [Answer]: a
 
-## Approval
+## Question 6
+後で実装に進む場合、最初に完成させたい縦断フローはどれですか？
 
-After answering all questions above, approve or request changes to this unit of work plan.
+A) 動画IDを開く、Codexで企画相談、JSON下書き表示まで
 
-[Answer]: approve
+B) 動画IDを開く、JSON編集、保存、validate実行まで
+
+C) 動画IDを開く、JSON適用、validate、voice、timeline、renderまで
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: a
+
+## Question 7
+ユニット成果物には実装順を含めますか？
+
+A) 必ず含める
+
+B) 依存関係だけ示し、実装順は後で決める
+
+C) Must/Should優先度つきで推奨順を含める
+
+X) Other (please describe after [Answer]: tag below)
+
+[Answer]: a

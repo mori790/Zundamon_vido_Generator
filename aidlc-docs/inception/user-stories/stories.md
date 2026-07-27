@@ -1,267 +1,203 @@
-# User Stories
+# U10 ユーザーストーリー
 
-## Story Approach
+## 記載方針
 
-- **Breakdown**: Hybrid journey-based plus feature-based.
-- **Persona Scope**: Primary creator only.
-- **Acceptance Criteria Style**: Standard Given/When/Then.
-- **Priority Labels**: MVP priorities A, B, and C from the specification.
-- **Future Extensions**: Out of scope for MVP.
+- **整理方法**: 利用者ジャーニー別
+- **粒度**: 1つの受入確認で完結する実装可能な単位
+- **受入条件**: Given／When／Then形式
+- **優先度**: Must／Should／Could
+- **要件対応**: U10要件IDを各ストーリーへ記載
 
-## Story Index
+## 動画制作者のジャーニー
 
-| ID | Priority | Story |
-|---|---:|---|
-| US-001 | A | Validate a script before generation |
-| US-002 | A | Generate VOICEVOX narration for each scene |
-| US-003 | A | Reuse cached narration |
-| US-004 | A | Measure audio and generate scene timeline |
-| US-005 | A | Render synchronized subtitles |
-| US-006 | A | Render fixed character art |
-| US-007 | A | Render MP4 from one command |
-| US-008 | B | Switch character expressions by scene |
-| US-009 | B | Display explanation images |
-| US-010 | B | Show title and ending scenes |
-| US-011 | B | Report actionable errors and logs |
-| US-012 | C | Animate simple lip sync |
-| US-013 | C | Display code scenes |
-| US-014 | C | Play optional BGM |
-| US-015 | C | Highlight subtitle keywords |
+### US-1: 配布ZIPから安全に導入する
 
-## US-001: Validate a Script Before Generation
+**優先度**: Must
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** the system to validate my JSON script before generation, **so that** I can fix input problems before voice generation or rendering starts.
+動画制作者として、検証済みZIPからアプリを導入したい。そうすることで、不明な回避操作をせず安全に利用を始められる。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given 署名・公証済みarm64 ZIPがある、When 展開してアプリを初回起動する、Then Gatekeeperによる通常の確認後にアプリが起動する。
+- Given 利用者文書を開く、When 導入手順を確認する、Then Gatekeeperを無効化する案内はなく、対応macOSと外部依存が日本語で示される。
 
-- Given `input/{videoId}.json` is missing, when I run validation, then the system stops and reports the missing script path.
-- Given required fields are missing or invalid, when I run validation, then the system lists the invalid fields clearly.
-- Given scene IDs are duplicated, when I run validation, then the system stops and identifies the duplicate IDs.
-- Given a referenced visual path escapes `public`, when I run validation, then the system rejects the script.
+**要件対応**: U10-FR-1、U10-FR-8、U10-FR-12、U10-FR-13、U10-NFR-5
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+### US-2: 初回起動時にWorkspaceを選択する
 
-## US-002: Generate VOICEVOX Narration for Each Scene
+**優先度**: Must
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** narration WAV files generated from every scene's text, **so that** I do not need to manually synthesize each line.
+動画制作者として、制作データを置くfolderを自分で選びたい。そうすることで、アプリ本体とWorkspaceを分離して管理できる。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given 保存済みWorkspaceがない、When アプリを起動する、Then folder選択が表示され、選択完了まで制作操作は開始されない。
+- Given folderを選択した、When 構造と書込権限が有効である、Then 参照だけが`userData`へ保存されWorkspaceが開く。
+- Given 許可外pathまたは利用不能folderを選択した、When 検証する、Then 書込みを行わず日本語で再選択を案内する。
 
-- Given VOICEVOX Engine is running, when I run `npm run voice -- {videoId}`, then a WAV file is created for each scene under `public/audio/{videoId}/`.
-- Given speaker settings are present, when narration is generated, then speed, pitch, intonation, and volume settings are applied.
-- Given VOICEVOX Engine is unavailable, when I run voice generation, then the system stops with the specified Japanese connection error.
+**要件対応**: U10-FR-2、U10-FR-3、U10-NFR-1、U10-NFR-5
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+### US-3: Workspaceを安全に復元する
 
-## US-003: Reuse Cached Narration
+**優先度**: Must
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** unchanged narration to be reused, **so that** repeated generation is faster.
+動画制作者として、再起動後に前回のWorkspaceへ戻りたい。そうすることで、毎回folderを選び直さず制作を継続できる。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given 保存済みWorkspaceが利用可能である、When アプリを再起動する、Then canonical pathを再検証して同じWorkspaceを開く。
+- Given Workspaceが移動、削除、または権限喪失している、When アプリを起動する、Then 許可外へfallbackせず再選択を案内する。
 
-- Given a scene's text and voice settings have not changed, when I regenerate voices, then the existing WAV is reused.
-- Given a scene's text or voice settings changed, when I regenerate voices, then only that scene's WAV is regenerated.
-- Given I pass `--force`, when voice generation runs, then the cache is bypassed.
-- Given generation fails partway through, when I run again, then successfully generated WAV files remain available for cache reuse.
+**要件対応**: U10-FR-3、U10-NFR-1、U10-NFR-2
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+### US-4: Codex CLI不足を診断する
 
-## US-004: Measure Audio and Generate Scene Timeline
+**優先度**: Must
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** the system to calculate scene timing from audio duration, **so that** subtitles and scene transitions align automatically.
+動画制作者として、Codexが使えない理由を知りたい。そうすることで、install、upgrade、loginの適切な復旧操作を選べる。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given Codex CLIが未導入、version不足、または未loginである、When Real接続を開始する、Then 状態を区別した日本語案内を表示する。
+- Given Codexが利用不能である、When 制作を続ける、Then Mock、script、asset、Preview、Renderの利用可能な機能は維持される。
+- Given 診断を実行する、When logと設定を確認する、Then tokenやlogin情報は保存・表示されない。
 
-- Given WAV files exist for each scene, when timeline generation runs, then `generated/timelines/{videoId}.timeline.json` is created.
-- Given scene wait durations are omitted, when timing is calculated, then default before and after speech durations are applied.
-- Given fps is configured, when frame values are calculated, then seconds are multiplied by fps and rounded.
-- Given multiple scenes exist, when the timeline is generated, then each scene starts after the previous scene ends.
+**要件対応**: U10-FR-5、U10-FR-12、U10-NFR-1、U10-NFR-5
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+### US-5: VOICEVOX不足を診断する
 
-## US-005: Render Synchronized Subtitles
+**優先度**: Must
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** subtitles to appear during narration, **so that** viewers can read the spoken explanation.
+動画制作者として、音声生成できない理由を知りたい。そうすることで、install、起動、version、接続先を修正できる。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given VOICEVOXが未導入、未起動、またはversion非対応である、When Voiceを実行する、Then 状態を区別した日本語案内を表示する。
+- Given VOICEVOXが利用不能である、When 制作を続ける、Then script編集、Codex、利用可能なPreview、既存音声によるRenderは妨げられない。
 
-- Given subtitles are enabled, when a scene's audio starts, then the scene text appears at the bottom center.
-- Given the scene audio ends, when playback continues, then the subtitle for that scene disappears.
-- Given text exceeds the configured line length, when rendered, then line breaking uses Japanese punctuation, particles, approximate character length, and forced splitting as fallbacks.
-- Given text still exceeds the configured limit, when rendered, then font size is reduced or a warning is logged.
+**要件対応**: U10-FR-6、U10-FR-12、U10-NFR-2、U10-NFR-5
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+### US-6: アプリを更新またはロールバックする
 
-## US-006: Render Fixed Character Art
+**優先度**: Should
+**ペルソナ**: P1
 
-**As a** technical video creator, **I want** Zundamon displayed consistently in the video, **so that** every scene has the expected character presence.
+動画制作者として、Workspaceを失わずアプリを入れ替えたい。そうすることで、新版への更新と既知正常版への復旧を安全に行える。
 
-**Priority**: A
+**受入条件**
 
-**Acceptance Criteria**
+- Given 新しい検証済みZIPがある、When アプリを置き換える、Then bundle外のWorkspaceと保存済み参照は保持される。
+- Given 新版に問題がある、When 直前の既知正常版へ置き換える、Then 対応するWorkspace互換性情報と復旧手順を確認できる。
 
-- Given character visibility is enabled or omitted, when a scene renders, then Zundamon appears in the lower-right default position.
-- Given character visibility is false, when a scene renders, then the character is hidden.
-- Given real character assets are not yet provided, when using the development setup, then placeholder character assets allow preview and render verification.
+**要件対応**: U10-FR-11、U10-FR-12、U10-NFR-2
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+## リリース担当者のジャーニー
 
-## US-007: Render MP4 From One Command
+### US-7: ローカル検証用成果物を生成する
 
-**As a** technical video creator, **I want** one command to generate the final video, **so that** the full workflow is repeatable.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: A
+リリース担当者として、Apple認証情報がなくてもarm64アプリを検証したい。そうすることで、署名・公証以外の品質確認を先に完了できる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given a valid script, required assets, and running VOICEVOX Engine, when I run `npm run video -- {videoId}`, then the system validates input, generates voices, generates a timeline, renders video, and writes `output/{videoId}.mp4`.
-- Given video settings specify width, height, and fps, when rendering completes, then the MP4 uses those settings.
-- Given an output file already exists, when rendering completes, then the file may be overwritten.
+- Given clean install済みのsourceとlockfileがある、When local package commandを実行する、Then production Main、Preload、Rendererを含むarm64 `.app`とZIPを生成する。
+- Given 認証情報がない、When packageが成功する、Then 成果物は`local-acceptance`と明示され、一般配布可能とは表示されない。
+- Given packaged appを起動する、When production flowを使用する、Then `tsx`、TypeScript source、開発server、`NODE_OPTIONS`へ依存しない。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-1、U10-FR-2、U10-FR-8、U10-NFR-3
 
-## US-008: Switch Character Expressions by Scene
+### US-8: Packaged環境で制作機能を検証する
 
-**As a** technical video creator, **I want** each scene to select Zundamon's expression, **so that** the video tone matches the narration.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: B
+リリース担当者として、source treeのない配布環境で主要機能を確認したい。そうすることで、開発環境だけで動く不具合を公開前に検出できる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given a scene emotion is `normal`, `happy`, `surprised`, or `troubled`, when the scene renders, then the matching character image set is used.
-- Given emotion is omitted, when the scene renders, then `normal` is used.
-- Given an unsupported emotion is provided, when validation runs, then the system stops with a clear validation error.
+- Given packaged appと選択済みWorkspaceがある、When Script、asset、Validate、Preview、Renderを実行する、Then packaged resourceとWorkspaceの正規化済みpathだけを使用して完了する。
+- Given 実行中の処理がある、When StopまたはFinder revealを操作する、Then 既存の停止・表示機能がpackaged環境でも動作する。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-4、U10-FR-13、U10-NFR-1
 
-## US-009: Display Explanation Images
+### US-9: 署名・公証を設定する
 
-**As a** technical video creator, **I want** scene-specific explanation images displayed, **so that** technical concepts can be shown visually.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: B
+リリース担当者として、Developer IDで署名・公証した成果物を生成したい。そうすることで、Mac App Store外で安全に配布できる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given a scene visual of type `image`, when the scene renders, then the referenced image is displayed.
-- Given image fit is omitted, when rendered, then `contain` is used.
-- Given image position is set to left, center, or right, when rendered, then placement follows the selected position.
-- Given the image file is missing, when validation runs, then the system stops with a clear asset error.
+- Given 有効なDeveloper IDと公証用認証情報がある、When release makeを実行する、Then Hardened Runtime、secure timestamp、最小entitlementsを用いて署名し、notarytoolによる公証を行う。
+- Given entitlementsを検査する、When 配布候補を検証する、Then `com.apple.security.get-task-allow`は存在しない。
+- Given 認証情報または公証が不足・失敗している、When release makeを実行する、Then fail closedで終了し、成功扱いしない。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-7、U10-FR-8、U10-NFR-1
 
-## US-010: Show Title and Ending Scenes
+### US-10: 一般配布をゲートする
 
-**As a** technical video creator, **I want** title and ending scenes rendered from the script, **so that** generated videos have a complete presentation structure.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: B
+リリース担当者として、必須検証に合格した成果物だけを配布可能と判定したい。そうすることで、未署名・未公証成果物の誤配布を防げる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given a title scene exists, when rendered, then the video title and character are displayed in a title layout.
-- Given an ending scene exists, when rendered, then the closing text and credits are displayed.
-- Given title or ending scenes are missing, when validation runs, then the system warns without blocking generation.
+- Given 配布候補がある、When release verificationを実行する、Then codesign、Gatekeeper、公証ticket、ZIP checksumを検証する。
+- Given いずれかの検証が失敗する、When 判定を完了する、Then publishable状態へ遷移せず非ゼロで終了する。
+- Given local acceptance成果物がある、When release verificationを実行する、Then 一般配布禁止であることを明示する。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-8、U10-NFR-1、Property-Based Testing要件
 
-## US-011: Report Actionable Errors and Logs
+### US-11: 成果物の整合性と由来を記録する
 
-**As a** technical video creator, **I want** clear logs and error messages, **so that** I can fix problems quickly.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: B
+リリース担当者として、成果物の内容と生成元を確認したい。そうすることで、同一versionの再検証と改ざん検知ができる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given generation starts, when each major step completes, then an INFO log is emitted.
-- Given a recoverable issue exists, when validation or generation runs, then a WARN log identifies the issue.
-- Given a blocking issue occurs, when the process stops, then an ERROR log identifies the failed step and relevant video or scene ID.
-- Given rendering fails, when the process stops, then the system reports that Remotion or FFmpeg logs should be checked.
+- Given packageが生成された、When release metadataを作成する、Then SBOM、SHA-256、version、Git revision、architectureをmanifestへ記録する。
+- Given app bundleとZIPを検査する、When inclusion policyを適用する、Then secret、test fixture、不要source map、開発設定、既存Workspaceを含めない。
+- Given 同一versionの旧出力がある、When 新しいreleaseを開始する、Then 暗黙に再利用せずversionとarchitectureで識別する。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-9、U10-FR-10、U10-NFR-3、U10-NFR-4
 
-## US-012: Animate Simple Lip Sync
+### US-12: リリース品質を再現可能に検証する
 
-**As a** technical video creator, **I want** Zundamon's mouth to open and close during speech, **so that** the video feels less static.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Priority**: C
+リリース担当者として、最小の一連のcommandで品質を確認したい。そうすることで、公開判断を再現可能にできる。
 
-**Acceptance Criteria**
+**受入条件**
 
-- Given scene audio has not started, when the scene renders, then the closed-mouth image is used.
-- Given scene audio is playing, when frames advance, then open and closed-mouth images alternate by the configured interval.
-- Given scene audio has ended, when the scene renders, then the closed-mouth image is used.
-- Given the character is speaking, when frames advance, then a slight vertical motion is applied.
+- Given release候補がある、When release gateを実行する、Then audit、typecheck、既存回帰、U10例示テスト、PBT、Studio build、package smokeを順に検証する。
+- Given propertyが失敗する、When 結果を保存する、Then fast-check seedと縮小後の反例から再実行できる。
+- Given 新規macOS利用者プロファイルがある、When acceptance checklistを実行する、Then 初回起動、Workspace、依存診断、制作、停止、reveal、更新・復旧を確認できる。
 
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
+**要件対応**: U10-FR-9、U10-FR-10、U10-FR-13、U10-NFR-6、Property-Based Testing要件
 
-## US-013: Display Code Scenes
+## INVEST確認
 
-**As a** technical video creator, **I want** code visual scenes, **so that** programming concepts can be explained without creating separate images.
+- **Independent**: 各ストーリーは1つの利用者成果または配布判定を対象とする。
+- **Negotiable**: 実装手段は要件で固定された安全境界以外を拘束しない。
+- **Valuable**: P1またはP2へ直接的な価値を提供する。
+- **Estimable**: 要件IDと単一の受入目的により見積可能である。
+- **Small**: 1つの受入確認で完結する粒度へ分割した。
+- **Testable**: すべてGiven／When／Then形式の受入条件を持つ。
 
-**Priority**: C
+## Extension準拠
 
-**Acceptance Criteria**
-
-- Given a scene visual of type `code`, when rendered, then the code block is displayed.
-- Given a file name is provided, when rendered, then the file name appears with the code.
-- Given code is displayed, when rendered, then line numbers are shown.
-- Given a language is provided, when rendered, then syntax highlighting is applied where supported.
-
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
-
-## US-014: Play Optional BGM
-
-**As a** technical video creator, **I want** optional BGM to play under narration, **so that** videos can have a consistent audio bed.
-
-**Priority**: C
-
-**Acceptance Criteria**
-
-- Given BGM is configured and exists, when the video renders, then BGM is included at the configured volume.
-- Given BGM is omitted, when the video renders, then generation continues without BGM.
-- Given BGM is configured but missing, when validation runs, then the system warns without blocking generation.
-
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
-
-## US-015: Highlight Subtitle Keywords
-
-**As a** technical video creator, **I want** configured subtitle keywords highlighted, **so that** important technical terms stand out.
-
-**Priority**: C
-
-**Acceptance Criteria**
-
-- Given `highlightKeywords` includes matching words, when subtitles render, then those words use the highlight style.
-- Given no keywords are configured, when subtitles render, then standard subtitle styling is used.
-- Given highlighted text spans wrapped lines, when rendered, then the subtitle remains readable and aligned.
-
-**INVEST Check**: Independent, Negotiable, Valuable, Estimable, Small, Testable.
-
-## MVP Out of Scope
-
-- AI script generation from theme.
-- Web image search.
-- Generative image creation.
-- High-precision phoneme-based lip sync.
-- Multiple character conversations.
-- GUI editing screen.
-- YouTube auto-posting.
-- Thumbnail generation.
-- Automatic BGM or sound-effect selection.
-- VOICEVOX accent auto-correction.
-
-## Extension Compliance Summary
-
-- Security Baseline: N/A. Disabled during Requirements Analysis.
-- Resiliency Baseline: N/A. Disabled during Requirements Analysis.
-- Property-Based Testing: N/A. Disabled during Requirements Analysis.
-
+- **Security Baseline**: secret非露出、path境界、CSP／IPC hardening、署名、公証、checksum、fail-closedをUS-2、US-4、US-7〜US-11へ反映した。未解決のblocking findingなし。
+- **Resiliency Baseline**: 依存障害、Workspace消失、更新、rollback、package／公証失敗、clean-profile recoveryをUS-3〜US-6、US-9、US-12へ反映した。Cloud固有規則は適用外。
+- **Property-Based Testing**: path、設定、manifest、release状態遷移のpropertyとseed再現をUS-10〜US-12へ反映した。未解決のblocking findingなし。

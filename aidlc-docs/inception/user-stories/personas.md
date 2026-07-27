@@ -1,42 +1,39 @@
-# Personas
+# U10 ペルソナ
 
-## Persona P1: Technical Video Creator
+## P1: 動画制作者
 
-### Profile
+- **役割**: Apple Silicon Macでずんだもん動画を制作する個人利用者
+- **利用環境**: macOS、利用者が選んだWorkspace、外部Codex CLI、外部VOICEVOX Engine
+- **目標**:
+  - 配布ZIPから安全にアプリを導入する
+  - 初回起動時にWorkspaceを選び、すぐ制作を始める
+  - 外部依存が不足していても原因と復旧方法を理解する
+  - アプリ更新でWorkspaceを失わず、必要なら旧版へ戻す
+- **課題**:
+  - Gatekeeper、権限、CLI login、VOICEVOX起動状態の違いが分かりにくい
+  - アプリ本体と制作データの保存場所を混同しやすい
+- **成功条件**:
+  - 日本語の案内だけで初回設定と障害復旧を完了できる
+  - 更新やロールバック後も既存Workspaceを利用できる
 
-- **Role**: Individual creator producing recurring technical explanation videos.
-- **Primary Goal**: Convert prepared JSON scripts and assets into Zundamon explanation videos with minimal repetitive editing work.
-- **Environment**: macOS, Node.js, VOICEVOX Engine, Remotion, FFmpeg.
-- **Working Style**: Iterates by editing JSON, previewing output, fixing issues, and rendering MP4.
+## P2: リリース担当者
 
-### Motivations
+- **役割**: ローカルMacでパッケージ生成、署名、公証、配布判定を行う開発者
+- **利用環境**: FileVaultを有効にしたApple Silicon Mac、固定済みnpm依存、必要に応じてApple認証情報
+- **目標**:
+  - 再現可能なarm64アプリとZIPを生成する
+  - 認証情報がない間もローカル検証を進める
+  - 署名・公証・整合性検証を満たした成果物だけを一般配布する
+- **課題**:
+  - 未署名成果物を誤って公開する危険がある
+  - secretや開発用ファイルが成果物へ混入する可能性がある
+- **成功条件**:
+  - release gateが失敗を見逃さず、復旧方法を日本語で示す
+  - SBOM、checksum、manifestにより成果物を追跡できる
 
-- Reduce manual editing for narration, subtitles, scene timing, character placement, and rendering.
-- Keep video production repeatable across many technical topics.
-- Reuse generated voice assets when script lines have not changed.
-- Get clear errors that point directly to missing inputs or invalid configuration.
+## 対応範囲
 
-### Pain Points
-
-- Manually generating VOICEVOX audio for each line is repetitive.
-- Subtitle timing is tedious when every narration length is different.
-- Asset placement and expression switching are easy to forget or apply inconsistently.
-- Rendering failures are expensive when the root cause is unclear.
-
-### Success Criteria
-
-- A valid script can be turned into a complete MP4 with one command.
-- Re-running unchanged scripts is faster because voice files are cached.
-- Input and asset problems are detected before expensive rendering work.
-- Preview and validation loops are fast enough for iterative video production.
-
-### Story Mapping
-
-| Persona | Relevant Stories |
+| ペルソナ | 対応ストーリー |
 |---|---|
-| P1 Technical Video Creator | US-001, US-002, US-003, US-004, US-005, US-006, US-007, US-008, US-009, US-010, US-011, US-012, US-013, US-014, US-015 |
-
-## Out-of-Scope Personas
-
-Future GUI users, collaborators, and publishing operators are out of scope for MVP user stories. Future extensions such as AI script generation, GUI editing, thumbnail generation, and YouTube posting remain outside the MVP story set.
-
+| P1 動画制作者 | US-1〜US-6 |
+| P2 リリース担当者 | US-7〜US-12 |

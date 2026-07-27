@@ -1,51 +1,90 @@
-# Unit of Work Story Map
+# Unit of Work Story Map: GUI with Embedded Codex Panel
 
-## Story Assignment Rule
+## Story Mapping Summary
 
-Each story is assigned to a primary owning unit. Secondary dependencies list supporting units that the story touches but does not primarily belong to.
+All 20 user stories are assigned to at least one unit. Primary ownership is listed first.
 
-## Story Map
-
-| Story | Priority | Primary Unit | Secondary Dependencies |
-|---|---:|---|---|
-| US-001 Validate a script before generation | A | U2 Script Validation, Assets, and Path Safety | U1, U6, U7 |
-| US-002 Generate VOICEVOX narration for each scene | A | U3 VOICEVOX Audio Generation and Cache | U1, U2, U6, U7 |
-| US-003 Reuse cached narration | A | U3 VOICEVOX Audio Generation and Cache | U1, U4, U6, U7 |
-| US-004 Measure audio and generate scene timeline | A | U4 Audio Measurement and Timeline Generation | U1, U2, U3, U6, U7 |
-| US-005 Render synchronized subtitles | A | U5 Remotion Composition and Scene Rendering | U1, U4, U7 |
-| US-006 Render fixed character art | A | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-| US-007 Render MP4 from one command | A | U6 CLI Orchestration and Render Integration | U1, U2, U3, U4, U5, U7 |
-| US-008 Switch character expressions by scene | B | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-| US-009 Display explanation images | B | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-| US-010 Show title and ending scenes | B | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-| US-011 Report actionable errors and logs | B | U6 CLI Orchestration and Render Integration | U1, U2, U3, U4, U5, U7 |
-| US-012 Animate simple lip sync | C | U5 Remotion Composition and Scene Rendering | U1, U4, U7 |
-| US-013 Display code scenes | C | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-| US-014 Play optional BGM | C | U5 Remotion Composition and Scene Rendering | U1, U2, U6, U7 |
-| US-015 Highlight subtitle keywords | C | U5 Remotion Composition and Scene Rendering | U1, U2, U7 |
-
-## Coverage Validation
-
-- All 15 user stories are assigned to one primary unit.
-- Priority A stories cover validation, voice generation, cache, timeline, subtitles, character rendering, and full MP4 generation.
-- Priority B stories are concentrated in rendering and CLI error/reporting behavior.
-- Priority C stories are mostly rendering enhancements plus sample/test coverage.
-
-## Unit Coverage Summary
-
-| Unit | Primary Stories | Role |
+| Story | Primary Unit | Supporting Units |
 |---|---|---|
-| U1 Project Foundation and Shared Types | None primary | Foundation for all stories |
-| U2 Script Validation, Assets, and Path Safety | US-001 | Input and safety boundary |
-| U3 VOICEVOX Audio Generation and Cache | US-002, US-003 | Narration generation |
-| U4 Audio Measurement and Timeline Generation | US-004 | Timing model |
-| U5 Remotion Composition and Scene Rendering | US-005, US-006, US-008, US-009, US-010, US-012, US-013, US-014, US-015 | Viewer-facing output |
-| U6 CLI Orchestration and Render Integration | US-007, US-011 | User command workflow |
-| U7 Tests, Sample Data, Placeholder Assets, and Documentation | None primary | Verification and onboarding |
+| US-1: Open or create a single video project | U1 | U3 |
+| US-2: Preserve CLI compatibility | U8 | U1, U3, U6 |
+| US-3: Discuss a video idea with Codex | U2 | U1 |
+| US-4: Handle Codex authentication or connection failure | U2 | U1 |
+| US-5: Generate a script JSON draft from the planning conversation | U4 | U2, U3 |
+| US-6: Review generated JSON in raw and structured views | U3 | U1 |
+| US-7: Ask Codex to revise a draft before applying it | U4 | U2, U3 |
+| US-8: Apply an approved JSON draft | U3 | U4, U1 |
+| US-9: Edit scenes directly in the GUI | U3 | U5 |
+| US-10: Select and attach image assets | U5 | U3 |
+| US-11: Handle missing asset failures | U5 | U3, U6 |
+| US-12: Validate the active script from the GUI | U6 | U3 |
+| US-13: Generate voice and timeline artifacts | U6 | U1 |
+| US-14: Handle VOICEVOX not running | U6 | U13 Log Panel within U6 |
+| US-15: Preview the current video inside the GUI | U7 | U6, U3 |
+| US-16: Render MP4 from the GUI | U8 | U6 |
+| US-17: Monitor logs for long-running operations | U6 | U8 |
+| US-18: Approve Codex-proposed production actions | U4 | U2, U6, U3 |
+| US-19: Recover from render failures | U8 | U6, U2 |
+| US-20: Continue manually when Codex is unavailable | U1 | U2, U3, U6 |
 
-## Extension Compliance Summary
+## Unit Coverage
 
-- Security Baseline: N/A. Disabled during Requirements Analysis.
-- Resiliency Baseline: N/A. Disabled during Requirements Analysis.
-- Property-Based Testing: N/A. Disabled during Requirements Analysis.
+### U1: Electron App Shell and Workspace Foundation
+
+- Primary stories: US-1, US-20.
+- Supports: US-2, US-3, US-4, US-6, US-8, US-13.
+
+### U2: Codex App Server Connection
+
+- Primary stories: US-3, US-4.
+- Supports: US-5, US-7, US-18, US-19, US-20.
+
+### U3: JSON Draft Review and Scene Editing
+
+- Primary stories: US-6, US-8, US-9.
+- Supports: US-1, US-2, US-5, US-7, US-10, US-11, US-12, US-15, US-18.
+
+### U4: Codex Proposal and Approval Flow
+
+- Primary stories: US-5, US-7, US-18.
+- Supports: US-8.
+
+### U5: Asset Selection and Visual Attachment
+
+- Primary stories: US-10, US-11.
+- Supports: US-9.
+
+### U6: Command Runner and Log Panel
+
+- Primary stories: US-12, US-13, US-14, US-17.
+- Supports: US-2, US-11, US-15, US-16, US-18, US-19, US-20.
+
+### U7: Embedded Remotion Preview
+
+- Primary stories: US-15.
+- Supports: none.
+
+### U8: Render Workflow and CLI Compatibility Verification
+
+- Primary stories: US-2, US-16, US-19.
+- Supports: US-17.
+
+## First Vertical Slice
+
+The first desired vertical slice is:
+
+1. Open a video ID.
+2. Connect to Codex.
+3. Discuss a video idea.
+4. Receive a JSON draft.
+5. Display the draft in the GUI.
+
+This slice spans:
+
+- U1: workspace foundation.
+- U2: Codex connection.
+- U3: draft display.
+- U4: Codex proposal routing.
+
+It intentionally stops before save, validation, audio generation, or rendering.
 

@@ -7,6 +7,7 @@ import {collectScriptWarnings, loadVideoScript} from '../src/core/script-loader'
 import {generateTimeline} from '../src/core/timeline-generator';
 import {saveTimeline} from '../src/core/timeline-store';
 import {generateVoices} from '../src/core/voice-generator';
+import {serializeRenderProgress} from '../src/studio/shared/command';
 
 export async function runVideoCommand(argv: string[] = process.argv.slice(2)): Promise<void> {
   const {videoId, force, verbose, skipVoice} = parseArgs(argv);
@@ -37,7 +38,12 @@ export async function runVideoCommand(argv: string[] = process.argv.slice(2)): P
   const timeline = generateTimeline(script, manifest);
   await saveTimeline(videoId, timeline);
   logger.info('タイムラインを生成しました');
-  await renderVideo(videoId, {verbose});
+  await renderVideo(videoId, {
+    verbose,
+    onProgress(progress) {
+      console.log(serializeRenderProgress(progress));
+    },
+  });
 }
 
 function parseArgs(argv: string[]): {videoId: string; force: boolean; verbose: boolean; skipVoice: boolean} {

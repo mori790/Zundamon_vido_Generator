@@ -1,65 +1,42 @@
 # Integration Test Instructions
 
-## Purpose
-
-Validate interactions between the local CLI, VOICEVOX Engine, generated files, timeline data, and Remotion render flow.
-
-## Test Scenarios
-
-### Scenario 1: Script Validation and Asset Check
-
-- **Description**: Validate the sample script and placeholder assets.
-- **Setup**: Run `npm install`.
-- **Command**:
+## Electron Boundary
 
 ```bash
-npm run validate -- sample-video
+npm run test:studio:e2e
 ```
 
-- **Expected Results**:
-  - Script loads successfully.
-  - Four scenes are detected.
-  - Title and ending scenes may warn for missing explanation visuals.
-  - Validation completes successfully.
+context-isolated Preload、Workspace API、dependency degraded state、local file access、asset選択を確認する。期待値は`U5_ELECTRON_E2E_OK`とexit code 0である。
 
-### Scenario 2: VOICEVOX Live Connection
+## CLI Pipeline
 
-- **Description**: Confirm the configured VOICEVOX Engine is reachable.
-- **Setup**: Start VOICEVOX Engine at `VOICEVOX_BASE_URL`, default `http://localhost:50021`.
-- **Command**:
+VOICEVOX Engineを起動した場合:
 
 ```bash
 npm run test:integration
-```
-
-- **Expected Results**:
-  - Test passes when VOICEVOX Engine is running.
-  - Test fails when VOICEVOX Engine is not running, by approved NFR design.
-
-### Scenario 3: Voice, Timeline, and Render Pipeline
-
-- **Description**: Generate WAV files, timeline JSON, and MP4 output from the sample script.
-- **Setup**: Start VOICEVOX Engine.
-- **Commands**:
-
-```bash
+npm run validate -- sample-video
 npm run voice -- sample-video
 npm run timeline -- sample-video
-npm run video -- sample-video
+npm run preview -- sample-video
+npm run render -- sample-video
 ```
 
-- **Expected Results**:
-  - WAV files are generated under `public/audio/sample-video/`.
-  - Manifest is generated under `generated/manifests/`.
-  - Timeline is generated under `generated/timelines/`.
-  - MP4 is generated at `output/sample-video.mp4`.
+VOICEVOXなしのrender確認:
+
+```bash
+npm run test:render
+```
+
+期待結果はWAV、timeline、Preview、non-zero MP4、単調増加するprogress、最終100%である。
+
+## Packaged Runtime
+
+1. `npm run package`を実行する。
+2. `.app`を起動し、Workspaceを選択する。
+3. Validate、Timeline、Preview、Renderを実行する。
+4. RendererがTypeScript source、dev server、repository cwdへ依存しないことを確認する。
+5. Render後にFinder revealとMP4再生を確認する。
 
 ## Cleanup
 
-Generated files may be kept for cache verification. To manually reset generated outputs, remove only generated audio, manifest, timeline, and MP4 files after confirming they are not needed.
-
-## Last Observed Result
-
-- `npm run validate -- sample-video` passed.
-- `npm run test:integration` failed because VOICEVOX Engine was unavailable or blocked in the execution environment, matching the selected behavior.
-
+Test用Workspaceだけを削除する。生成途中のMP4は障害調査に使うため自動削除しない。
