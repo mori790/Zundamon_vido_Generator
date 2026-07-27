@@ -43,6 +43,16 @@
 - `startNewThread(videoId)`, `respondApproval(id, approved)`, `disconnect()`.
 - `onEvent(listener)` returns an unsubscribe function.
 
+### `workspaceApi`
+
+- `get()`, `select()`, and `clear()`.
+- Returns `unconfigured`, `ready`, `missing`, `denied`, or `invalid` without exposing unrestricted filesystem operations.
+
+### `dependencyApi`
+
+- `checkAll()` and `check(name)`.
+- Returns independent Codex/VOICEVOX status, detected version, and stable recovery action code.
+
 ## Core Internal APIs
 
 - `loadVideoScript(videoId)` - loads and validates input JSON.
@@ -51,11 +61,15 @@
 - `buildRenderData(videoId)` - joins validated script, audio manifest, and timeline.
 - `renderVideo(videoId, options)` - renders MP4 with progress and stop support.
 - `applyScriptDraft(videoId, rawJson, fileAccess)` - validates, backs up, and writes an approved script.
+- `WorkspaceRootService` - selects, validates, persists, restores, or clears the project root.
+- `createDependencyDiagnosisService()` - performs bounded Codex and VOICEVOX checks.
+- Release verifier - classifies `local-acceptance` through `publishable` from explicit evidence.
 
 ## Principal Data Models
 
 - `VideoScript`, `Scene`, `Timeline`, `WorkspaceState`.
 - `ChatHistory`, `ChatMessage`, `Proposal`, `CodexApproval`, `CodexEvent`.
 - `Operation`, `LogEntry`, `PreviewState`, `RenderOutputStatus`.
+- `WorkspaceReference`, `ProjectRootState`, `DependencyReport`, `ReleaseManifest`, `ReleaseEvidence`.
 
 No public REST API or database schema exists.

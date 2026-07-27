@@ -20,6 +20,9 @@ Zundamon Video Generator is a local creator desktop application and CLI pipeline
 8. Preview the Remotion composition.
 9. Render, stop, retry, overwrite, and reveal an MP4 output.
 10. Resume a Codex thread and recover manually after connection failure.
+11. Select and restore an external Workspace on first run.
+12. Diagnose Codex CLI and VOICEVOX readiness independently.
+13. Build a local-acceptance arm64 application with SBOM, checksum, and release manifest.
 
 ## Business Dictionary
 
@@ -31,6 +34,9 @@ Zundamon Video Generator is a local creator desktop application and CLI pipeline
 - **Timeline**: Generated frame ranges derived from audio duration and scene padding.
 - **Real Mode**: Codex CLI App Server JSONL-over-stdio connection.
 - **Mock Mode**: Deterministic local chat adapter for tests and demos.
+- **Project Root**: User-selected directory containing `input/`, `public/`, `generated/`, and `output/`.
+- **Local Acceptance**: Unsigned internal-validation artifact that must not be publicly distributed.
+- **Publishable**: Signed, notarized, stapled, Gatekeeper-verified artifact with integrity evidence.
 
 ## Component-Level Business Responsibilities
 
@@ -39,3 +45,4 @@ Zundamon Video Generator is a local creator desktop application and CLI pipeline
 - **Generation Core and CLI**: Validation, voice, timeline, preview, and render operations.
 - **Remotion Composition**: Frame rendering, audio, subtitles, character, and scene visuals.
 - **Local Persistence**: Input scripts, assets, chat/session state, generated metadata, and MP4 output.
+- **Desktop Release Boundary**: Production build, package contents, signing configuration, SBOM, checksum, and fail-closed distribution gate.

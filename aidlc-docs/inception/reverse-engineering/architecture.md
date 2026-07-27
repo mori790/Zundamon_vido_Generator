@@ -12,16 +12,20 @@ Electron uses a context-isolated security boundary. The Main process owns child 
 ## Component Map
 
 - **Electron Main**
-  - Registers command, preview, render-output, local-file, and Codex IPC handlers.
-  - Owns `CommandRunner`, `CodexAppServerService`, and local filesystem services.
+  - Registers workspace, dependency, command, preview, render-output, local-file, and Codex IPC handlers.
+  - Owns `WorkspaceRootService`, dependency diagnosis, `CommandRunner`, `CodexAppServerService`, and local filesystem services.
 - **Preload**
-  - Exposes `commandApi`, `previewApi`, `renderOutputApi`, `localFileApi`, and `codexApi`.
+  - Exposes purpose-specific Workspace, dependency, command, preview, render-output, local-file, and Codex APIs.
 - **React Renderer**
   - Owns workspace navigation, script review, Codex panel, preview, production commands, and status UI.
 - **Shared Studio Contracts**
   - Defines validated messages, state transitions, limits, proposals, assets, drafts, and IPC types.
 - **Generation Core**
   - Loads scripts, validates assets, calls VOICEVOX, manages cache manifests, calculates timelines, and renders.
+- **Production Resource Boundary**
+  - Resolves compiled Main/Preload/CLI, prebuilt Remotion bundle, ASAR-unpacked compositor binaries, and the user-selected Workspace.
+- **Release Boundary**
+  - Electron Forge creates arm64 `.app`/ZIP artifacts; verification creates SBOM, SHA-256, manifest, and release-state evidence.
 - **Remotion Runtime**
   - Converts render data into video frames and MP4 output.
 
@@ -57,6 +61,8 @@ Electron uses a context-isolated security boundary. The Main process owns child 
 ## Infrastructure and Deployment
 
 - No cloud infrastructure, database, REST server, container, CDK, Terraform, or CI workflow is present.
-- Current runtime is local macOS development execution.
-- No packaged application, signing, notarization, installer, updater, release feed, or distribution workflow exists.
-- U10 therefore begins from an unpackaged Electron application.
+- Runtime is a local macOS 13+ desktop application and compatible CLI.
+- Electron Forge 7.11.2 generates an arm64 `.app` and ZIP.
+- Signing, Hardened Runtime, and notarization are configured but require external Apple credentials.
+- Current artifact state is `local-acceptance`; public release remains fail-closed.
+- No installer, auto-updater, release feed, cloud deployment, or central monitoring exists.

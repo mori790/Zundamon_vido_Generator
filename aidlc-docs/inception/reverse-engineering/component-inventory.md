@@ -20,6 +20,10 @@
 9. CLI generation pipeline.
 10. Remotion composition runtime.
 11. Test suite, PBT suite, fake App Server, and Electron E2E.
+12. Workspace root persistence and First Run gate.
+13. Codex/VOICEVOX dependency diagnosis.
+14. Production resource resolver and packaged CLI adapter.
+15. Forge packaging and release-artifact verifier.
 
 ## Infrastructure Inventory
 
@@ -27,13 +31,14 @@
 - Deployment manifests: none.
 - Containers: none.
 - CI/CD: none detected.
-- Desktop package configuration: none.
-- Signing/notarization configuration: none.
+- Desktop package configuration: Electron Forge arm64 `.app` and ZIP.
+- Signing/notarization configuration: conditional Developer ID, Hardened Runtime, entitlements, notarytool.
 - Auto-update service: none.
 
 ## Test Inventory
 
-- Default suite: 33 files and 125 tests.
+- Default suite: 37 files and 135 tests.
 - Live VOICEVOX integration: separate opt-in test.
 - Electron E2E: context-isolated preload and asset workflow.
 - Codex integration: protocol example/PBT, fake-process, Renderer adapter, and Real panel tests.
+- U10 integration: Workspace root, dependency diagnosis, resource resolution, release policy PBT, packaged render smoke.

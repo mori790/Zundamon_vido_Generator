@@ -1,12 +1,12 @@
 # Reverse Engineering Metadata
 
-**Analysis Date**: 2026-07-27T02:07:45Z
+**Analysis Date**: 2026-07-27T05:06:19Z
 
 **Analyzer**: AI-DLC
 
 **Workspace**: `/Users/tomimorisatoshihare/Zundamon_vido_Generator`
 
-**Repository Files Observed**: 309
+**Repository Files Observed**: 399 excluding `.git`, `node_modules`, `out`, and generated build directories
 
 **Application Package Count**: 1
 
@@ -24,4 +24,4 @@
 
 ## Refresh Reason
 
-The previous artifacts predated the Electron Studio and U9 Real Codex App Server integration. This refresh represents the current context-isolated desktop application and identifies the packaging/release gaps relevant to U10.
+The previous artifacts predated U10 Desktop Packaging and Release Readiness. This refresh includes First Run Workspace selection, dependency diagnosis, production resource resolution, Electron Forge packaging, local release evidence, and the fail-closed public distribution gate relevant to U11.

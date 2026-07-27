@@ -10,16 +10,18 @@
 6. Remotion composition depends on render data, React components, and public assets.
 7. Tests depend on all layers through injected boundaries and fake processes.
 
-## Runtime Dependencies
+## Production Dependencies
 
-- `electron` 41.7.1 - desktop runtime.
 - `react`, `react-dom` 18.x - Studio and Remotion UI.
-- `vite` 6.4.3 and `@vitejs/plugin-react` 4.x - Studio Renderer build.
-- `remotion`, `@remotion/cli`, `@remotion/player`, `@remotion/bundler`, `@remotion/renderer` 4.x/4.0.499 - preview/render pipeline.
-- `zod` 4.4.3 - runtime script validation.
+- `remotion` and `@remotion/renderer` 4.x - packaged preview/render runtime.
 
 ## Development and Test Dependencies
 
+- `electron` 41.7.1 - desktop packaging/runtime source.
+- `vite` 6.4.3 and `@vitejs/plugin-react` 4.x.
+- `@remotion/cli`, `@remotion/player`, and `@remotion/bundler` 4.0.499.
+- `zod` 4.4.3, bundled into production outputs.
+- Electron Forge CLI/maker-zip 7.11.2.
 - `typescript` 5.x and Node/React type packages.
 - `tsx` 4.x.
 - `esbuild` 0.28.1.
@@ -33,9 +35,9 @@
 - VOICEVOX Engine for speech generation.
 - macOS Finder for reveal workflow.
 
-## Release-Relevant Findings
+## Release Findings
 
-- Vite/esbuild/testing dependencies should not be shipped merely because they are currently top-level dependencies.
-- The packaged application must either bundle required Main/Renderer code or include only actual runtime modules.
-- `codex` and VOICEVOX are external prerequisites unless U10 explicitly chooses bundling or guided installation.
-- Current `npm audit --audit-level=high` result is zero vulnerabilities.
+- Main/Preload/CLI application code is bundled; actual Remotion runtime modules remain packaged.
+- Codex and VOICEVOX remain external prerequisites and are diagnosed at runtime.
+- Production-only audit reports zero vulnerabilities.
+- Forge development tooling has a larger dependency graph but is not a production runtime dependency.

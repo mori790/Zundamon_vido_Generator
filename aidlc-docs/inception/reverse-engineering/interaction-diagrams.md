@@ -49,3 +49,21 @@ These text sequences are the parser-safe alternatives to graphical sequence diag
 4. Renderer decodes the image and requests tokenized copy.
 5. Main confines the destination under `public/visuals/{videoId}/`.
 6. Renderer updates the scene draft only after successful copy.
+
+## First Run and Workspace Restore
+
+1. Renderer requests the saved Workspace state.
+2. Main reads and validates the atomic Workspace reference.
+3. Missing or invalid state keeps the First Run gate active.
+4. Creator selects a directory through the native dialog.
+5. Main canonicalizes the path, creates the required structure, and atomically saves only the reference.
+6. Core, commands, Preview, Render, assets, and Codex use the validated Workspace root.
+
+## Local Release
+
+1. Studio build compiles Renderer, Main, Preload, CLI, and Remotion bundle.
+2. Electron Forge packages the arm64 application and ZIP.
+3. Release verification checks inclusion and artifact size.
+4. npm generates a CycloneDX SBOM.
+5. The verifier records SHA-256, version, Git revision, architecture, and release state.
+6. Missing Apple evidence keeps the state at `local-acceptance` and prohibits public distribution.

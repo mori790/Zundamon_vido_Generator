@@ -18,8 +18,9 @@
 ## Build Tools
 
 - npm and package-lock.
-- tsx 4.x for TypeScript CLI/Main development execution.
-- esbuild 0.28.1 for preload and Electron E2E bundles.
+- tsx 4.x for TypeScript CLI development execution and release script execution.
+- esbuild 0.28.1 for production Main, Preload, CLI, and Electron E2E bundles.
+- Electron Forge CLI 7.11.2 and maker-zip 7.11.2.
 - TypeScript compiler for static verification.
 
 ## Testing
@@ -38,6 +39,8 @@
 
 ## Packaging Status
 
-- No packager is installed.
-- No Electron Forge, electron-builder, Electron Packager, or native packaging script is configured.
-- No signing, hardened runtime, entitlements, notarization, stapling, DMG/ZIP, updater, or release-channel configuration exists.
+- Electron Forge creates macOS 13+ arm64 `.app` and ZIP artifacts.
+- Main, Preload, CLI, and Remotion are production-built before packaging.
+- Minimal entitlements, Hardened Runtime, Developer ID signing, and notarytool configuration exist.
+- Local verification generates CycloneDX SBOM, SHA-256, and release manifest.
+- Auto-update, DMG/PKG, Mac App Store, x64, and Universal binaries are not implemented.

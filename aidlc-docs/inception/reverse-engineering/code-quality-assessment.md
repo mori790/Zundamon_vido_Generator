@@ -3,11 +3,13 @@
 ## Verification Status
 
 - TypeScript strict check passes.
-- Default suite: 33 test files and 125 tests pass.
+- Default suite: 37 test files and 135 tests pass.
 - Studio production build passes.
 - Context-isolated Electron E2E passes.
 - Live Codex App Server initialize, thread start/resume, stream, and interrupt smoke passes.
 - Dependency audit reports zero vulnerabilities.
+- Electron Forge arm64 package/make and packaged 742-frame render pass.
+- Release PBT runs 8 properties at 1,000 iterations each.
 
 ## Quality Indicators
 
@@ -28,16 +30,15 @@
 - Session persistence is atomic and file access is confined.
 - PBT covers protocol round-trip, bounds, and state monotonicity.
 
-## Technical Debt and U10 Risks
+## Technical Debt and U11 Risks
 
-- Main process TypeScript is not production-bundled.
-- `process.cwd()` assumes development launch layout.
-- Packaging metadata, icons, signing, notarization, and release automation are absent.
-- External Codex and VOICEVOX prerequisites are not checked by an installer.
-- No update/rollback distribution mechanism exists.
+- README is not aligned with the packaged Desktop workflow.
+- Clean-profile internal acceptance and live VOICEVOX integration remain manual.
+- Cold-start and Workspace-restore p95 measurements are absent.
+- ZIP is 261 MiB and exceeds the warning threshold.
 - No CI runner validates a clean packaged artifact.
-- README does not document end-user installation, privacy, permissions, or release recovery.
+- No automatic updater or public release feed exists.
 
-## Packaging Readiness
+## Release Readiness
 
-Core behavior is well tested, but packaging is not a mechanical configuration-only change. U10 must explicitly decide artifact format, target architecture, external-runtime policy, signing/notarization scope, release channel, and clean-machine acceptance criteria.
+Local acceptance is ready. Public distribution is not ready until Developer ID signing, notarization, stapling, and Gatekeeper verification succeed. U11 can improve internal adoption independently while planning post-MVP work without weakening this gate.
