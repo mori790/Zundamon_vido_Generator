@@ -1,26 +1,39 @@
 # Component Inventory
 
-## Application Packages
+## Packages
 
-- `zundamon-video-generator` - Local CLI and Remotion video generation application.
+- **Application packages**: 1 (`zundamon-video-generator`).
+- **Infrastructure packages**: 0.
+- **Shared packages**: 0 separate packages; shared modules live inside `src/`.
+- **Test packages**: 0 separate packages; tests live in `tests/`.
 
-## Infrastructure Packages
+## Logical Components
 
-- None detected.
+1. Electron Main and window lifecycle.
+2. Context-isolated preload bridge.
+3. React Studio Renderer.
+4. Codex App Server integration.
+5. Purpose-specific local-file service.
+6. Production command runner and logs.
+7. Preview and render-output services.
+8. Script draft, proposal, asset, and workspace domains.
+9. CLI generation pipeline.
+10. Remotion composition runtime.
+11. Test suite, PBT suite, fake App Server, and Electron E2E.
 
-## Shared Packages
+## Infrastructure Inventory
 
-- None as separate packages. Shared logic is in `src/core`, `src/types`, `src/schemas`, and `src/utils`.
+- Cloud resources: none.
+- Deployment manifests: none.
+- Containers: none.
+- CI/CD: none detected.
+- Desktop package configuration: none.
+- Signing/notarization configuration: none.
+- Auto-update service: none.
 
-## Test Packages
+## Test Inventory
 
-- `tests/` - Vitest unit and integration tests for schema validation, subtitle logic, timeline calculation, cache hashing, asset checks, character asset selection, and VOICEVOX integration.
-
-## Total Count
-
-- **Total Packages**: 1
-- **Application**: 1
-- **Infrastructure**: 0
-- **Shared**: 0 separate packages
-- **Test**: 1 test directory
-
+- Default suite: 33 files and 125 tests.
+- Live VOICEVOX integration: separate opt-in test.
+- Electron E2E: context-isolated preload and asset workflow.
+- Codex integration: protocol example/PBT, fake-process, Renderer adapter, and Real panel tests.

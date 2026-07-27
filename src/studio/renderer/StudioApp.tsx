@@ -12,10 +12,112 @@ import type {ChatHistory} from '../shared/chat';
 import type {Operation} from '../shared/command';
 import {transitionProposal, type JsonDraftProposal, type Proposal} from '../shared/proposal';
 import type {VideoProjectSummary, WorkspaceError, WorkspaceState} from '../shared/workspace';
+import type {ProjectRootState, WorkspaceRootApi} from '../shared/workspace';
+import type {DependencyApi, DependencyReport} from '../shared/desktop';
 
 type Screen = 'start' | 'workspace';
 
+declare global {
+  var workspaceApi: WorkspaceRootApi | undefined;
+  var dependencyApi: DependencyApi | undefined;
+}
+
 export function StudioApp({assetFileAccess}: {assetFileAccess?: AssetFileAccess} = {}): JSX.Element {
+  const workspaceApi = globalThis.workspaceApi;
+  const [rootState, setRootState] = useState<ProjectRootState>(
+    workspaceApi ? {status: 'unconfigured'} : {status: 'ready', root: 'development'},
+  );
+  const [checkingRoot, setCheckingRoot] = useState(Boolean(workspaceApi));
+  const [dependencies, setDependencies] = useState<DependencyReport | null>(null);
+
+  useEffect(() => {
+    if (!workspaceApi) return;
+    let active = true;
+    workspaceApi.get().then((state) => {
+      if (active) setRootState(state);
+    }).finally(() => {
+      if (active) setCheckingRoot(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [workspaceApi]);
+
+  useEffect(() => {
+    if (rootState.status !== 'ready' || !globalThis.dependencyApi) return;
+    let active = true;
+    globalThis.dependencyApi.checkAll().then((report) => {
+      if (active) setDependencies(report);
+    });
+    return () => {
+      active = false;
+    };
+  }, [rootState.status]);
+
+  if (checkingRoot) {
+    return <main className="studio-shell" aria-live="polite">Workspaceを確認しています...</main>;
+  }
+
+  if (rootState.status !== 'ready' && workspaceApi) {
+    return <FirstRunGate api={workspaceApi} state={rootState} onChange={setRootState} />;
+  }
+
+  return (
+    <>
+      {dependencies ? <DependencyStatusPanel report={dependencies} /> : null}
+      <StudioContent assetFileAccess={assetFileAccess} />
+    </>
+  );
+}
+
+function FirstRunGate({
+  api,
+  state,
+  onChange,
+}: {
+  api: WorkspaceRootApi;
+  state: ProjectRootState;
+  onChange(state: ProjectRootState): void;
+}): JSX.Element {
+  const [busy, setBusy] = useState(false);
+  return (
+    <main className="studio-shell">
+      <section className="start-panel" aria-labelledby="first-run-title" aria-live="polite">
+        <h1 id="first-run-title" tabIndex={-1}>最初にWorkspaceを選択してください</h1>
+        <p>台本、素材、生成データ、動画の保存先として使用するfolderを選びます。</p>
+        {state.reason ? <p className="error-banner">{state.reason}</p> : null}
+        <button
+          data-testid="first-run-select-workspace-button"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            api.select().then(onChange).finally(() => setBusy(false));
+          }}
+          type="button"
+        >
+          {busy ? '確認中...' : 'Workspaceを選択'}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function DependencyStatusPanel({report}: {report: DependencyReport}): JSX.Element {
+  const label = (status: DependencyReport['codex']) =>
+    status.status === 'ready' ? `利用可能${status.detectedVersion ? ` (${status.detectedVersion})` : ''}` :
+      status.actionCode === 'codex-install' ? '未導入: Codex CLIをインストールしてください。' :
+      status.actionCode === 'codex-login' ? '未ログイン: codex loginを実行してください。' :
+      status.actionCode === 'voicevox-start' ? '未起動: VOICEVOXを起動してください。' :
+      '利用できません。再診断してください。';
+  return (
+    <aside className="dependency-status-panel" data-testid="dependency-status-panel" aria-live="polite">
+      <span>Codex: {label(report.codex)}</span>
+      <span>VOICEVOX: {label(report.voicevox)}</span>
+    </aside>
+  );
+}
+
+function StudioContent({assetFileAccess}: {assetFileAccess?: AssetFileAccess} = {}): JSX.Element {
   const [screen, setScreen] = useState<Screen>('start');
   const [projects, setProjects] = useState<VideoProjectSummary[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);

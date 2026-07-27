@@ -1,35 +1,43 @@
 # Code Quality Assessment
 
-## Test Coverage
+## Verification Status
 
-- **Overall**: Good for core MVP logic.
-- **Unit Tests**: Present for validation, subtitle wrapping, frame conversion, timeline generation, cache hashing, file existence checks, and character asset selection.
-- **Integration Tests**: VOICEVOX integration test exists but requires a running VOICEVOX Engine.
-- **Render Test**: `npm run test:render` exists as an optional render smoke test.
+- TypeScript strict check passes.
+- Default suite: 33 test files and 125 tests pass.
+- Studio production build passes.
+- Context-isolated Electron E2E passes.
+- Live Codex App Server initialize, thread start/resume, stream, and interrupt smoke passes.
+- Dependency audit reports zero vulnerabilities.
 
-## Code Quality Indicators
+## Quality Indicators
 
-- **Linting**: No dedicated lint command detected.
-- **Type Checking**: TypeScript configuration exists; prior type checking succeeded during MVP work.
-- **Code Style**: Modular and consistent TypeScript service boundaries.
-- **Documentation**: README covers CLI usage and troubleshooting.
-
-## Technical Debt
-
-- No GUI layer exists yet.
-- GUI integration will need a stable boundary for long-running command status, logs, progress, and cancellation.
-- Codex App Server integration is not yet represented in the codebase.
-- Current generated artifacts are file-based and suitable for local tooling, but GUI state such as draft proposals and review status is not modeled yet.
+- **Type safety**: Strong shared contracts and strict TypeScript.
+- **Runtime validation**: Zod and explicit trust-boundary guards.
+- **Security boundary**: `contextIsolation: true`, `nodeIntegration: false`, purpose-specific IPC.
+- **Testing**: Unit, component, PBT, fake-process integration, live smoke, and Electron E2E.
+- **Linting**: No dedicated lint script.
+- **Coverage metric**: No coverage threshold or published report.
+- **CI**: No automated CI workflow.
 
 ## Good Patterns
 
-- Clear separation between schema validation, asset checking, voice generation, timeline generation, render data building, and rendering.
-- Cache manifest avoids unnecessary VOICEVOX calls.
-- Script JSON remains the main project data contract.
+- Existing CLI behavior is reused rather than duplicated in GUI code.
+- Renderer has no direct Node/Electron access.
+- App Server approvals are separate, bounded, exactly-once, and fail closed.
+- Turn replay is avoided after reconnect.
+- Session persistence is atomic and file access is confined.
+- PBT covers protocol round-trip, bounds, and state monotonicity.
 
-## Risks for GUI Expansion
+## Technical Debt and U10 Risks
 
-- Long-running rendering and VOICEVOX operations must be surfaced asynchronously.
-- User approval should be required before applying AI-generated JSON to `input/`.
-- GUI should preserve current CLI reliability instead of bypassing existing validation.
+- Main process TypeScript is not production-bundled.
+- `process.cwd()` assumes development launch layout.
+- Packaging metadata, icons, signing, notarization, and release automation are absent.
+- External Codex and VOICEVOX prerequisites are not checked by an installer.
+- No update/rollback distribution mechanism exists.
+- No CI runner validates a clean packaged artifact.
+- README does not document end-user installation, privacy, permissions, or release recovery.
 
+## Packaging Readiness
+
+Core behavior is well tested, but packaging is not a mechanical configuration-only change. U10 must explicitly decide artifact format, target architecture, external-runtime policy, signing/notarization scope, release channel, and clean-machine acceptance criteria.

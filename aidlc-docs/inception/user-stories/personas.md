@@ -1,29 +1,39 @@
-# Personas: GUI with Embedded Codex Panel
+# U10 ペルソナ
 
-## Primary Persona
+## P1: 動画制作者
 
-### P1: Individual Technical Video Creator
+- **役割**: Apple Silicon Macでずんだもん動画を制作する個人利用者
+- **利用環境**: macOS、利用者が選んだWorkspace、外部Codex CLI、外部VOICEVOX Engine
+- **目標**:
+  - 配布ZIPから安全にアプリを導入する
+  - 初回起動時にWorkspaceを選び、すぐ制作を始める
+  - 外部依存が不足していても原因と復旧方法を理解する
+  - アプリ更新でWorkspaceを失わず、必要なら旧版へ戻す
+- **課題**:
+  - Gatekeeper、権限、CLI login、VOICEVOX起動状態の違いが分かりにくい
+  - アプリ本体と制作データの保存場所を混同しやすい
+- **成功条件**:
+  - 日本語の案内だけで初回設定と障害復旧を完了できる
+  - 更新やロールバック後も既存Workspaceを利用できる
 
-- **Role**: Solo creator producing recurring technical explainer videos.
-- **Environment**: macOS local workspace with Node.js, VOICEVOX, Remotion, and project assets.
-- **Goals**:
-  - Turn a rough idea into a coherent Zundamon explainer video.
-  - Discuss structure and wording with Codex before committing to a script.
-  - Review generated JSON in a way that is understandable and editable.
-  - Generate audio, preview, and render MP4 without leaving the production app.
-- **Pain Points**:
-  - Writing valid JSON manually is error-prone.
-  - Switching between chat, editor, terminal, file browser, and preview interrupts flow.
-  - AI-generated content must be reviewed before it changes actual project files.
-  - VOICEVOX, missing assets, and render failures need clear explanations.
-- **Success Criteria**:
-  - Can go from idea to MP4 through one GUI.
-  - Can see and control exactly when Codex changes files or runs commands.
-  - Can recover from invalid JSON, missing assets, auth issues, and render errors.
+## P2: リリース担当者
 
-## Persona Mapping
+- **役割**: ローカルMacでパッケージ生成、署名、公証、配布判定を行う開発者
+- **利用環境**: FileVaultを有効にしたApple Silicon Mac、固定済みnpm依存、必要に応じてApple認証情報
+- **目標**:
+  - 再現可能なarm64アプリとZIPを生成する
+  - 認証情報がない間もローカル検証を進める
+  - 署名・公証・整合性検証を満たした成果物だけを一般配布する
+- **課題**:
+  - 未署名成果物を誤って公開する危険がある
+  - secretや開発用ファイルが成果物へ混入する可能性がある
+- **成功条件**:
+  - release gateが失敗を見逃さず、復旧方法を日本語で示す
+  - SBOM、checksum、manifestにより成果物を追跡できる
 
-| Persona | Relevant Story Areas |
+## 対応範囲
+
+| ペルソナ | 対応ストーリー |
 |---|---|
-| P1: Individual Technical Video Creator | All MVP stories |
-
+| P1 動画制作者 | US-1〜US-6 |
+| P2 リリース担当者 | US-7〜US-12 |

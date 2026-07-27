@@ -1,125 +1,99 @@
-# Application Design Plan: GUI with Embedded Codex Panel
+# U10 Application Design計画
 
-## Design Plan Checklist
+## 実行チェックリスト
 
-- [x] Load requirements, user stories, reverse engineering artifacts, and execution plan.
-- [x] Identify main design decision points.
-- [x] Collect user answers for application design choices.
-- [x] Analyze answers for ambiguity or contradictions.
-- [x] Generate `components.md` with component definitions and high-level responsibilities.
-- [x] Generate `component-methods.md` with component interfaces and method signatures.
-- [x] Generate `services.md` with service definitions and orchestration patterns.
-- [x] Generate `component-dependency.md` with dependency relationships and communication patterns.
-- [x] Generate consolidated `application-design.md`.
-- [x] Validate design completeness and consistency.
+- [x] U10要件、ストーリー、実行計画、既存architectureを確認する。
+- [x] 追加・変更するcomponent責務の候補を整理する。
+- [x] 設計判断の確認質問を作成する。
+- [x] すべての回答を収集する。
+- [x] 回答の曖昧さ・矛盾・不足を分析する。
+- [x] `components.md`をU10向けに更新する。
+- [x] `component-methods.md`をU10向けに更新する。
+- [x] `services.md`をU10向けに更新する。
+- [x] `component-dependency.md`をU10向けに更新する。
+- [x] `application-design.md`へ統合する。
+- [x] 設計の完全性と整合性を検証する。
 
-## Design Scope
+## 最小設計方針
 
-This design covers the application-level architecture for a local video production GUI with an embedded Codex panel.
+- 既存のElectron Main／Preload／Renderer境界を維持する。
+- Workspace、dependency diagnosis、release verificationはMainが所有する。
+- Rendererには目的別の狭いIPCだけを公開する。
+- Forge設定とrelease scriptはruntime serviceへ抽象化しない。
+- 詳細な状態遷移と検証規則はFunctional Designで定義する。
 
-The design should define:
+## 確認質問
 
-- GUI application shell.
-- Single-video workspace.
-- Codex panel and Codex App Server adapter.
-- Draft JSON and approval workflow.
-- Raw JSON and structured scene editor.
-- Asset selector and public path handling.
-- Command runner and log streaming.
-- Preview and render integration.
-- Compatibility boundary with the existing CLI/core pipeline.
+すべての`[Answer]:`へ選択肢の文字を記入してください。
 
-## Questions
+### 質問1: Workspace責務
 
-Please answer every `[Answer]:` tag below before design artifacts are generated.
+Workspace選択、検証、保存済み参照の復元をどこへ配置しますか？
 
-## Question 1
-GUIの実装形態はどれを前提に設計しますか？
+A) Electron Mainの1つのWorkspace serviceへ集約する（推奨）
 
-A) Electronなどのデスクトップアプリとして設計する
+B) 選択はMain、検証と状態管理はRendererへ分ける
 
-B) ローカルWebアプリとして設計し、ブラウザで開く
+C) 既存local-file serviceへすべて追加する
 
-C) まずはローカルWebアプリとして設計し、将来的にデスクトップ化できる境界を残す
+D) 新しい独立processへ分離する
 
-X) Other (please describe after [Answer]: tag below)
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-[Answer]: a
+[Answer]:a
 
-## Question 2
-GUIと既存CLI/coreの接続はどれを前提にしますか？
+### 質問2: 外部依存診断
 
-A) GUIから既存npmコマンドを実行して連携する
+Codex CLIとVOICEVOXの診断componentをどう構成しますか？
 
-B) GUI用のローカルバックエンドを作り、既存coreサービスを直接呼び出す
+A) Main内の1つのDependency Diagnosis serviceで種類別adapterを呼ぶ（推奨）
 
-C) MVPはnpmコマンド実行を使い、設計上はcore直接呼び出しへ移行できる境界を作る
+B) CodexとVOICEVOXを完全に別serviceとして実装する
 
-X) Other (please describe after [Answer]: tag below)
+C) 既存Codex serviceとCommand Runnerへ個別に追加する
 
-[Answer]: a
+D) Rendererから直接診断する
 
-## Question 3
-Codex App Serverとの接続境界はどれがよいですか？
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-A) GUIフロントエンドが直接Codex App Serverとやり取りする
+[Answer]:a
 
-B) ローカルバックエンドがCodex App Serverとやり取りし、GUIには抽象化したイベントを渡す
+### 質問3: Release logicの境界
 
-C) まずはバックエンド経由を前提にし、直接接続は採用しない
+署名・公証、manifest、checksum、配布可否判定をどこへ置きますか？
 
-X) Other (please describe after [Answer]: tag below)
+A) Build scriptと純粋なrelease moduleへ限定し、通常のアプリruntimeへ含めない（推奨）
 
-[Answer]: a
+B) Electron MainのRelease serviceとしてruntimeへ含める
 
-## Question 4
-JSON下書きやチャット履歴の保存はどうしますか？
+C) Forge configurationだけへ記述する
 
-A) MVPではメモリ上だけで扱い、正式適用したJSONだけ保存する
+D) 外部の手動shell手順だけで扱う
 
-B) `generated/` 配下などにGUI用ドラフトと会話メタデータを保存する
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-C) 専用の `projects/` または `.zundamon-studio/` のようなGUI状態ディレクトリを作る
+[Answer]:a
 
-X) Other (please describe after [Answer]: tag below)
+### 質問4: Rendererへの公開方法
 
-[Answer]: a
+Workspaceと依存診断の結果をRendererへどう公開しますか？
 
-## Question 5
-プレビュー方式はどれを設計の主案にしますか？
+A) 既存preload patternに合わせた目的別typed APIを追加する（推奨）
 
-A) GUI内にRemotion Player相当を埋め込む
+B) 1つの汎用invoke APIを追加する
 
-B) GUIからRemotion Studioを起動し、別画面でプレビューする
+C) local-file APIを拡張して兼用する
 
-C) 主案はGUI内プレビュー、フォールバックとしてRemotion Studio起動を設計に含める
+D) RendererへNode APIを公開する
 
-X) Other (please describe after [Answer]: tag below)
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-[Answer]: a
+[Answer]:a
 
-## Question 6
-Codexの実行承認UIはどれがよいですか？
+## 必須成果物
 
-A) Codexメッセージ内に「承認して実行」ボタンを出す
-
-B) 画面上部やサイドバーに承認待ちキューを出す
-
-C) メッセージ内ボタンと承認待ちキューの両方を用意する
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: a
-
-## Question 7
-Application Designの成果物では、実装技術をどこまで固定しますか？
-
-A) Electron/React/Nodeなど、具体技術まで固定する
-
-B) React/Node/Remotion/Codex App Serverは固定し、デスクトップ化方式は未確定にする
-
-C) 技術は極力固定せず、責務と境界だけを設計する
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: a
+- [x] Component名、目的、責務、interface
+- [x] Method signature、input／output、高水準の目的
+- [x] Service責務とorchestration
+- [x] Dependency matrix、communication、data flow
+- [x] Security、Resiliency、PBT設計制約との整合

@@ -707,3 +707,12 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+.dependency-status-panel {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: #fff8d6;
+  color: #413900;
+  font-size: 0.85rem;
+}

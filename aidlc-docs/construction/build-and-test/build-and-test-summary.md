@@ -1,46 +1,67 @@
 # Build and Test Summary
 
-## Result
+## Build Status
 
-- TypeScript: passed。
-- Default suite: 33 files、125 tests passed。
-- Studio production build: passed。
-- Sample validation: passed。
-- Actual Render: 567 frames、18.5 seconds、約1.5 MB non-zero MP4。
-- Preview: Remotion Studio server ready、build passed。
-- GUI manual: overwrite、Stop/partial warning、retry、Finder reveal passed。
+- TypeScript: success
+- Studio production build: success
+- Electron Forge arm64 package／make: success
+- Artifacts: `.app`、261 MiB ZIP、CycloneDX SBOM、SHA-256、release manifest
+- Release state: `local-acceptance`
 
-## Coverage
+## Test Execution
 
-- U1 Workspace and Electron shell。
-- U2 Codex panel boundary。
-- U3 JSON draft review and scene editing。
-- U4 proposal approval flow。
-- U5 asset selection。
-- U6 Command Runner and logs。
-- U7 embedded Preview。
-- U8 Render workflow and CLI compatibility。
-- U9 Real Codex App Server、context-isolated IPC、stream、resume、Stop、approval、recovery。
+### Unit／Property Tests
 
-## Environmental Checks
+- 37 test files、135 tests passed、0 failed
+- Release PBT: 2 files、8 properties、各1,000 run passed
+- `PBT_SEED`によるseed replayを用意
+- Coverage percentage: 未計測
 
-- VOICEVOX、native Electron/Finder、actual mediaはlocal environment依存。
-- 4K/60fps/30分capacity testは未実行で、hardware別のmanual measurement対象。
-- Dependency auditは0件。force fixは未使用。
+### Integration／E2E
+
+- Electron context-isolated E2E: passed
+- Packaged CLI: 742 framesのMP4 render passed
+- Workspace、dependency diagnosis、release policy integration: passed
+- VOICEVOX live integration: environment依存のため今回未実行
+
+### Performance
+
+- ZIP size gate: 261 MiB、warning、blockingなし
+- Codex 5秒／VOICEVOX 3秒timeout: test passed
+- cold start p95 5秒／Workspace復元p95 2秒: manual measurement未実行
+- multi-user load／stress: local single-user appのためN/A
+
+### Security
+
+- Production dependency audit: 0 vulnerabilities
+- Artifact inclusion、SBOM、checksum、manifest: passed
+- 未署名public verification: codesignで拒否、fail closed
+- 実署名／公証／staple／Gatekeeper: Apple credential未提供のためdeferred
 
 ## Extension Compliance
 
-- Security Baseline: applicable rules compliant。Local non-networked項目はN/A。
-- Resiliency Baseline: bounded retry、timeout、non-replay、cleanup、recovery tests compliant。Distributed deployment項目はN/A。
-- Property-Based Testing: full mode compliant。fast-check 4.9.0でround-trip、bounds、terminal/approval monotonicity、shrinking、seed replayを検証。
+### Security Baseline
+
+- SECURITY-05、09、10、12、13、15: compliant
+- SECURITY-01〜04、06〜08、11、14: local desktop applicationで該当resource／authentication／network serviceがないためN/A
+- Blocking finding: なし
+
+### Resiliency Baseline
+
+- Atomic Workspace保存、failure containment、timeout、manual retry、rollback／recovery: compliant
+- Cloud HA、multi-region DR、central observability: local single-user applicationのためN/A
+- Blocking finding: なし
+
+### Property-Based Testing
+
+- PBT-08: shrinking、seed表示、`PBT_SEED` replay、release 1,000 runに対応しcompliant
+- PBT-01〜07、09、10: Code Generation成果物とfast-check suiteでcompliant
+- Blocking finding: なし
 
 ## Overall Status
 
-Build and Test complete。Operations placeholderへ進行可能。
-
-## U9 Verification
-
-- TypeScript、125-test example/PBT suite、Studio build、context-isolated Electron E2E passed。
-- Live Codex App Server initialize、thread start/resume、turn start、stream、interrupt completion passed。
-- Dependency audit: 0 vulnerabilities after sequential exact upgrades。
-- Fake-process integration: approval deny/timeout、process exit、bounded retry、manual half-open recovery passed。
+- Build: success
+- Automated tests: pass
+- Local acceptance: ready
+- Public distribution: not ready。Apple署名・公証証跡が揃うまでblocked
+- Operations placeholderへ進行可能

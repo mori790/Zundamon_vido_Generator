@@ -2,6 +2,8 @@ import {contextBridge, ipcRenderer} from 'electron';
 import type {CommandApi, LogEntry, Operation, StartCommandRequest} from '../shared/command';
 import type {PreviewApi} from '../shared/preview';
 import type {RenderOutputApi} from '../shared/render';
+import type {DependencyApi} from '../shared/desktop';
+import type {WorkspaceRootApi} from '../shared/workspace';
 
 const commandApi: CommandApi = {
   start: (request: StartCommandRequest) => ipcRenderer.invoke('command:start', request),
@@ -21,6 +23,17 @@ const commandApi: CommandApi = {
 };
 
 contextBridge.exposeInMainWorld('commandApi', commandApi);
+
+contextBridge.exposeInMainWorld('workspaceApi', {
+  get: () => ipcRenderer.invoke('workspace:get'),
+  select: () => ipcRenderer.invoke('workspace:select'),
+  clear: () => ipcRenderer.invoke('workspace:clear'),
+} satisfies WorkspaceRootApi);
+
+contextBridge.exposeInMainWorld('dependencyApi', {
+  checkAll: () => ipcRenderer.invoke('dependency:check-all'),
+  check: (name) => ipcRenderer.invoke('dependency:check', name),
+} satisfies DependencyApi);
 
 const previewApi: PreviewApi = {
   check: (videoId: string) => ipcRenderer.invoke('preview:check', videoId),

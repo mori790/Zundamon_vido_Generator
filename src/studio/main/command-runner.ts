@@ -25,6 +25,7 @@ type RunnerEvents = {
   operation(operation: Operation): void;
   log(entry: LogEntry): void;
 };
+type Invocation = {command: string; args: string[]; env?: NodeJS.ProcessEnv};
 
 export class CommandRunner {
   private operation: Operation | null = null;
@@ -38,6 +39,7 @@ export class CommandRunner {
     private readonly events: RunnerEvents,
     private readonly spawnCommand: SpawnCommand = spawn,
     private readonly verifyOutput?: (videoId: string) => Promise<unknown>,
+    private readonly resolveInvocation?: (script: string, videoId: string) => Invocation,
   ) {}
 
   start(request: StartCommandRequest): Operation {
@@ -135,11 +137,15 @@ export class CommandRunner {
   private runScript(script: string, videoId: string): Promise<boolean> {
     this.addLog('system', `npm run ${script} -- ${videoId}`);
     return new Promise((resolve, reject) => {
-      const executable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-      const child = this.spawnCommand(executable, ['run', script, '--', videoId], {
+      const invocation = this.resolveInvocation?.(script, videoId) ?? {
+        command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+        args: ['run', script, '--', videoId],
+      };
+      const child = this.spawnCommand(invocation.command, invocation.args, {
         cwd: this.cwd,
         detached: process.platform !== 'win32',
         shell: false,
+        env: {...process.env, ...invocation.env},
       });
       this.child = child;
       this.pipeLines(child.stdout, 'stdout');

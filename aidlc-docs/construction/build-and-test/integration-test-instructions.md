@@ -1,18 +1,19 @@
 # Integration Test Instructions
 
-## Automated Boundaries
+## Electron Boundary
 
 ```bash
-npm run test:integration
 npm run test:studio:e2e
 ```
 
-- `test:integration` は起動中のVOICEVOX Engineを検証する。
-- `test:studio:e2e` はElectron main/preloadとasset file access boundaryを検証する。
+context-isolated Preload、Workspace API、dependency degraded state、local file access、asset選択を確認する。期待値は`U5_ELECTRON_E2E_OK`とexit code 0である。
 
 ## CLI Pipeline
 
+VOICEVOX Engineを起動した場合:
+
 ```bash
+npm run test:integration
 npm run validate -- sample-video
 npm run voice -- sample-video
 npm run timeline -- sample-video
@@ -20,20 +21,22 @@ npm run preview -- sample-video
 npm run render -- sample-video
 ```
 
-Expected:
+VOICEVOXなしのrender確認:
 
-- WAVは `public/audio/sample-video/`、timelineは `generated/timelines/` に生成される。
-- PreviewはRemotion Studioを起動してbuildを完了する。
-- RenderはprogressとETAを出力し、`output/sample-video.mp4` をnon-zero fileとして検証する。
+```bash
+npm run test:render
+```
 
-## GUI Workflow
+期待結果はWAV、timeline、Preview、non-zero MP4、単調増加するprogress、最終100%である。
 
-1. `npm run studio:dev` と `npm run studio:start` を起動する。
-2. Workspace、draft review、asset selection、Validate、Voice、Timeline、Previewを確認する。
-3. Renderのoverwrite confirm/cancel、progress、ETA、Stop、partial warning、manual retry、Finder revealを確認する。
-## U9 Codex App Server
+## Packaged Runtime
 
-- Run `npm run test:studio:e2e` to verify the context-isolated preload and purpose-specific local-file IPC.
-- Start Studio, select Real, and verify initialize, thread start/resume, streamed response, Stop, reconnect, and new thread.
-- Trigger a safe approval request and verify Approve, Deny, timeout, disconnect, and shutdown settle fail closed.
-- Fault-inject malformed/oversized JSONL, process exit, pending capacity, and three reconnect failures; verify manual recovery without turn replay.
+1. `npm run package`を実行する。
+2. `.app`を起動し、Workspaceを選択する。
+3. Validate、Timeline、Preview、Renderを実行する。
+4. RendererがTypeScript source、dev server、repository cwdへ依存しないことを確認する。
+5. Render後にFinder revealとMP4再生を確認する。
+
+## Cleanup
+
+Test用Workspaceだけを削除する。生成途中のMP4は障害調査に使うため自動削除しない。

@@ -39,6 +39,14 @@ async function run(): Promise<void> {
   ipcMain.handle('preview:check', () => ({status: 'missing', missing: []}));
   ipcMain.handle('preview:load', () => ({status: 'missing', missing: []}));
   ipcMain.handle('render-output:status', () => ({status: 'missing'}));
+  ipcMain.handle('workspace:get', () => ({status: 'ready', root: temporaryDirectory}));
+  ipcMain.handle('workspace:select', () => ({status: 'ready', root: temporaryDirectory}));
+  ipcMain.handle('workspace:clear', () => undefined);
+  ipcMain.handle('dependency:check-all', () => ({
+    checkedAt: new Date().toISOString(),
+    codex: {status: 'ready', action: 'none'},
+    voicevox: {status: 'ready', action: 'none'},
+  }));
   ipcMain.handle('codex:connect', () => ({status: 'connected'}));
   ipcMain.handle('codex:interrupt', () => undefined);
   ipcMain.handle('codex:disconnect', () => undefined);

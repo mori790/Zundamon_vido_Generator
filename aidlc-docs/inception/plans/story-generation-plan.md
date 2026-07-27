@@ -1,155 +1,124 @@
-# Story Generation Plan: GUI with Embedded Codex Panel
+# U10 ユーザーストーリー生成計画
 
-## Planning Checklist
+## 実行チェックリスト
 
-- [x] Review requirements and reverse engineering context.
-- [x] Confirm that User Stories should execute for this user-facing GUI feature.
-- [x] Collect user answers for story structure and persona assumptions.
-- [x] Analyze answers for ambiguity or contradictions.
-- [x] Generate `personas.md`.
-- [x] Generate `stories.md`.
-- [x] Verify each story has acceptance criteria.
-- [x] Verify stories follow INVEST where practical.
-- [x] Map personas to relevant stories.
+- [x] U10要件と最新のリバースエンジニアリング成果物を確認する。
+- [x] ユーザーストーリーの実施価値を判定する。
+- [x] ストーリー生成方針と確認質問を作成する。
+- [x] すべての回答を収集する。
+- [x] 回答の曖昧さ・矛盾・不足を分析する。
+- [x] ストーリー生成計画の明示承認を得る。
+- [x] `aidlc-docs/inception/user-stories/personas.md`をU10向けに更新する。
+- [x] `aidlc-docs/inception/user-stories/stories.md`をU10向けに更新する。
+- [x] 各ストーリーがINVEST基準を実用上満たすことを確認する。
+- [x] 各ストーリーへ受入条件を付ける。
+- [x] ペルソナとストーリーの対応を確認する。
 
-## Recommended Story Approach
+## 推奨する構成
 
-Use a hybrid of user journey-based and feature-based breakdown.
+利用者ジャーニーを主軸にし、リリース担当者の作業を別の流れとして分ける。
 
-- **Primary organization**: User journey, because the product value is the flow from idea to rendered MP4.
-- **Secondary organization**: Feature clusters, because Codex panel, JSON review, asset management, preview, and command execution each need testable acceptance criteria.
+- **動画制作者**: インストール、初回起動、Workspace選択、依存診断、制作、更新、復旧
+- **リリース担当者**: ローカル検証用パッケージ、署名・公証、配布可否判定、整合性情報生成
 
-## Story Breakdown Options Considered
+機能単位だけで分けるより、一般配布できない成果物を誤って扱う危険と、初回利用時のつまずきを受入条件へ反映しやすい。
 
-### User Journey-Based
+## 検討した分割方法
 
-Stories follow the creator workflow: project setup, planning chat, JSON draft, review, asset assignment, validation, preview, render.
+- **利用者ジャーニー別**: 操作の順序と復旧を表現しやすい。推奨する主方式。
+- **機能別**: Forge、Workspace、依存診断など実装境界に対応しやすい。要件対応表で補助的に使う。
+- **ペルソナ別**: 動画制作者とリリース担当者の責務を分離しやすい。章の区分に使う。
+- **ドメイン別**: 配布、制作、復旧を整理できるが、操作順が見えにくい。
+- **エピック別**: 大規模計画には向くが、U10だけでは階層を増やしすぎるため採用しない。
 
-**Best for this project** because the main risk is whether the end-to-end creator experience feels coherent.
+## 確認質問
 
-### Feature-Based
+すべての`[Answer]:`へ選択肢の文字を記入してください。
 
-Stories are grouped by GUI feature: Codex panel, editor, asset manager, preview, logs, command runner.
+### 質問1: ストーリーの主な整理方法
 
-**Useful as a secondary structure** because implementation will likely be organized by components.
+U10のストーリーをどの方法で整理しますか？
 
-### Persona-Based
+A) 利用者ジャーニーを主軸にし、動画制作者とリリース担当者を分ける（推奨）
 
-Stories are grouped by creator types or operator roles.
+B) Electron Forge、Workspace、依存診断などの機能別に整理する
 
-**Less useful for MVP** because the initial user is a single individual creator, not a multi-role organization.
+C) 動画制作者とリリース担当者のペルソナ別に整理する
 
-### Domain-Based
+D) 配布、制作、復旧などのドメイン別に整理する
 
-Stories are grouped by planning, scripting, generation, and rendering domains.
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-**Useful for future expansion** but too abstract for early GUI experience design.
+[Answer]:a
 
-### Epic-Based
+### 質問2: ストーリーの粒度
 
-Stories are grouped under epics with sub-stories.
+どの粒度で作成しますか？
 
-**Useful for planning** and will be used lightly to keep stories readable.
+A) 1つの受入確認で完結する実装可能な粒度（推奨）
 
-## Mandatory Artifacts
+B) 初回利用やリリース作業をまとめた大きな粒度
 
-- [x] Generate `aidlc-docs/inception/user-stories/personas.md`.
-- [x] Generate `aidlc-docs/inception/user-stories/stories.md`.
-- [x] Ensure stories include acceptance criteria.
-- [x] Ensure stories are Independent, Negotiable, Valuable, Estimable, Small, and Testable where practical.
-- [x] Map personas to relevant user stories.
+C) 要件項目ごとに1件ずつ作成する粒度
 
-## Questions
+D) 主要フローだけを作成する最小粒度
 
-Please answer every `[Answer]:` tag below before story generation starts.
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Question 1
-ストーリーの粒度はどれがよいですか？
+[Answer]:a
 
-A) MVP実装に近い細かめのストーリーにする
+### 質問3: 受入条件の形式
 
-B) 体験設計を重視した大きめのストーリーにする
+受入条件をどの形式で記載しますか？
 
-C) エピックは大きく、配下ストーリーは実装可能な粒度にする
+A) Given／When／Then形式（推奨）
 
-X) Other (please describe after [Answer]: tag below)
+B) 確認項目の箇条書き
 
-[Answer]: a
+C) 正常系は箇条書き、失敗系はGiven／When／Then形式
 
-## Question 2
-ペルソナはどの範囲で作りますか？
+D) 新規macOS利用者プロファイル用チェックリストだけに集約する
 
-A) 個人クリエイター1人に絞る
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-B) 個人クリエイター、技術監修者、将来のGUI運用者を分ける
+[Answer]:a
 
-C) MVPは個人クリエイター中心にし、補助ペルソナとしてAI/Codexとメンテナーを記載する
+### 質問4: 優先度
 
-X) Other (please describe after [Answer]: tag below)
+ストーリーの優先度をどのように示しますか？
 
-[Answer]: a
+A) Must／Should／Couldで示す（推奨）
 
-## Question 3
-受け入れ条件の書き方はどれがよいですか？
+B) 一般配布前／認証情報入手後で示す
 
-A) Given/When/Then形式で厳密に書く
+C) 動画制作者向け／リリース担当者向けだけを区別し、優先度は付けない
 
-B) 箇条書きで読みやすく書く
+D) すべて同じ優先度として扱う
 
-C) 重要ストーリーはGiven/When/Then、軽いストーリーは箇条書きにする
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-X) Other (please describe after [Answer]: tag below)
+[Answer]:a
 
-[Answer]: a
+### 質問5: 認証情報がない状態の扱い
 
-## Question 4
-最優先のユーザージャーニーはどれですか？
+署名・公証用認証情報がない現状をストーリーへどう反映しますか？
 
-A) 企画相談からJSON適用まで
+A) ローカル検証用成果物の完成と、一般配布禁止ゲートを別ストーリーにする（推奨）
 
-B) JSON適用からMP4出力まで
+B) 認証情報入手後の署名・公証だけをストーリー化する
 
-C) 企画相談からMP4出力までの全体
+C) 署名・公証は受入条件から除外し、手順書だけに記載する
 
-X) Other (please describe after [Answer]: tag below)
+D) U10ではローカル検証用成果物だけを扱う
 
-[Answer]: c
+E) その他（`[Answer]: E - 説明`の形式で記入する）
 
-## Question 5
-Codexのストーリーでは何を強く表現しますか？
+[Answer]:a
 
-A) 相談相手としての企画支援
+## 生成する必須成果物
 
-B) JSON生成と修正の自動化
-
-C) 承認付きで制作作業を進める制作アシスタント
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: a
-
-## Question 6
-失敗時のストーリーはどこまで含めますか？
-
-A) MVPでは主要な成功パスだけに絞る
-
-B) VOICEVOX未起動、JSON不正、素材不足、レンダー失敗は含める
-
-C) 上記に加えて、Codex接続失敗や認証失敗も含める
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: c
-
-## Question 7
-ストーリーの優先度は付けますか？
-
-A) Must/Should/Couldで優先度を付ける
-
-B) MVP/将来対応で分ける
-
-C) 今回は優先度を付けず、要件との対応だけを示す
-
-X) Other (please describe after [Answer]: tag below)
-
-[Answer]: a
+- [x] `personas.md`: 動画制作者とリリース担当者の目的、制約、成功条件
+- [x] `stories.md`: INVESTを意識したストーリーと受入条件
+- [x] 要件IDとストーリーの対応
+- [x] ペルソナとストーリーの対応
+- [x] 正常系、依存不足、権限不足、署名・公証失敗、更新・復旧の扱い

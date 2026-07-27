@@ -1,6 +1,9 @@
 node_modules/
 dist/
 dist-studio/
+dist-cli/
+dist-remotion/
+out/
 .DS_Store
 output/*.mp4
 public/audio/**/*.wav

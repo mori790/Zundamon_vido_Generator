@@ -1,4 +1,4 @@
-# Unit Test Execution
+# Unit Test Execution Instructions
 
 ## Default Suite
 
@@ -6,22 +6,25 @@
 npm test
 ```
 
-## Expected Result
+期待値は37 files、135 tests、0 failuresである。CLI core、Workspace、First Run、dependency diagnosis、release policy、Command Runner、Preview、Render、Codex、React UIを検証する。VOICEVOX live testはdefault suiteから除外される。
 
-- 33 test files、125 tests、0 failures。
-- CLI core、draft review、assets、Codex proposal、Command Runner、Preview、Render output、React panelsを検証する。
-- Live VOICEVOX testはdefault suiteから除外される。
+## Property-Based Tests
 
-## Focused Checks
+通常は各propertyを100 run、release gateでは1,000 run実行する。
 
 ```bash
-npx vitest run tests/studio/script-draft.test.ts
-npx vitest run tests/studio/command-runner.test.ts
-npx vitest run tests/studio/PreviewPanel.test.tsx
-npx vitest run tests/studio/ProductionCommandPanel.test.tsx
-npx vitest run tests/studio/codex-app-server.test.ts tests/studio/codex-app-server.property.test.ts
-npx vitest run tests/studio/codex-app-server-service.test.ts tests/studio/real-codex-connection.test.ts
-npx vitest run tests/studio/CodexPanel.real.test.tsx
+npm run test:pbt
+npm run test:pbt:release
 ```
 
-失敗時は最初のfailureを修正し、`npx tsc --noEmit` と `npm test` を再実行する。Property testはVitestが表示するfast-checkの `seed` と `path` で再現する。
+fast-checkは失敗時にseed、path、shrunk counterexampleを表示する。報告されたseedを使って再現する。
+
+```bash
+PBT_SEED='<reported seed>' PBT_RUNS=1000 npm run test:pbt
+```
+
+PBTはWorkspace round-trip／idempotence、release state invariant、manifest normalization、artifact allowlistを対象とする。具体的なbusiness regressionはexample testで併用する。
+
+## Failure Handling
+
+最初のfailureとshrunk counterexampleを修正し、focused test、`npx tsc --noEmit`、default suite、release PBTの順に再実行する。失敗をretryだけで抑制しない。

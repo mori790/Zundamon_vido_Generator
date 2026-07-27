@@ -2,56 +2,60 @@
 
 ## External APIs
 
-### VOICEVOX Audio Query
+### VOICEVOX
 
-- **Method**: `POST`
-- **Path**: `/audio_query`
-- **Purpose**: Create an audio query object from text and speaker ID.
-- **Caller**: `src/core/voicevox-client.ts`.
+- `POST /audio_query` - creates an audio query.
+- `POST /synthesis` - generates WAV audio.
+- Base URL defaults to `http://localhost:50021`.
 
-### VOICEVOX Synthesis
+### Codex App Server
 
-- **Method**: `POST`
-- **Path**: `/synthesis`
-- **Purpose**: Generate WAV audio from an audio query.
-- **Caller**: `src/core/voicevox-client.ts`.
+- Transport: newline-delimited JSON over child-process stdio.
+- Stable methods used: `initialize`, `initialized`, `thread/start`, `thread/resume`, `turn/start`, and `turn/interrupt`.
+- Notifications consumed: agent-message delta and turn completion.
+- Server requests: recognized approval requests are surfaced to the user; unknown requests are denied.
+- Limits: 64 KiB prompt, 1 MiB JSONL line, 128 pending requests, 5-minute approval timeout.
 
-## Internal APIs
+## Electron Renderer APIs
 
-### `loadVideoScript(videoId)`
+### `commandApi`
 
-- **Purpose**: Load and validate `input/{videoId}.json`.
-- **Returns**: Parsed `VideoScript`.
+- `start(request)`, `stop(operationId)`, `clearLogs(operationId)`, `snapshot()`.
+- `onOperation(listener)` and `onLog(listener)` return unsubscribe functions.
 
-### `generateVoices(videoId, options)`
+### `previewApi`
 
-- **Purpose**: Generate or reuse scene-level WAV audio.
-- **Returns**: Generated and cached scene IDs plus manifest.
+- `check(videoId)` and `load(videoId)`.
 
-### `generateTimeline(script, manifest)`
+### `renderOutputApi`
 
-- **Purpose**: Calculate frame timing from audio durations and scene padding.
-- **Returns**: `Timeline`.
+- `status(videoId)`, `confirmOverwrite(videoId)`, and `reveal(videoId)`.
 
-### `renderVideo(videoId, options)`
+### `localFileApi`
 
-- **Purpose**: Build render data and render MP4 output.
-- **Returns**: Render result with output path.
+- Workspace: list input, read script, write script.
+- Chat: read and write per-video history.
+- Asset: select, tokenized copy, existence check, and trash.
 
-## Data Models
+### `codexApi`
 
-### `VideoScript`
+- `connect(videoId)`, `send(input)`, `interrupt()`, `reconnect(videoId)`.
+- `startNewThread(videoId)`, `respondApproval(id, approved)`, `disconnect()`.
+- `onEvent(listener)` returns an unsubscribe function.
 
-- **Purpose**: User-authored video definition.
-- **Important Fields**: `id`, `title`, `speaker`, `video`, `subtitle`, `scenes`.
+## Core Internal APIs
 
-### `Scene`
+- `loadVideoScript(videoId)` - loads and validates input JSON.
+- `generateVoices(videoId, options)` - generates/reuses scene WAV files.
+- `generateTimeline(script, manifest)` - calculates frame timing.
+- `buildRenderData(videoId)` - joins validated script, audio manifest, and timeline.
+- `renderVideo(videoId, options)` - renders MP4 with progress and stop support.
+- `applyScriptDraft(videoId, rawJson, fileAccess)` - validates, backs up, and writes an approved script.
 
-- **Purpose**: Single spoken video segment.
-- **Important Fields**: `id`, `type`, `text`, `emotion`, `visual`, `durationBeforeSpeech`, `durationAfterSpeech`.
+## Principal Data Models
 
-### `Timeline`
+- `VideoScript`, `Scene`, `Timeline`, `WorkspaceState`.
+- `ChatHistory`, `ChatMessage`, `Proposal`, `CodexApproval`, `CodexEvent`.
+- `Operation`, `LogEntry`, `PreviewState`, `RenderOutputStatus`.
 
-- **Purpose**: Frame-level scene timing.
-- **Important Fields**: `videoId`, `fps`, `totalFrames`, `scenes`.
-
+No public REST API or database schema exists.

@@ -1,66 +1,34 @@
-# Application Design: GUI with Embedded Codex Panel
+# U10 Application Design
 
-## Summary
+## 概要
 
-The proposed GUI is an Electron desktop application with a React renderer. It sits above the existing Zundamon Video Generator CLI and Remotion pipeline. The MVP uses existing npm commands for validation, voice generation, timeline generation, preview, and rendering. Codex App Server is connected directly from the GUI renderer, with action approval handled inside Codex messages.
+U10は既存ElectronのMain／Preload／Renderer境界を維持し、Main側へWorkspace Service、Resource Resolver、Dependency Diagnosis、Packaged Command Adapterを追加する。配布処理はBuild Script、Forge Configuration、Release Moduleへ限定し、通常runtimeから隔離する。
 
-## Core Design Decisions
+## 採用した判断
 
-- **Desktop shell**: Electron.
-- **UI**: React.
-- **Local execution**: Electron main process runs npm commands and local file operations.
-- **Codex connection**: Renderer directly connects to Codex App Server.
-- **Draft persistence**: Draft JSON and chat-derived proposals are memory-only until applied.
-- **Approval UI**: Inline approval buttons in Codex messages.
-- **Preview**: GUI-embedded Remotion preview is the main target.
-- **CLI compatibility**: Existing npm commands and project folders remain intact.
+- Workspace選択・検証・復元を1つのMain serviceへ集約する。
+- CodexとVOICEVOXは1つの診断serviceから種類別adapterとして呼ぶ。
+- Release logicはbuild scriptと純粋moduleへ限定する。
+- Rendererには目的別typed preload APIだけを公開する。
+- 既存Command Runner、local-file、Preview、Render、Codex serviceを再利用する。
 
-## Primary Components
+## 成果物
 
-- Electron App Shell.
-- Workspace Controller.
-- Script Repository Adapter.
-- Draft State Store.
-- Codex Panel.
-- Codex App Server Client.
-- Action Approval Controller.
-- JSON Review UI.
-- Scene Editor.
-- Asset Manager.
-- Validation Adapter.
-- Command Runner.
-- Log Panel.
-- Preview Panel.
+- [components.md](components.md): 8 componentの目的、責務、境界
+- [component-methods.md](component-methods.md): 高水準method signatureと共有型
+- [services.md](services.md): Workspace、診断、packaged command、release orchestration
+- [component-dependency.md](component-dependency.md): dependency matrixとdata flow
 
-## Service Boundaries
+## 設計制約
 
-- **Project Workspace Service**: Coordinates active video project state.
-- **Codex Conversation Service**: Handles planning chat and Codex proposals.
-- **Draft Review Service**: Manages draft JSON, validation, application, and discard.
-- **Asset Workflow Service**: Handles visual selection and scene attachment.
-- **Production Command Service**: Runs existing npm commands and streams logs.
-- **Preview Service**: Provides embedded preview and fallback behavior.
-- **Approval Service**: Ensures Codex-proposed changes and commands require explicit approval.
+- Workspace、resource、`userData`を別trust boundaryとして扱う。
+- RendererへNode、filesystem、汎用IPCを公開しない。
+- shell文字列連結とcredential保存を行わない。
+- 未署名成果物をpublishableへ昇格させない。
+- 無効Workspace、公証失敗、証跡不足ではfail closedにする。
 
-## Important Constraints
+## Extension準拠
 
-- Codex-generated JSON must remain unapplied until approved.
-- Active scripts must stay compatible with `input/{videoId}.json`.
-- Existing CLI commands must continue to work.
-- Long-running operations must report status and logs.
-- Memory-only draft storage means unapplied drafts can be lost on app quit. This is acceptable for MVP based on the selected design, but should be revisited after the first usable version.
-
-## Key Risks
-
-- Direct renderer-to-Codex connection may need revision if authentication, protocol, or desktop security constraints require a main-process or backend adapter.
-- Embedded Remotion preview may be more complex than command-based preview.
-- npm command orchestration is pragmatic for MVP but less precise than directly calling core services.
-- Memory-only drafts reduce persistence complexity but increase risk of losing uncommitted AI proposals.
-
-## Artifact References
-
-- `components.md` defines component responsibilities.
-- `component-methods.md` defines high-level method signatures.
-- `services.md` defines service orchestration.
-- `component-dependency.md` defines communication and dependency patterns.
-
+- **Security Baseline**: Main ownership、typed IPC、path allowlist、credential隔離、署名・公証、fail-closedを設計へ反映。Cloud固有規則は適用外。阻害事項なし。
+- **Resiliency Baseline**: dependency単位の失敗分離、Workspace再選択、rollback、cleanupを反映。Cloud HA／DRは適用外。阻害事項なし。
+- **Property-Based Testing**: Workspace path、設定、manifest、release stateの純粋境界をテスト可能にした。阻害事項なし。

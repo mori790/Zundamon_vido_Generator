@@ -55,6 +55,22 @@ describe('StudioApp', () => {
     delete globalThis.commandApi;
     delete globalThis.previewApi;
     delete globalThis.renderOutputApi;
+    delete globalThis.workspaceApi;
+    delete globalThis.dependencyApi;
+  });
+
+  it('blocks the Studio until a packaged Workspace is selected', async () => {
+    globalThis.workspaceApi = {
+      get: vi.fn().mockResolvedValue({status: 'unconfigured'}),
+      select: vi.fn().mockResolvedValue({status: 'ready', root: '/tmp/workspace'}),
+      clear: vi.fn(),
+    };
+    vi.spyOn(workspaceClient, 'listVideoProjects').mockResolvedValue([]);
+    render(<StudioApp />);
+    const select = await screen.findByTestId('first-run-select-workspace-button');
+    expect(screen.queryByTestId('start-screen-project-list')).not.toBeInTheDocument();
+    fireEvent.click(select);
+    expect(await screen.findByTestId('start-screen-project-list')).toBeInTheDocument();
   });
 
   it('renders project list from input scripts', async () => {

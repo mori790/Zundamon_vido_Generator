@@ -1,315 +1,203 @@
-# User Stories: GUI with Embedded Codex Panel
+# U10 ユーザーストーリー
 
-## Story Format
+## 記載方針
 
-- **Persona**: P1 Individual Technical Video Creator.
-- **Priority**: Must, Should, or Could.
-- **Acceptance Criteria**: Given/When/Then format.
-- **Requirement Mapping**: Functional and non-functional requirement IDs from `requirements.md`.
+- **整理方法**: 利用者ジャーニー別
+- **粒度**: 1つの受入確認で完結する実装可能な単位
+- **受入条件**: Given／When／Then形式
+- **優先度**: Must／Should／Could
+- **要件対応**: U10要件IDを各ストーリーへ記載
 
-## Epic 1: Open a Single Video Workspace
+## 動画制作者のジャーニー
 
-### US-1: Open or create a single video project
+### US-1: 配布ZIPから安全に導入する
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to open or create one video project in the GUI, **so that** I can manage planning, script review, assets, preview, and rendering in one workspace.
+**優先度**: Must
+**ペルソナ**: P1
 
-**Acceptance Criteria**
+動画制作者として、検証済みZIPからアプリを導入したい。そうすることで、不明な回避操作をせず安全に利用を始められる。
 
-- Given the GUI is open, when I enter or select a video ID, then the app loads the matching project workspace.
-- Given no script exists for the video ID, when I create the workspace, then the app starts with an empty or draft script state.
-- Given a script exists in `input/{videoId}.json`, when I open the workspace, then the app displays the active script and current generated artifact status.
+**受入条件**
 
-**Requirement Mapping**: FR-1, FR-12, NFR-1
+- Given 署名・公証済みarm64 ZIPがある、When 展開してアプリを初回起動する、Then Gatekeeperによる通常の確認後にアプリが起動する。
+- Given 利用者文書を開く、When 導入手順を確認する、Then Gatekeeperを無効化する案内はなく、対応macOSと外部依存が日本語で示される。
 
-### US-2: Preserve CLI compatibility
+**要件対応**: U10-FR-1、U10-FR-8、U10-FR-12、U10-FR-13、U10-NFR-5
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** the GUI to use the same project files as the CLI, **so that** I can still run terminal commands when needed.
+### US-2: 初回起動時にWorkspaceを選択する
 
-**Acceptance Criteria**
+**優先度**: Must
+**ペルソナ**: P1
 
-- Given the GUI applies a script, when I run `npm run validate -- {videoId}`, then the CLI can validate the same script.
-- Given the GUI creates assets or generated files, when I inspect the workspace, then files remain in the existing `input/`, `public/`, `generated/`, and `output/` structure.
-- Given I choose not to use the GUI, when I run existing npm commands, then the previous CLI workflow still works.
+動画制作者として、制作データを置くfolderを自分で選びたい。そうすることで、アプリ本体とWorkspaceを分離して管理できる。
 
-**Requirement Mapping**: FR-12, NFR-4
+**受入条件**
 
-## Epic 2: Plan with Codex
+- Given 保存済みWorkspaceがない、When アプリを起動する、Then folder選択が表示され、選択完了まで制作操作は開始されない。
+- Given folderを選択した、When 構造と書込権限が有効である、Then 参照だけが`userData`へ保存されWorkspaceが開く。
+- Given 許可外pathまたは利用不能folderを選択した、When 検証する、Then 書込みを行わず日本語で再選択を案内する。
 
-### US-3: Discuss a video idea with Codex
+**要件対応**: U10-FR-2、U10-FR-3、U10-NFR-1、U10-NFR-5
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to discuss my video idea with Codex inside the GUI, **so that** I can shape the target audience, angle, structure, and tone before generating JSON.
+### US-3: Workspaceを安全に復元する
 
-**Acceptance Criteria**
+**優先度**: Must
+**ペルソナ**: P1
 
-- Given the Codex panel is available, when I describe a video idea, then Codex responds within the same workspace.
-- Given my idea is incomplete, when Codex needs more context, then it asks clarifying questions or proposes reasonable options.
-- Given I request a different tone or scope, when Codex revises the plan, then the updated proposal remains visible in the conversation.
+動画制作者として、再起動後に前回のWorkspaceへ戻りたい。そうすることで、毎回folderを選び直さず制作を継続できる。
 
-**Requirement Mapping**: FR-2, FR-3, FR-11
+**受入条件**
 
-### US-4: Handle Codex authentication or connection failure
+- Given 保存済みWorkspaceが利用可能である、When アプリを再起動する、Then canonical pathを再検証して同じWorkspaceを開く。
+- Given Workspaceが移動、削除、または権限喪失している、When アプリを起動する、Then 許可外へfallbackせず再選択を案内する。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** the GUI to clearly show Codex connection or authentication failures, **so that** I can fix the issue without losing my video work.
+**要件対応**: U10-FR-3、U10-NFR-1、U10-NFR-2
 
-**Acceptance Criteria**
+### US-4: Codex CLI不足を診断する
 
-- Given Codex App Server authentication is unavailable, when I open or use the Codex panel, then the GUI shows an actionable error state.
-- Given the Codex connection drops, when I am editing a project, then the active script and local edits remain available.
-- Given Codex is unavailable, when I continue manually, then non-Codex GUI functions remain usable where possible.
+**優先度**: Must
+**ペルソナ**: P1
 
-**Requirement Mapping**: FR-11, NFR-2, NFR-3
+動画制作者として、Codexが使えない理由を知りたい。そうすることで、install、upgrade、loginの適切な復旧操作を選べる。
 
-## Epic 3: Generate and Review JSON Drafts
+**受入条件**
 
-### US-5: Generate a script JSON draft from the planning conversation
+- Given Codex CLIが未導入、version不足、または未loginである、When Real接続を開始する、Then 状態を区別した日本語案内を表示する。
+- Given Codexが利用不能である、When 制作を続ける、Then Mock、script、asset、Preview、Renderの利用可能な機能は維持される。
+- Given 診断を実行する、When logと設定を確認する、Then tokenやlogin情報は保存・表示されない。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** Codex to generate a `VideoScript` JSON draft from our planning conversation, **so that** I do not need to write the first version manually.
+**要件対応**: U10-FR-5、U10-FR-12、U10-NFR-1、U10-NFR-5
 
-**Acceptance Criteria**
+### US-5: VOICEVOX不足を診断する
 
-- Given a planning conversation exists, when I ask Codex to create JSON, then Codex produces a draft compatible with the current script schema.
-- Given Codex produces a draft, when the GUI receives it, then the draft is marked as not applied.
-- Given the draft has schema errors, when it is displayed, then validation errors are shown before application.
+**優先度**: Must
+**ペルソナ**: P1
 
-**Requirement Mapping**: FR-2, FR-3, FR-4, FR-5, NFR-2
+動画制作者として、音声生成できない理由を知りたい。そうすることで、install、起動、version、接続先を修正できる。
 
-### US-6: Review generated JSON in raw and structured views
+**受入条件**
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to switch between raw JSON and structured scene views, **so that** I can verify both technical validity and video content.
+- Given VOICEVOXが未導入、未起動、またはversion非対応である、When Voiceを実行する、Then 状態を区別した日本語案内を表示する。
+- Given VOICEVOXが利用不能である、When 制作を続ける、Then script編集、Codex、利用可能なPreview、既存音声によるRenderは妨げられない。
 
-**Acceptance Criteria**
+**要件対応**: U10-FR-6、U10-FR-12、U10-NFR-2、U10-NFR-5
 
-- Given a JSON draft exists, when I choose raw view, then the GUI displays editable JSON text.
-- Given a JSON draft exists, when I choose structured view, then the GUI displays scenes with ID, type, text, emotion, visual, and timing details.
-- Given I switch between views, when no changes are made, then the represented script remains consistent.
+### US-6: アプリを更新またはロールバックする
 
-**Requirement Mapping**: FR-5, FR-6
+**優先度**: Should
+**ペルソナ**: P1
 
-### US-7: Ask Codex to revise a draft before applying it
+動画制作者として、Workspaceを失わずアプリを入れ替えたい。そうすることで、新版への更新と既知正常版への復旧を安全に行える。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to request changes to a draft through Codex, **so that** the script matches my intent before it becomes the active project file.
+**受入条件**
 
-**Acceptance Criteria**
+- Given 新しい検証済みZIPがある、When アプリを置き換える、Then bundle外のWorkspaceと保存済み参照は保持される。
+- Given 新版に問題がある、When 直前の既知正常版へ置き換える、Then 対応するWorkspace互換性情報と復旧手順を確認できる。
 
-- Given a draft is visible, when I ask Codex to revise wording, scene count, tone, or structure, then Codex returns an updated draft.
-- Given a revised draft is generated, when I compare it to the previous draft, then the GUI makes clear that it is still unapplied.
-- Given I reject a revision, when I discard it, then the active script remains unchanged.
+**要件対応**: U10-FR-11、U10-FR-12、U10-NFR-2
 
-**Requirement Mapping**: FR-2, FR-3, FR-4, NFR-2
+## リリース担当者のジャーニー
 
-### US-8: Apply an approved JSON draft
+### US-7: ローカル検証用成果物を生成する
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to explicitly apply a reviewed JSON draft, **so that** only approved content is saved to `input/{videoId}.json`.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Acceptance Criteria**
+リリース担当者として、Apple認証情報がなくてもarm64アプリを検証したい。そうすることで、署名・公証以外の品質確認を先に完了できる。
 
-- Given a valid draft exists, when I click Apply, then the GUI saves it as the active script.
-- Given a draft is invalid, when I attempt to apply it, then the GUI prevents application and shows validation errors.
-- Given a draft is applied, when I reload the project, then the active script matches the applied draft.
+**受入条件**
 
-**Requirement Mapping**: FR-4, FR-8, NFR-2, NFR-5
+- Given clean install済みのsourceとlockfileがある、When local package commandを実行する、Then production Main、Preload、Rendererを含むarm64 `.app`とZIPを生成する。
+- Given 認証情報がない、When packageが成功する、Then 成果物は`local-acceptance`と明示され、一般配布可能とは表示されない。
+- Given packaged appを起動する、When production flowを使用する、Then `tsx`、TypeScript source、開発server、`NODE_OPTIONS`へ依存しない。
 
-## Epic 4: Edit Scenes and Assets
+**要件対応**: U10-FR-1、U10-FR-2、U10-FR-8、U10-NFR-3
 
-### US-9: Edit scenes directly in the GUI
+### US-8: Packaged環境で制作機能を検証する
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to add, remove, reorder, and edit scenes directly, **so that** I can make precise changes without asking Codex for every edit.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Acceptance Criteria**
+リリース担当者として、source treeのない配布環境で主要機能を確認したい。そうすることで、開発環境だけで動く不具合を公開前に検出できる。
 
-- Given an active or draft script is loaded, when I add a scene, then the scene appears in the ordered scene list.
-- Given a scene exists, when I edit text, type, emotion, visual config, or character visibility, then the GUI updates the script state.
-- Given I make an invalid edit, when validation runs, then the GUI identifies the affected field or scene.
+**受入条件**
 
-**Requirement Mapping**: FR-6, NFR-5
+- Given packaged appと選択済みWorkspaceがある、When Script、asset、Validate、Preview、Renderを実行する、Then packaged resourceとWorkspaceの正規化済みpathだけを使用して完了する。
+- Given 実行中の処理がある、When StopまたはFinder revealを操作する、Then 既存の停止・表示機能がpackaged環境でも動作する。
 
-### US-10: Select and attach image assets
+**要件対応**: U10-FR-4、U10-FR-13、U10-NFR-1
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to choose image files and attach them to scenes, **so that** explanation visuals can be included without manually managing paths.
+### US-9: 署名・公証を設定する
 
-**Acceptance Criteria**
+**優先度**: Must
+**ペルソナ**: P2
 
-- Given I select an image file, when I attach it to a scene, then the file is placed under `public/visuals/{videoId}/`.
-- Given an image is attached, when the script is saved, then the scene references the asset with a public path.
-- Given a referenced image is missing, when validation runs, then the GUI shows which scene and path are affected.
+リリース担当者として、Developer IDで署名・公証した成果物を生成したい。そうすることで、Mac App Store外で安全に配布できる。
 
-**Requirement Mapping**: FR-7, NFR-5
+**受入条件**
 
-### US-11: Handle missing asset failures
+- Given 有効なDeveloper IDと公証用認証情報がある、When release makeを実行する、Then Hardened Runtime、secure timestamp、最小entitlementsを用いて署名し、notarytoolによる公証を行う。
+- Given entitlementsを検査する、When 配布候補を検証する、Then `com.apple.security.get-task-allow`は存在しない。
+- Given 認証情報または公証が不足・失敗している、When release makeを実行する、Then fail closedで終了し、成功扱いしない。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** missing visual assets to be shown clearly, **so that** I can fix them before preview or render.
+**要件対応**: U10-FR-7、U10-FR-8、U10-NFR-1
 
-**Acceptance Criteria**
+### US-10: 一般配布をゲートする
 
-- Given a script references a missing asset, when I validate the project, then the GUI shows the scene ID and missing path.
-- Given a missing asset exists in a scene, when I open the structured scene view, then the scene is marked as needing attention.
-- Given I replace the missing asset, when validation runs again, then the error is cleared.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Requirement Mapping**: FR-7, FR-9, NFR-5
+リリース担当者として、必須検証に合格した成果物だけを配布可能と判定したい。そうすることで、未署名・未公証成果物の誤配布を防げる。
 
-## Epic 5: Validate, Preview, and Render
+**受入条件**
 
-### US-12: Validate the active script from the GUI
+- Given 配布候補がある、When release verificationを実行する、Then codesign、Gatekeeper、公証ticket、ZIP checksumを検証する。
+- Given いずれかの検証が失敗する、When 判定を完了する、Then publishable状態へ遷移せず非ゼロで終了する。
+- Given local acceptance成果物がある、When release verificationを実行する、Then 一般配布禁止であることを明示する。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to run validation from the GUI, **so that** I can detect JSON and asset problems before generation.
+**要件対応**: U10-FR-8、U10-NFR-1、Property-Based Testing要件
 
-**Acceptance Criteria**
+### US-11: 成果物の整合性と由来を記録する
 
-- Given an active script exists, when I run validation, then the GUI reports success or specific validation errors.
-- Given the script has invalid JSON or schema violations, when validation runs, then the GUI identifies the relevant issue.
-- Given validation fails, when I attempt voice generation or rendering, then the GUI warns me before continuing.
+**優先度**: Must
+**ペルソナ**: P2
 
-**Requirement Mapping**: FR-8, FR-9, NFR-5
+リリース担当者として、成果物の内容と生成元を確認したい。そうすることで、同一versionの再検証と改ざん検知ができる。
 
-### US-13: Generate voice and timeline artifacts
+**受入条件**
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to generate voices and timelines from the GUI, **so that** I can prepare the video for preview and render without using the terminal.
+- Given packageが生成された、When release metadataを作成する、Then SBOM、SHA-256、version、Git revision、architectureをmanifestへ記録する。
+- Given app bundleとZIPを検査する、When inclusion policyを適用する、Then secret、test fixture、不要source map、開発設定、既存Workspaceを含めない。
+- Given 同一versionの旧出力がある、When 新しいreleaseを開始する、Then 暗黙に再利用せずversionとarchitectureで識別する。
 
-**Acceptance Criteria**
+**要件対応**: U10-FR-9、U10-FR-10、U10-NFR-3、U10-NFR-4
 
-- Given the active script is valid and VOICEVOX is running, when I start voice generation, then WAV files are generated or reused from cache.
-- Given voice generation finishes, when timeline generation runs, then `generated/timelines/{videoId}.timeline.json` is updated.
-- Given generation is running, when I watch the GUI, then progress or logs indicate the current operation.
+### US-12: リリース品質を再現可能に検証する
 
-**Requirement Mapping**: FR-8, FR-9, NFR-3
+**優先度**: Must
+**ペルソナ**: P2
 
-### US-14: Handle VOICEVOX not running
+リリース担当者として、最小の一連のcommandで品質を確認したい。そうすることで、公開判断を再現可能にできる。
 
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** VOICEVOX connection failures to be explained clearly, **so that** I know how to recover.
+**受入条件**
 
-**Acceptance Criteria**
+- Given release候補がある、When release gateを実行する、Then audit、typecheck、既存回帰、U10例示テスト、PBT、Studio build、package smokeを順に検証する。
+- Given propertyが失敗する、When 結果を保存する、Then fast-check seedと縮小後の反例から再実行できる。
+- Given 新規macOS利用者プロファイルがある、When acceptance checklistを実行する、Then 初回起動、Workspace、依存診断、制作、停止、reveal、更新・復旧を確認できる。
 
-- Given VOICEVOX is not running, when I start voice generation, then the GUI shows that VOICEVOX Engine cannot be reached.
-- Given the connection target is configured, when the error appears, then the GUI shows the attempted connection URL.
-- Given I start VOICEVOX and retry, when the connection succeeds, then voice generation can continue.
+**要件対応**: U10-FR-9、U10-FR-10、U10-FR-13、U10-NFR-6、Property-Based Testing要件
 
-**Requirement Mapping**: FR-9, NFR-3
+## INVEST確認
 
-### US-15: Preview the current video inside the GUI
+- **Independent**: 各ストーリーは1つの利用者成果または配布判定を対象とする。
+- **Negotiable**: 実装手段は要件で固定された安全境界以外を拘束しない。
+- **Valuable**: P1またはP2へ直接的な価値を提供する。
+- **Estimable**: 要件IDと単一の受入目的により見積可能である。
+- **Small**: 1つの受入確認で完結する粒度へ分割した。
+- **Testable**: すべてGiven／When／Then形式の受入条件を持つ。
 
-**Priority**: Should  
-**Persona**: P1  
-**As a** technical video creator, **I want** to preview the video inside the GUI, **so that** I can check timing, subtitles, assets, and character display without switching tools.
+## Extension準拠
 
-**Acceptance Criteria**
-
-- Given valid render data exists, when I open preview, then the GUI displays the video preview.
-- Given preview data is stale, when I request preview, then the GUI tells me what needs regeneration.
-- Given embedded preview is unavailable, when I start preview, then the GUI can fall back to launching Remotion Studio.
-
-**Requirement Mapping**: FR-10, NFR-3
-
-### US-16: Render MP4 from the GUI
-
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** to render MP4 from the GUI, **so that** the final output can be produced from the same app.
-
-**Acceptance Criteria**
-
-- Given the active script and generated artifacts are ready, when I start render, then the GUI runs the render operation.
-- Given render succeeds, when the operation finishes, then the GUI shows the output path.
-- Given render fails, when the error is returned, then the GUI displays the failure message and relevant logs.
-
-**Requirement Mapping**: FR-8, FR-9, NFR-3
-
-### US-17: Monitor logs for long-running operations
-
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** logs and operation states visible in the GUI, **so that** I understand what is happening during validation, generation, preview, and rendering.
-
-**Acceptance Criteria**
-
-- Given an operation starts, when it is running, then the GUI shows an active state.
-- Given logs are produced, when the operation continues, then the GUI appends log output in order.
-- Given the operation finishes, when it succeeds or fails, then the GUI shows a terminal status.
-
-**Requirement Mapping**: FR-9, NFR-3
-
-## Epic 6: Codex-Guided Approved Actions
-
-### US-18: Approve Codex-proposed production actions
-
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** Codex to propose actions but wait for approval, **so that** I stay in control of file changes and generation commands.
-
-**Acceptance Criteria**
-
-- Given Codex proposes saving JSON, when I have not approved, then no active script file is changed.
-- Given Codex proposes validation, voice generation, preview, or render, when I have not approved, then no command runs.
-- Given I approve a Codex-proposed action, when the action starts, then the GUI displays the running operation and logs.
-
-**Requirement Mapping**: FR-8, NFR-2, NFR-5
-
-### US-19: Recover from render failures
-
-**Priority**: Must  
-**Persona**: P1  
-**As a** technical video creator, **I want** render failures to include useful context, **so that** I can ask Codex for help or fix the project manually.
-
-**Acceptance Criteria**
-
-- Given rendering fails, when the GUI receives the failure, then it displays a clear error state.
-- Given render logs exist, when I view the failure, then the GUI shows the relevant logs.
-- Given I ask Codex to diagnose the failure, when Codex has access to the logs, then it can propose next steps without automatically changing files.
-
-**Requirement Mapping**: FR-2, FR-9, NFR-3
-
-### US-20: Continue manually when Codex is unavailable
-
-**Priority**: Should  
-**Persona**: P1  
-**As a** technical video creator, **I want** core editing and generation controls to remain usable when Codex is unavailable, **so that** I can continue production manually.
-
-**Acceptance Criteria**
-
-- Given Codex authentication fails, when I open the project, then scene editing and validation remain available.
-- Given Codex connection is unavailable, when I use generation controls, then GUI operations that do not require Codex still work.
-- Given Codex returns later, when I reconnect, then the current project state remains intact.
-
-**Requirement Mapping**: FR-6, FR-9, FR-11, NFR-2
-
-## Priority Summary
-
-| Priority | Stories |
-|---|---|
-| Must | US-1, US-2, US-3, US-4, US-5, US-6, US-7, US-8, US-9, US-10, US-11, US-12, US-13, US-14, US-16, US-17, US-18, US-19 |
-| Should | US-15, US-20 |
-| Could | None in MVP |
-
-## INVEST Notes
-
-- Stories are user-visible and individually testable.
-- Some stories depend on the single-video workspace foundation, but each preserves a distinct user value.
-- Larger technical concerns such as Codex App Server transport, embedded preview implementation, and command orchestration are intentionally left for design stages.
-
+- **Security Baseline**: secret非露出、path境界、CSP／IPC hardening、署名、公証、checksum、fail-closedをUS-2、US-4、US-7〜US-11へ反映した。未解決のblocking findingなし。
+- **Resiliency Baseline**: 依存障害、Workspace消失、更新、rollback、package／公証失敗、clean-profile recoveryをUS-3〜US-6、US-9、US-12へ反映した。Cloud固有規則は適用外。
+- **Property-Based Testing**: path、設定、manifest、release状態遷移のpropertyとseed再現をUS-10〜US-12へ反映した。未解決のblocking findingなし。

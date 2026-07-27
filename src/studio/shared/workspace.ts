@@ -1,4 +1,32 @@
 import type {VideoScript} from '../../types/video';
+import {z} from 'zod';
+
+export const workspaceReferenceSchema = z.object({
+  schemaVersion: z.literal(1),
+  root: z.string().min(1),
+});
+
+export type WorkspaceReference = z.infer<typeof workspaceReferenceSchema>;
+export type ProjectRootStatus = 'unconfigured' | 'ready' | 'missing' | 'denied' | 'invalid';
+export type ProjectRootState = {
+  status: ProjectRootStatus;
+  root?: string;
+  reason?: string;
+};
+
+export type WorkspaceRootApi = {
+  get(): Promise<ProjectRootState>;
+  select(): Promise<ProjectRootState>;
+  clear(): Promise<void>;
+};
+
+export function normalizeWorkspaceReference(value: WorkspaceReference): WorkspaceReference {
+  return {schemaVersion: 1, root: value.root.trim()};
+}
+
+export function parseWorkspaceReference(value: unknown): WorkspaceReference {
+  return normalizeWorkspaceReference(workspaceReferenceSchema.parse(value));
+}
 
 export type VideoProjectSummary = {
   videoId: string;
@@ -84,4 +112,3 @@ export function createFileSystemError(targetPath: string, message = 'ファイ�
     targetPath,
   };
 }
-

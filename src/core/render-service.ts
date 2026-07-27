@@ -1,5 +1,4 @@
 import path from 'node:path';
-import {bundle} from '@remotion/bundler';
 import {renderMedia, selectComposition} from '@remotion/renderer';
 import {directories} from './config';
 import {AppError} from './errors';
@@ -17,14 +16,14 @@ export async function renderVideo(videoId: string, options: RenderOptions = {}):
 
   try {
     logger.info('動画をレンダリングしています');
-    const entryPoint = resolveWorkspacePath('src', 'Root.tsx');
-    const serveUrl = await bundle({
-      entryPoint,
-    });
+    const packagedBundle = process.env.ZUNDAMON_REMOTION_BUNDLE;
+    const binariesDirectory = process.env.ZUNDAMON_REMOTION_BINARIES;
+    const serveUrl = packagedBundle ?? await bundleDevelopmentEntry();
     const composition = await selectComposition({
       serveUrl,
       id: 'ZundamonVideo',
       inputProps,
+      binariesDirectory,
     });
 
     await ensureDir(path.dirname(outputPath));
@@ -37,6 +36,7 @@ export async function renderVideo(videoId: string, options: RenderOptions = {}):
       codec: 'h264',
       outputLocation: outputPath,
       inputProps,
+      binariesDirectory,
       onProgress: reportProgress
         ? ({progress, renderedFrames}) => reportProgress(renderedFrames, progress)
         : undefined,
@@ -53,4 +53,9 @@ export async function renderVideo(videoId: string, options: RenderOptions = {}):
       cause,
     });
   }
+}
+
+async function bundleDevelopmentEntry(): Promise<string> {
+  const {bundle} = await import('@remotion/bundler');
+  return bundle({entryPoint: resolveWorkspacePath('src', 'Root.tsx')});
 }

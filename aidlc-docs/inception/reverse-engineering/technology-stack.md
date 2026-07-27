@@ -1,30 +1,43 @@
 # Technology Stack
 
-## Programming Languages
+## Languages and Runtime
 
-- TypeScript - Application, scripts, schemas, and tests.
-- TSX/React - Remotion components.
-- JSON - User video scripts and generated manifests/timelines.
+- TypeScript/TSX 5.x, ES2022, strict mode.
+- Node.js 20 development/runtime baseline.
+- JSON and JSONL for script, generated state, and Codex transport.
+- macOS desktop environment.
 
-## Frameworks
+## Application Frameworks
 
-- React `18.2.0` - Component rendering.
-- Remotion `4.x` - Video composition and rendering.
-- Zod `3.x` - Runtime input validation.
-- Vitest `2.x` - Tests.
-
-## External Runtime Services
-
-- VOICEVOX Engine - Local text-to-speech API.
-- Remotion managed Chromium/renderer - Local rendering.
+- Electron 41.7.1.
+- React and React DOM 18.x.
+- Vite 6.4.3 with React plugin.
+- Remotion CLI/player/runtime 4.0.499.
+- Zod 4.4.3.
 
 ## Build Tools
 
-- npm - Dependency and script runner.
-- tsx - TypeScript script execution.
-- TypeScript compiler - Static type checking.
+- npm and package-lock.
+- tsx 4.x for TypeScript CLI/Main development execution.
+- esbuild 0.28.1 for preload and Electron E2E bundles.
+- TypeScript compiler for static verification.
 
-## Testing Tools
+## Testing
 
-- Vitest - Unit and integration test runner.
+- Vitest 4.1.10.
+- Testing Library React/Jest DOM.
+- jsdom 24.x.
+- fast-check 4.9.0.
+- Native Electron E2E.
 
+## External Local Services
+
+- Codex CLI/App Server 0.145.0 or newer.
+- VOICEVOX Engine 0.25.x.
+- Remotion-managed browser/render stack.
+
+## Packaging Status
+
+- No packager is installed.
+- No Electron Forge, electron-builder, Electron Packager, or native packaging script is configured.
+- No signing, hardened runtime, entitlements, notarization, stapling, DMG/ZIP, updater, or release-channel configuration exists.

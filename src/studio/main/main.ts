@@ -6,8 +6,23 @@ import {createRenderOutputService} from './render-output-service';
 import {createLocalFileService} from './local-file-service';
 import {CodexAppServerService} from './codex-app-server-service';
 import type {StartCommandRequest} from '../shared/command';
+import {WorkspaceRootService} from './workspace-root-service';
+import {createDependencyDiagnosisService} from './dependency-diagnosis-service';
+import {resolveRuntimeResources} from './runtime-resources';
+import {setWorkspaceRoot} from '../../core/config';
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+const resources = resolveRuntimeResources(app);
+const workspaceRoots = new WorkspaceRootService({
+  userData: app.getPath('userData'),
+  forbiddenRoots: [app.getPath('userData'), resources.applicationRoot],
+  defaultRoot: app.isPackaged ? undefined : process.cwd(),
+  async chooseRoot() {
+    const result = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
+    return result.canceled ? null : result.filePaths[0] ?? null;
+  },
+});
+const dependencies = createDependencyDiagnosisService();
 const renderOutputService = createRenderOutputService({
   async confirm(outputPath) {
     const result = await dialog.showMessageBox({
@@ -23,42 +38,107 @@ const renderOutputService = createRenderOutputService({
   },
   reveal: (outputPath) => shell.showItemInFolder(outputPath),
 });
-const runner = new CommandRunner(process.cwd(), {
+let runnerRoot = process.cwd();
+let runner = createRunner(runnerRoot);
+function createRunner(root: string): CommandRunner {
+  return new CommandRunner(root, {
   operation(operation) {
     BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('command:operation', operation));
   },
   log(entry) {
     BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('command:log', entry));
   },
-}, undefined, (videoId) => renderOutputService.verify(videoId));
-const localFiles = createLocalFileService();
+  }, undefined, (videoId) => renderOutputService.verify(videoId), app.isPackaged
+    ? (script, videoId) => ({
+        command: process.execPath,
+        args: [path.join(resources.cliRoot, `${script}.cjs`), videoId],
+        env: {
+          ELECTRON_RUN_AS_NODE: '1',
+          NODE_PATH: path.join(resources.applicationRoot, 'node_modules'),
+          ZUNDAMON_REMOTION_BUNDLE: path.join(process.resourcesPath, 'dist-remotion'),
+          ZUNDAMON_REMOTION_BINARIES: path.join(
+            `${resources.applicationRoot}.unpacked`,
+            'node_modules',
+            '@remotion',
+            'compositor-darwin-arm64',
+          ),
+        },
+      })
+    : undefined);
+}
+async function useWorkspaceRoot(): Promise<string> {
+  const root = await workspaceRoots.requireRoot();
+  setWorkspaceRoot(root);
+  if (runnerRoot !== root) {
+    runnerRoot = root;
+    runner = createRunner(root);
+  }
+  return root;
+}
 const codex = new CodexAppServerService();
 codex.onEvent((event) => {
   BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('codex:event', event));
 });
 
-ipcMain.handle('command:start', (_event, request: StartCommandRequest) => runner.start(request));
+ipcMain.handle('workspace:get', async () => {
+  const state = await workspaceRoots.get();
+  if (state.status === 'ready' && state.root) setWorkspaceRoot(state.root);
+  return state;
+});
+ipcMain.handle('workspace:select', async () => {
+  const state = await workspaceRoots.select();
+  if (state.status === 'ready' && state.root) setWorkspaceRoot(state.root);
+  return state;
+});
+ipcMain.handle('workspace:clear', () => workspaceRoots.clear());
+ipcMain.handle('dependency:check-all', () => dependencies.checkAll());
+ipcMain.handle('dependency:check', (_event, name) => dependencies.check(name));
+ipcMain.handle('command:start', async (_event, request: StartCommandRequest) => {
+  await useWorkspaceRoot();
+  if (request.command === 'voice') {
+    const status = await dependencies.check('voicevox');
+    if (status.status !== 'ready') throw new Error('VOICEVOXを起動し、接続を再確認してください。');
+  }
+  return runner.start(request);
+});
 ipcMain.handle('command:stop', (_event, operationId: string) => runner.stop(operationId));
 ipcMain.handle('command:clear-logs', (_event, operationId: string) => runner.clearLogs(operationId));
 ipcMain.handle('command:snapshot', () => runner.snapshot());
-ipcMain.handle('preview:check', (_event, videoId: string) => checkPreview(videoId));
-ipcMain.handle('preview:load', (_event, videoId: string) => loadPreview(videoId));
+ipcMain.handle('preview:check', async (_event, videoId: string) => {
+  await useWorkspaceRoot();
+  return checkPreview(videoId);
+});
+ipcMain.handle('preview:load', async (_event, videoId: string) => {
+  await useWorkspaceRoot();
+  return loadPreview(videoId);
+});
 ipcMain.handle('render-output:status', (_event, videoId: string) => renderOutputService.status(videoId));
 ipcMain.handle('render-output:confirm-overwrite', (_event, videoId: string) =>
   renderOutputService.confirmOverwrite(videoId));
 ipcMain.handle('render-output:reveal', (_event, videoId: string) => renderOutputService.reveal(videoId));
-ipcMain.handle('local-file:list-input', () => localFiles.workspace.listInput());
-ipcMain.handle('local-file:read-script', (_event, fileName: string) => localFiles.workspace.readScript(fileName));
-ipcMain.handle('local-file:write-script', (_event, fileName: string, data: string) =>
-  localFiles.workspace.writeScript(fileName, data));
-ipcMain.handle('local-file:read-chat', (_event, videoId: string) => localFiles.chat.read(videoId));
-ipcMain.handle('local-file:write-chat', (_event, videoId: string, data: string) => localFiles.chat.write(videoId, data));
-ipcMain.handle('local-file:select-asset', () => localFiles.asset.select());
-ipcMain.handle('local-file:copy-asset', (_event, videoId: string, token: string, overwrite: boolean) =>
-  localFiles.asset.copy(videoId, token, overwrite));
-ipcMain.handle('local-file:asset-exists', (_event, publicPath: string) => localFiles.asset.exists(publicPath));
-ipcMain.handle('local-file:trash-asset', (_event, publicPath: string) => localFiles.asset.trash(publicPath));
-ipcMain.handle('codex:connect', (_event, videoId: string) => codex.connect(videoId));
+async function localFiles() {
+  return createLocalFileService(await useWorkspaceRoot());
+}
+ipcMain.handle('local-file:list-input', async () => (await localFiles()).workspace.listInput());
+ipcMain.handle('local-file:read-script', async (_event, fileName: string) =>
+  (await localFiles()).workspace.readScript(fileName));
+ipcMain.handle('local-file:write-script', async (_event, fileName: string, data: string) =>
+  (await localFiles()).workspace.writeScript(fileName, data));
+ipcMain.handle('local-file:read-chat', async (_event, videoId: string) => (await localFiles()).chat.read(videoId));
+ipcMain.handle('local-file:write-chat', async (_event, videoId: string, data: string) =>
+  (await localFiles()).chat.write(videoId, data));
+ipcMain.handle('local-file:select-asset', async () => (await localFiles()).asset.select());
+ipcMain.handle('local-file:copy-asset', async (_event, videoId: string, token: string, overwrite: boolean) =>
+  (await localFiles()).asset.copy(videoId, token, overwrite));
+ipcMain.handle('local-file:asset-exists', async (_event, publicPath: string) =>
+  (await localFiles()).asset.exists(publicPath));
+ipcMain.handle('local-file:trash-asset', async (_event, publicPath: string) =>
+  (await localFiles()).asset.trash(publicPath));
+ipcMain.handle('codex:connect', async (_event, videoId: string) => {
+  const status = await dependencies.check('codex');
+  if (status.status !== 'ready') throw new Error('Codex CLIのinstall、version、login状態を確認してください。');
+  return codex.connect(videoId);
+});
 ipcMain.handle('codex:send', (_event, input) => codex.send(input));
 ipcMain.handle('codex:interrupt', () => codex.interrupt());
 ipcMain.handle('codex:reconnect', (_event, videoId: string) => codex.reconnect(videoId));
@@ -77,7 +157,7 @@ async function createMainWindow(): Promise<void> {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: path.join(process.cwd(), 'dist-studio/preload.cjs'),
+      preload: resources.preload,
     },
   });
 
@@ -86,7 +166,7 @@ async function createMainWindow(): Promise<void> {
     return;
   }
 
-  await window.loadFile(path.join(process.cwd(), 'dist-studio/studio.html'));
+  await window.loadFile(resources.rendererHtml);
 }
 
 app.whenReady().then(createMainWindow);

@@ -1,175 +1,48 @@
-# Component Methods: GUI with Embedded Codex Panel
+# U10 Component Method設計
 
-## Type Names
+詳細な検証規則と状態遷移はFunctional Designで定義する。
 
-```ts
-type VideoId = string;
-type DraftStatus = 'none' | 'draft' | 'reviewing' | 'invalid' | 'applied' | 'discarded';
-type OperationName = 'validate' | 'voice' | 'timeline' | 'preview' | 'render';
-type OperationStatus = 'idle' | 'queued' | 'running' | 'succeeded' | 'failed';
-```
+## Workspace Service
 
-## C1: Electron App Shell
+- `get(): Promise<WorkspaceState>` — 保存済み参照を読み、再検証した状態を返す。
+- `select(): Promise<WorkspaceState>` — native dialogでfolderを選択し、検証後に保存する。
+- `clear(): Promise<void>` — 保存済み参照だけを削除する。
+- `requireRoot(): Promise<string>` — 有効なcanonical rootを返し、無効ならtyped errorにする。
 
-```ts
-createMainWindow(): Promise<void>
-registerIpcHandlers(): void
-showOpenImageDialog(): Promise<string[]>
-```
+## Packaged Resource Resolver
 
-- Opens the primary desktop window.
-- Registers safe bridges for file picking, file operations, and command execution.
+- `resolveRuntime(): RuntimeResources` — Main、CLI、Remotion、public resourceの絶対pathを返す。
+- `resolveWorkspacePath(root: string, relative: string): string` — root外を拒否してWorkspace pathを返す。
+- `resolveResourcePath(relative: string): string` — allowlist内の読み取り専用resourceを返す。
 
-## C2: Workspace Controller
+## Dependency Diagnosis Service
 
-```ts
-openWorkspace(videoId: VideoId): Promise<WorkspaceState>
-createWorkspace(videoId: VideoId): Promise<WorkspaceState>
-refreshArtifactStatus(videoId: VideoId): Promise<ArtifactStatus>
-setActiveScript(script: VideoScript): void
-getWorkspaceState(): WorkspaceState
-```
+- `checkCodex(): Promise<DependencyStatus>` — executable、version、login状態を分類する。
+- `checkVoicevox(): Promise<DependencyStatus>` — 接続、version、engine状態を分類する。
+- `checkAll(): Promise<DependencyReport>` — 両診断を独立実行して共通reportを返す。
 
-- Owns the single-video workspace state.
-- Coordinates active script, draft state, artifacts, and command readiness.
+## Packaged Command Adapter
 
-## C3: Script Repository Adapter
+- `createInvocation(request: StartCommandRequest): CommandInvocation` — 固定実行対象、引数、cwdを構築する。
+- `assertAvailable(kind: CommandKind): Promise<void>` — commandに必要なresourceと依存を確認する。
 
-```ts
-loadScript(videoId: VideoId): Promise<VideoScript | null>
-saveScript(videoId: VideoId, script: VideoScript): Promise<void>
-scriptExists(videoId: VideoId): Promise<boolean>
-getScriptPath(videoId: VideoId): string
-```
+## Release Module
 
-- Reads and writes canonical `input/{videoId}.json`.
-- Does not store draft proposals.
+- `createManifest(input: ReleaseInput): Promise<ReleaseManifest>` — version、revision、architecture、artifact、checksumを生成する。
+- `classifyArtifact(evidence: ReleaseEvidence): ReleaseState` — 証跡から状態を純粋判定する。
+- `verifyLocalAcceptance(input: ArtifactInput): Promise<VerificationResult>` — package内容、起動、checksumを検証する。
+- `verifyPublishable(input: ArtifactInput): Promise<VerificationResult>` — 署名、公証、Gatekeeper、ticketを追加検証する。
 
-## C4: Draft State Store
+## Preload API
 
-```ts
-createDraft(source: 'codex' | 'manual', script: unknown): DraftState
-updateDraft(script: unknown): DraftState
-markDraftInvalid(errors: ValidationIssue[]): DraftState
-markDraftApplied(): DraftState
-discardDraft(): DraftState
-getDraft(): DraftState
-```
+- `workspaceApi.get(): Promise<WorkspaceState>`
+- `workspaceApi.select(): Promise<WorkspaceState>`
+- `workspaceApi.clear(): Promise<void>`
+- `dependencyApi.checkAll(): Promise<DependencyReport>`
 
-- Holds draft script state in memory only.
-- Separates unapplied JSON from the active script.
+## 共有型
 
-## C5: Codex Panel
-
-```ts
-sendMessage(text: string): Promise<void>
-receiveCodexEvent(event: CodexEvent): void
-showActionProposal(action: ProposedAction): void
-attachDraftProposal(script: unknown): void
-```
-
-- Manages chat messages and Codex-proposed drafts/actions.
-
-## C6: Codex App Server Client
-
-```ts
-connect(): Promise<CodexConnectionState>
-disconnect(): Promise<void>
-sendUserMessage(text: string, context: CodexContext): Promise<void>
-onEvent(handler: (event: CodexEvent) => void): Unsubscribe
-getConnectionState(): CodexConnectionState
-```
-
-- Communicates directly with Codex App Server from the GUI layer.
-- Converts protocol-level events into app-level events.
-
-## C7: Action Approval Controller
-
-```ts
-registerProposal(action: ProposedAction): ApprovalState
-approveAction(actionId: string): Promise<ActionResult>
-rejectAction(actionId: string): ApprovalState
-getPendingActions(): ProposedAction[]
-```
-
-- Ensures save and command actions require explicit approval.
-- MVP UI renders approvals inline inside Codex messages.
-
-## C8: JSON Review UI
-
-```ts
-setReviewMode(mode: 'raw' | 'structured'): void
-editRawJson(text: string): DraftState
-editStructuredScene(sceneId: string, patch: Partial<Scene>): DraftState
-applyDraft(): Promise<void>
-discardDraft(): void
-```
-
-- Presents both raw JSON and structured scene views.
-
-## C9: Scene Editor
-
-```ts
-addScene(scene: Scene): DraftState
-removeScene(sceneId: string): DraftState
-reorderScene(sceneId: string, targetIndex: number): DraftState
-updateScene(sceneId: string, patch: Partial<Scene>): DraftState
-```
-
-- Updates scene data in the editable script state.
-
-## C10: Asset Manager
-
-```ts
-selectImages(): Promise<LocalAssetSelection[]>
-copyVisualAsset(videoId: VideoId, sourcePath: string): Promise<PublicAssetRef>
-attachVisualToScene(sceneId: string, asset: PublicAssetRef): DraftState
-checkVisualAssets(script: VideoScript): Promise<AssetCheckResult>
-```
-
-- Handles local image selection and public path creation.
-
-## C11: Validation Adapter
-
-```ts
-validateDraft(script: unknown): ValidationResult
-validateActiveScript(videoId: VideoId): Promise<ValidationResult>
-formatValidationIssues(error: unknown): ValidationIssue[]
-```
-
-- Validates in-memory drafts and active scripts.
-
-## C12: Command Runner
-
-```ts
-runOperation(videoId: VideoId, operation: OperationName): Promise<OperationResult>
-cancelOperation(operationId: string): Promise<void>
-onLog(handler: (entry: LogEntry) => void): Unsubscribe
-getOperationStatus(operationId: string): OperationStatus
-```
-
-- Runs existing npm commands through Electron main process.
-
-## C13: Log Panel
-
-```ts
-appendLog(entry: LogEntry): void
-clearLogs(scope?: OperationName): void
-getLogs(scope?: OperationName): LogEntry[]
-exportLogsForCodex(scope?: OperationName): CodexLogContext
-```
-
-- Shows logs and can provide selected logs as Codex context.
-
-## C14: Preview Panel
-
-```ts
-loadPreview(videoId: VideoId): Promise<void>
-refreshPreview(): Promise<void>
-markPreviewStale(reason: string): void
-openPreviewFallback(videoId: VideoId): Promise<void>
-```
-
-- Targets embedded preview first.
-- Keeps Remotion Studio fallback as a recovery path.
-
+- `WorkspaceState`: `unconfigured | ready | missing | denied | invalid`
+- `DependencyStatus`: dependency名、状態code、検出version、action code
+- `ReleaseState`: `local-acceptance | signed | notarized | verified | publishable`
+- すべての外部入力はruntime validation後にdomain型へ変換する。

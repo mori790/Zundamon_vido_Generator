@@ -2,52 +2,67 @@
 
 ## Build System
 
-- **Type**: npm.
-- **Runtime**: Node.js with TypeScript ESM.
-- **Primary Commands**: `npm run validate`, `npm run voice`, `npm run timeline`, `npm run preview`, `npm run video`, `npm test`.
+- **Package**: `zundamon-video-generator`, one private npm ESM package.
+- **Language**: TypeScript/TSX targeting ES2022.
+- **Studio build**: Vite 6 plus esbuild preload bundle.
+- **Desktop runtime**: Electron 41.
+- **Tests**: Vitest 4 and fast-check 4.
 
-## Existing Files Inventory
+## Source Inventory
 
-- `scripts/validate-script.ts` - CLI validation entry point.
-- `scripts/generate-voices.ts` - CLI voice generation entry point.
-- `scripts/generate-timeline.ts` - CLI timeline generation entry point.
-- `scripts/generate-video.ts` - full CLI generation and render entry point.
-- `scripts/preview.ts` - Remotion Studio preview entry point.
-- `src/core/script-loader.ts` - loads and validates video scripts.
-- `src/core/asset-checker.ts` - verifies referenced assets and character files.
-- `src/core/voicevox-client.ts` - performs VOICEVOX API calls.
-- `src/core/voice-generator.ts` - generates WAV files and cache manifest entries.
-- `src/core/audio-analyzer.ts` - measures WAV duration.
-- `src/core/timeline-generator.ts` - converts audio durations into frames.
-- `src/core/render-data-builder.ts` - joins script, manifest, and timeline for Remotion.
-- `src/core/render-service.ts` - bundles and renders Remotion output.
-- `src/schemas/video-script.ts` - Zod schema for script JSON.
-- `src/types/video.ts` - shared TypeScript model definitions.
-- `src/components/*.tsx` - visual presentation components.
-- `src/compositions/ZundamonVideo.tsx` - main Remotion composition.
-- `tests/*.test.ts` - unit and integration tests.
+### Application and Composition
+
+- `src/Root.tsx` - Remotion composition registration.
+- `src/compositions/ZundamonVideo.tsx` - Main video composition.
+- `src/components/` - Background, character, scene, subtitle, and visual rendering.
+- `src/core/` - Script loading, validation, VOICEVOX, caching, timeline, render data, and rendering.
+- `src/schemas/` - Zod script schema.
+- `src/types/` - Script and timeline models.
+- `src/utils/` - Filesystem, frame, logger, subtitle, WAV, and render-progress helpers.
+
+### Electron Studio
+
+- `src/studio/main/main.ts` - Window lifecycle and IPC registration.
+- `src/studio/main/preload.ts` - Context-bridge API exposure.
+- `src/studio/main/command-runner.ts` - Production child-process orchestration and logs.
+- `src/studio/main/codex-app-server-service.ts` - Codex process, JSONL, sessions, turns, approvals, retries, diagnostics.
+- `src/studio/main/local-file-service.ts` - Confined script/chat/asset filesystem operations.
+- `src/studio/main/preview-data-service.ts` - Preview readiness and render-data loading.
+- `src/studio/main/render-output-service.ts` - Output status, overwrite confirmation, verification, and reveal.
+- `src/studio/renderer/StudioApp.tsx` - Workspace-level UI orchestration.
+- `src/studio/renderer/CodexPanel.tsx` - Real/Mock chat, stream, approval, and recovery UI.
+- `src/studio/renderer/ScriptReviewPanel.tsx` - Draft creation, validation, editing, asset attachment, and apply.
+- `src/studio/renderer/PreviewPanel.tsx` - Embedded preview state and fallback.
+- `src/studio/renderer/ProductionCommandPanel.tsx` - Command execution, logs, progress, stop, retry, and output actions.
+- `src/studio/renderer/*-client.ts` - Purpose-specific preload clients.
+- `src/studio/renderer/*-file-access.ts` - Renderer adapters over local-file API.
+- `src/studio/renderer/real-codex-connection.ts` - Real App Server adapter.
+- `src/studio/renderer/mock-codex-connection.ts` - Deterministic Mock adapter.
+- `src/studio/shared/` - Assets, chat, Codex protocol, command, local-file, preview, proposals, render, draft/apply, and workspace contracts.
+
+### CLI and Tests
+
+- `scripts/validate-script.ts` - Script and asset validation.
+- `scripts/generate-voices.ts` - VOICEVOX generation.
+- `scripts/generate-timeline.ts` - Timeline generation.
+- `scripts/preview.ts` - Remotion preview startup.
+- `scripts/generate-video.ts` - Full generation/render flow.
+- `tests/studio/` - Main, shared, Renderer, PBT, fake-process, and Electron E2E tests.
+- `tests/fixtures/fake-codex-app-server.mjs` - Deterministic App Server test process.
+- `tests/voicevox.integration.test.ts` - Live VOICEVOX integration.
 
 ## Design Patterns
 
-### Pipeline Steps
+- Purpose-specific IPC rather than generic filesystem or JSON-RPC exposure.
+- Dependency injection at process/filesystem/time boundaries for deterministic tests.
+- Pure state transition functions for proposals, turns, approvals, drafts, and progress.
+- File-based persistence with bounded parsing and atomic Codex session writes.
+- Existing CLI scripts reused by Electron Main rather than reimplemented in Renderer.
 
-- **Location**: `scripts/*.ts` and `src/core/*`.
-- **Purpose**: Keep validation, voice generation, timeline creation, and rendering independently runnable.
+## Packaging-Relevant Gaps
 
-### File-Based Artifacts
-
-- **Location**: `input/`, `public/`, `generated/`, `output/`.
-- **Purpose**: Let creators inspect and rerun intermediate artifacts.
-
-### Cache Manifest
-
-- **Location**: `src/core/manifest-store.ts`, `src/core/voice-generator.ts`.
-- **Purpose**: Reuse generated audio when scene text and speaker configuration have not changed.
-
-## GUI-Relevant Modification Candidates
-
-- Add a GUI package or app shell at workspace root.
-- Extract CLI operations into callable service functions where needed.
-- Add project/session metadata for GUI state without changing the existing script JSON contract prematurely.
-- Add a Codex App Server integration boundary separate from Remotion rendering.
-
+- Main entry is TypeScript and currently launched through `NODE_OPTIONS='--import tsx'`.
+- Studio build outputs Renderer/preload artifacts but no compiled Main bundle.
+- Runtime paths use `process.cwd()` in several Main and CLI boundaries.
+- No `build`, `productName`, application ID, icons, signing identities, entitlements, notarization, artifact naming, or release commands are configured.
+- Runtime dependencies and development-only dependencies need packaging classification.
