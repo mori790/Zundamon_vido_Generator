@@ -117,6 +117,7 @@ describe('renderer asset file access', () => {
         exists: vi.fn().mockResolvedValue(true),
         trash: trashItem,
       },
+      draft: {} as never,
     };
     const file = new File(['first'], 'source.png', {type: 'image/png'});
     const access = createRendererAssetFileAccess({
@@ -153,6 +154,7 @@ describe('renderer asset file access', () => {
       workspace: {} as never,
       chat: {} as never,
       asset: {select: vi.fn(), copy: vi.fn(), exists: vi.fn(), trash: vi.fn()},
+      draft: {} as never,
     };
     const decodeImage = vi.fn();
     const file = new File([new Uint8Array(MAX_IMAGE_BYTES + 1)], 'large.png', {type: 'image/png'});

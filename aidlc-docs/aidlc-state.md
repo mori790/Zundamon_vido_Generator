@@ -4,9 +4,9 @@
 - **Project Type**: Brownfield
 - **Start Date**: 2026-07-27T05:06:07Z
 - **Current Phase**: OPERATIONS
-- **Current Stage**: OPERATIONS - Complete - U11
-- **Last Completed**: Operations placeholder - U11 Internal Adoption and Post-MVP Planning
-- **Next Step**: U11 workflow complete. Real-artifact preflight passed; proceed to clean-profile smoke on target Mac/user profile.
+- **Current Stage**: OPERATIONS - 待機中
+- **Last Completed**: U12 OPERATIONS（placeholder）承認完了
+- **Next Step**: 次の変更要求を待つ。
 
 ## Workspace State
 - **Existing Code**: Yes
@@ -90,10 +90,17 @@
 - [x] CONSTRUCTION - Build and Test
 - [x] OPERATIONS - Operations (placeholder)
 
+## U12 Stage Progress
+- [x] CONSTRUCTION - Functional Design（U12-B/C/D/E 各サブユニット）
+- [x] CONSTRUCTION - NFR Requirements（U12-B/C/D/E 各サブユニット）
+- [x] CONSTRUCTION - NFR Design（U12-B/C/D/E 各サブユニット）
+- [x] CONSTRUCTION - Code Generation（U12-B/C/D/E 各サブユニット）
+- [x] CONSTRUCTION - Build and Test（tsc/test 207件/build 全通過）
+- [x] OPERATIONS - Operations（placeholder）
+
 ## Active Change Request
-- **Request**: U11 README update, internal-user clean-Mac acceptance, and planning/requirements/specification for post-MVP features.
-- **Mode**: New U11 workflow in progress.
-- **Status**: U11 workflow complete. Real-artifact `npm run acceptance:preflight` passed; clean-profile smoke is next.
+- **Request**: なし
+- **Status**: 待機中
 
 ## Parallel Workstreams
 - **U6 Command Runner and Log Panel**: Code Generation approved.

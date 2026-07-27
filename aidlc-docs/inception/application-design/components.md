@@ -1,122 +1,83 @@
-# U11 Components
+# U12 Components
 
 ## Scope
 
-U11 implements internal adoption and planning support in the existing single npm package. It does not implement product runtime features for series management, template library, or multiple Workspace management.
+U12はテキスト起点のシーン編集パイプラインを既存のElectron Studioアプリに追加する。既存コンポーネント（Codexパネル、台本ドラフト編集UI、コマンド実行パネル、Remotionプレビュー）はすべて継続使用し、新規5コンポーネントを追加する。
 
-## C1: Desktop-First README Component
+## C1: テキスト入力パネル
 
-- **Purpose**: Reframe README for internal non-developer Desktop adoption while preserving CLI and developer workflows.
-- **Responsibilities**:
-  - Present product purpose, supported Mac, `local-acceptance` meaning, and general distribution prohibition at the top.
-  - Describe GUI First Run, Workspace selection, Codex, VOICEVOX, and sample-video smoke flow in order.
-  - Provide ZIP and SHA-256 handoff and verification steps.
-  - Separate GUI troubleshooting from CLI, development, test, and release commands.
-  - Avoid normalizing Gatekeeper disablement, quarantine removal, arbitrary shell commands, or public-release claims.
-- **Interfaces**:
-  - Markdown content in `README.md`.
-  - Links to internal acceptance and Post-MVP docs.
-  - References to package scripts without reimplementing release-state logic.
+- **目的**: 動画制作者が外部で作成した草案テキストをアプリに渡す入力ゲートウェイ。
+- **責務**:
+  - Studioメインエリアに「テキスト入力」タブとして配置する。
+  - テキストエリアへの貼り付け（任意形式の自然文）を受け付ける。
+  - `.txt` / `.md` ファイルのファイル選択ダイアログを提供し、内容をテキストエリアに展開する。
+  - テキストエリアが空の状態でシーン分割を開始しようとした場合はエラーを表示して処理を止める。
+  - テキスト確定後、AIシーン分割エンジン（C2）へ処理を委譲する。
+- **インターフェース**:
+  - Studio メインエリアのタブUIとして表示。
+  - テキストをSceneSegmentationServiceへ渡すIPC呼び出しまたはRenderer内関数呼び出し。
 
-## C2: Internal Acceptance Documentation Component
+## C2: AIシーン分割エンジン
 
-- **Purpose**: Provide repeatable clean-profile smoke execution and evidence capture for internal acceptance.
-- **Responsibilities**:
-  - Store checklist and evidence template under `docs/internal-acceptance/`.
-  - Define the minimum smoke as ZIP verification, app launch, empty Workspace selection, sample-video load, Render path, and non-zero MP4 confirmation.
-  - Keep Codex, VOICEVOX diagnosis, editing, assets, Stop, Finder reveal, update, and Rollback as additional checks.
-  - Mark clean-profile acceptance as Not Run until performed on an appropriate Mac or macOS user profile.
-  - Warn against recording credentials, tokens, personal information, and unnecessary absolute paths.
-- **Interfaces**:
-  - `docs/internal-acceptance/clean-profile-smoke-checklist.md`.
-  - `docs/internal-acceptance/acceptance-evidence-template.md`.
-  - README links and release handoff instructions.
+- **目的**: 草案テキストをCodexで意味的シーンに自動分割するサービスコンポーネント。
+- **責務**:
+  - シーン分割プロンプトを組み立て、既存CodexパネルのIPC経由でCodexへ送信する（U2 IPC契約を再利用）。
+  - Codexレスポンスをパースし、シーンタイトル・ナレーションテキスト・推薦素材タグを含む `Scene[]` 配列に変換する。
+  - 30シーン以上の分割結果を適切に処理する。
+  - 分割中はRendererに処理中インジケーターを表示させる状態イベントを発行する。
+  - Codex接続エラー・タイムアウト時はfail-fastしてエラーメッセージを返す（テキストエリア内容は保持）。
+- **インターフェース**:
+  - 既存CodexパネルIPC（U2実装）を入力チャンネルとして使用。
+  - `Scene[]` 型をシーン調整UI（C3）へ渡す。
 
-## C3: Acceptance Preflight Component
+## C3: シーン調整UI
 
-- **Purpose**: Add one non-destructive local command for internal release acceptance readiness.
-- **Responsibilities**:
-  - Reuse existing release artifact verifier contracts instead of duplicating manifest or release-state logic.
-  - Verify arm64 ZIP, release manifest, SBOM, ZIP SHA-256 match, architecture, and `local-acceptance` state.
-  - Execute or verify production dependency audit, typecheck, default tests, and Studio build.
-  - Fail closed with a non-zero exit code and Japanese action guidance.
-  - Report evidence paths without modifying existing Workspace, input, asset, or output data.
-- **Interfaces**:
-  - New npm script, proposed as `acceptance:preflight`.
-  - Thin TypeScript script wrapper under `scripts/`.
-  - Existing release manifest and release verification outputs.
-  - Existing npm scripts for audit, typecheck, tests, and Studio build.
+- **目的**: AIが提案したシーン一覧をユーザーが確認・編集するインタラクティブUIコンポーネント。
+- **責務**:
+  - シーンカードの一覧を表示する（シーンタイトル・ナレーションテキスト・推薦素材タグ）。
+  - ドラッグまたはボタン操作によるシーン並び替えをサポートする。
+  - シーンの追加（空シーン挿入）・削除（確認ダイアログ付き）を提供する。
+  - 各シーンのナレーションテキストをインライン編集できる。
+  - 変更はDraftPersistenceService（S3）経由で `draft-{id}.json` にリアルタイム保存する。
+  - シーン確定後、素材推薦パネル（C4）へ処理を委譲する。
+- **インターフェース**:
+  - C2（AIシーン分割エンジン）から `Scene[]` を受け取る。
+  - S3（DraftPersistenceService）経由でドラフトを永続化する。
+  - C4（素材推薦パネル）へ確定したシーン一覧を渡す。
 
-## C4: Release Evidence Adapter
+## C4: 素材推薦パネル
 
-- **Purpose**: Encapsulate U11's read-only interaction with existing release evidence.
-- **Responsibilities**:
-  - Locate generated release manifest, SBOM, ZIP, and checksum evidence.
-  - Parse bounded manifest data using existing schema or shared validation helpers where available.
-  - Classify artifact state without ever converting unsigned `local-acceptance` into `publishable`.
-  - Return typed evidence summaries for preflight reporting and tests.
-- **Interfaces**:
-  - Existing `src/studio/shared/release.ts` contracts.
-  - Existing `scripts/release-artifacts.ts` behavior and outputs.
-  - File-system read access to release artifact directories only.
+- **目的**: シーンごとにAIが素材を推薦し、ユーザーが承認または変更するUIと推薦ロジック。
+- **責務**:
+  - 各シーンカードにサイドパネルまたはインラインUIとして素材推薦結果を表示する。
+  - 素材タイプ（立ち絵・背景・BGM/SE・字幕スタイル・説明画像）ごとにAI推薦候補を表示する。
+  - 推薦プロンプト（ナレーションテキスト + assetsフォルダの素材ファイル名リスト）を組み立て、Codex IPC経由で推薦を取得する（U2 IPC契約を再利用）。
+  - ユーザーが「承認」または ドロップダウンで別素材に変更できるUIを提供する。
+  - assetsフォルダに該当タイプの素材が存在しない場合は「素材が見つかりません」を表示し、他タイプの推薦は続行する。
+  - 素材割り当てをS3（DraftPersistenceService）経由でドラフトに保存する。
+- **インターフェース**:
+  - S2（AssetCatalogService）から素材ファイルリストを取得する。
+  - C3（シーン調整UI）から確定シーン一覧を受け取る。
+  - 既存CodexパネルIPC（U2）経由で推薦を取得する。
+  - S3（DraftPersistenceService）に素材割り当てを保存する。
 
-## C5: Post-MVP Planning Component
+## C5: JSON自動生成・パイプライン接続
 
-- **Purpose**: Preserve the future feature backlog and design the top three Next features at planning depth.
-- **Responsibilities**:
-  - Store backlog and roadmap under `docs/post-mvp/`.
-  - Document Next, Later, and Future classification without date or effort commitments.
-  - Detail series management, template library, and multiple Workspace management by component, method, service, dependency, NFR, and acceptance criteria.
-  - Explicitly keep Future items that weaken Human Approval or local-only boundaries out of current implementation.
-  - Connect future pure data logic to Partial PBT expectations.
-- **Interfaces**:
-  - `docs/post-mvp/backlog.md`.
-  - `docs/post-mvp/roadmap.md`.
-  - `docs/post-mvp/series-management-spec.md`.
-  - `docs/post-mvp/template-library-spec.md`.
-  - `docs/post-mvp/multiple-workspaces-spec.md`.
-
-## C6: Future Series Management Specification Component
-
-- **Purpose**: Define the future series model and UI/service responsibilities without implementing them in U11.
-- **Responsibilities**:
-  - Specify versioned Series metadata with ordered unique video IDs.
-  - Preserve existing `input/{videoId}.json` files by reference only.
-  - Define invalid-data rejection and atomic save expectations.
-  - Keep series deletion non-destructive for scripts, assets, audio, and outputs.
-- **Interfaces**:
-  - Future typed IPC and Main service, not implemented in U11.
-  - Future Workspace JSON storage.
-
-## C7: Future Template Library Specification Component
-
-- **Purpose**: Define future template reuse behavior without implementing it in U11.
-- **Responsibilities**:
-  - Specify read-only built-in templates and user-managed Workspace templates.
-  - Require template application to create drafts, never direct active-script overwrites.
-  - Validate placeholders, schema versions, unknown fields, and generated `VideoScript`.
-  - Keep asset binaries outside templates.
-- **Interfaces**:
-  - Future template parser and draft generation service, not implemented in U11.
-  - Existing U3 draft apply boundary.
-
-## C8: Future Multiple Workspace Specification Component
-
-- **Purpose**: Define future recent-Workspace switching behavior without implementing it in U11.
-- **Responsibilities**:
-  - Specify versioned `userData` reference list with canonical path uniqueness.
-  - Keep exactly one active Workspace.
-  - Require Main-process canonical validation and purpose-specific Renderer APIs.
-  - Require explicit confirmation when unsaved draft, running command, or active Codex turn exists.
-  - Keep Workspace reference deletion non-destructive.
-- **Interfaces**:
-  - Future Workspace reference service, not implemented in U11.
-  - Existing `WorkspaceRootService` and Workspace API concepts.
+- **目的**: 確定したシーン・素材割り当てから既存パイプラインが要求する`VideoScript` JSONを生成する。
+- **責務**:
+  - ドラフト状態（シーン一覧 + 素材割り当て）を既存 `VideoScript` JSON形式（`input/{id}.json`）にマッピングする。
+  - 生成JSONを `input/{id}.json` に直接書き込む（既存パイプラインをそのまま使う）。
+  - 生成完了後、既存の台本ドラフト編集UI（U3）でユーザーがJSONを閲覧・手動修正できることを保証する。
+  - VideoScriptスキーマバリデーションを書き込み前に実行し、失敗時はエラーを表示してファイルを変更しない。
+- **インターフェース**:
+  - S3（DraftPersistenceService）からドラフト状態を読み込む。
+  - 既存 `VideoScript` スキーマと `input/{id}.json` ファイルパス規約に従う。
+  - 既存の台本ドラフト編集UI（U3）と `input/{id}.json` を共有する。
 
 ## Extension Compliance
 
-| Extension | Status | Rationale |
+| Extension | 状態 | 根拠 |
 |---|---|---|
-| Security Baseline | Compliant | Components preserve checksum verification, no public-release claim for unsigned artifacts, secret-safe evidence, schema validation, and purpose-specific IPC boundaries. |
-| Resiliency Baseline | Compliant | Components preserve local Backup & Restore, direct/in-place deployment, fail-closed release verification, rollback note, and incident evidence. |
-| Property-Based Testing (Partial) | Compliant | Future data components identify round-trip, invariant, generator quality, seed replay, and fast-check framework expectations. |
+| Security Baseline | Compliant | assetsパス検証、Codex入力サニタイズ、PII/token非記録、fail-closed Codexエラー処理、VideoScriptスキーマ検証をコンポーネント責務へ反映した。 |
+| Resiliency Baseline | Compliant | ドラフト永続化（アプリ再起動後の継続）、Codex失敗時のテキスト保持、素材欠損時の個別エラー、JSON書き込み失敗時のno-op動作をコンポーネント責務へ反映した。 |
+| Property-Based Testing (Partial) | Compliant | JSON生成のround-trip invariant（C5）、シーン境界のunique invariant（C3）、素材パスのschema-valid invariant（C4）をコンポーネント責務へ接続した。 |

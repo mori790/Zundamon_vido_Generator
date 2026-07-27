@@ -5,6 +5,11 @@ import {PreviewPanel} from './PreviewPanel';
 import {PreviewCoordinator} from './preview-coordinator';
 import {previewClient} from './preview-client';
 import {ScriptReviewPanel} from './ScriptReviewPanel';
+import {TextInputTab} from './TextInputTab';
+import {AssetAssignTab} from './AssetAssignTab';
+import {JsonGenerateTab} from './JsonGenerateTab';
+import {SceneListTab} from './SceneListTab';
+import type {Scene, SceneWithAsset} from '../shared/scene-segmentation';
 import type {AssetFileAccess} from './asset-file-access';
 import {loadChatHistory, saveChatHistory} from './chat-history-store';
 import {listVideoProjects, loadWorkspace} from './workspace-client';
@@ -16,6 +21,7 @@ import type {ProjectRootState, WorkspaceRootApi} from '../shared/workspace';
 import type {DependencyApi, DependencyReport} from '../shared/desktop';
 
 type Screen = 'start' | 'workspace';
+type MainTab = 'workspace' | 'text-input' | 'scenes' | 'asset-assign' | 'json-generate';
 
 declare global {
   var workspaceApi: WorkspaceRootApi | undefined;
@@ -62,10 +68,12 @@ export function StudioApp({assetFileAccess}: {assetFileAccess?: AssetFileAccess}
     return <FirstRunGate api={workspaceApi} state={rootState} onChange={setRootState} />;
   }
 
+  const workspaceRoot = rootState.status === 'ready' ? (rootState.root ?? null) : null;
+
   return (
     <>
       {dependencies ? <DependencyStatusPanel report={dependencies} /> : null}
-      <StudioContent assetFileAccess={assetFileAccess} />
+      <StudioContent assetFileAccess={assetFileAccess} workspaceRoot={workspaceRoot} />
     </>
   );
 }
@@ -117,12 +125,19 @@ function DependencyStatusPanel({report}: {report: DependencyReport}): JSX.Elemen
   );
 }
 
-function StudioContent({assetFileAccess}: {assetFileAccess?: AssetFileAccess} = {}): JSX.Element {
+function StudioContent({
+  assetFileAccess,
+  workspaceRoot,
+}: {assetFileAccess?: AssetFileAccess; workspaceRoot: string | null} = {workspaceRoot: null}): JSX.Element {
+  const [activeTab, setActiveTab] = useState<MainTab>('workspace');
   const [screen, setScreen] = useState<Screen>('start');
   const [projects, setProjects] = useState<VideoProjectSummary[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [workspace, setWorkspace] = useState<WorkspaceState | null>(null);
   const [error, setError] = useState<WorkspaceError | null>(null);
+  const [scenes, setScenes] = useState<Scene[] | null>(null);
+  const [sceneDraftMeta, setSceneDraftMeta] = useState<{draftText: string; segmentedAt: string} | null>(null);
+  const [scenesWithAssets, setScenesWithAssets] = useState<SceneWithAsset[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -156,33 +171,163 @@ function StudioContent({assetFileAccess}: {assetFileAccess?: AssetFileAccess} = 
     setScreen('workspace');
   }
 
+  const tabBar = (
+    <nav className="main-tab-bar" role="tablist">
+      <button
+        aria-selected={activeTab === 'workspace'}
+        data-testid="tab-workspace"
+        onClick={() => setActiveTab('workspace')}
+        role="tab"
+        type="button"
+      >
+        ワークスペース
+      </button>
+      <button
+        aria-selected={activeTab === 'text-input'}
+        data-testid="tab-text-input"
+        onClick={() => setActiveTab('text-input')}
+        role="tab"
+        type="button"
+      >
+        テキスト入力
+      </button>
+      <button
+        aria-selected={activeTab === 'scenes'}
+        data-testid="tab-scenes"
+        disabled={!scenes}
+        onClick={() => setActiveTab('scenes')}
+        role="tab"
+        type="button"
+      >
+        シーン調整
+      </button>
+      <button
+        aria-selected={activeTab === 'asset-assign'}
+        data-testid="tab-asset-assign"
+        disabled={!scenes}
+        onClick={() => setActiveTab('asset-assign')}
+        role="tab"
+        type="button"
+      >
+        素材割り当て
+      </button>
+      <button
+        aria-selected={activeTab === 'json-generate'}
+        data-testid="tab-json-generate"
+        disabled={!scenesWithAssets}
+        onClick={() => setActiveTab('json-generate')}
+        role="tab"
+        type="button"
+      >
+        JSON生成
+      </button>
+    </nav>
+  );
+
+  if (activeTab === 'json-generate' && scenesWithAssets) {
+    return (
+      <>
+        {tabBar}
+        <JsonGenerateTab
+          scenes={scenesWithAssets}
+          videoId={workspace?.videoId ?? ''}
+          onSuccess={(vid) => {
+            void openWorkspace(vid);
+            setActiveTab('workspace');
+          }}
+        />
+      </>
+    );
+  }
+
+  if (activeTab === 'asset-assign' && scenes) {
+    return (
+      <>
+        {tabBar}
+        <AssetAssignTab
+          initialScenes={scenes}
+          videoId={workspace?.videoId ?? null}
+          onConfirm={(result) => {
+            setScenesWithAssets(result);
+            setActiveTab('json-generate');
+          }}
+        />
+      </>
+    );
+  }
+
+  if (activeTab === 'scenes' && scenes) {
+    return (
+      <>
+        {tabBar}
+        <main className="studio-shell">
+          <SceneListTab
+            initialDraftText={sceneDraftMeta?.draftText ?? ''}
+            initialSegmentedAt={sceneDraftMeta?.segmentedAt ?? null}
+            onConfirm={(finalScenes) => {
+              setScenes(finalScenes);
+              setActiveTab('asset-assign');
+            }}
+            scenes={scenes}
+            videoId={workspace?.videoId ?? null}
+          />
+        </main>
+      </>
+    );
+  }
+
+  if (activeTab === 'text-input') {
+    return (
+      <>
+        {tabBar}
+        <main className="studio-shell">
+          <TextInputTab
+            onSegmentationComplete={(newScenes, meta) => {
+              setScenes(newScenes);
+              setSceneDraftMeta(meta);
+              setActiveTab('scenes');
+            }}
+            videoId={workspace?.videoId ?? null}
+            workspaceRoot={workspaceRoot}
+          />
+        </main>
+      </>
+    );
+  }
+
   if (screen === 'workspace' && workspace) {
     return (
-      <WorkspaceShell
-        assetFileAccess={assetFileAccess}
-        workspace={workspace}
-        onApplyScript={(activeScript) => {
-          setWorkspace({
-            ...workspace,
-            mode: 'existing-script',
-            activeScript,
-          });
-        }}
-        onBack={() => {
-          setWorkspace(null);
-          setScreen('start');
-        }}
-      />
+      <>
+        {tabBar}
+        <WorkspaceShell
+          assetFileAccess={assetFileAccess}
+          workspace={workspace}
+          onApplyScript={(activeScript) => {
+            setWorkspace({
+              ...workspace,
+              mode: 'existing-script',
+              activeScript,
+            });
+          }}
+          onBack={() => {
+            setWorkspace(null);
+            setScreen('start');
+          }}
+        />
+      </>
     );
   }
 
   return (
-    <StartScreen
-      projects={projects}
-      loadingProjects={loadingProjects}
-      error={error}
-      onOpenWorkspace={openWorkspace}
-    />
+    <>
+      {tabBar}
+      <StartScreen
+        projects={projects}
+        loadingProjects={loadingProjects}
+        error={error}
+        onOpenWorkspace={openWorkspace}
+      />
+    </>
   );
 }
 
@@ -504,6 +649,7 @@ function WorkspaceShell({
     </main>
   );
 }
+
 
 function WorkspaceHeader({workspace, onBack}: {workspace: WorkspaceState; onBack(): void}): JSX.Element {
   return (

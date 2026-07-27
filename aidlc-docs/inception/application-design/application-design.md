@@ -1,121 +1,81 @@
-# U11 Application Design
+# U12 Application Design
 
 ## Design Decision Summary
 
-The approved Application Design choices are:
+承認されたApplication Designの選択:
 
-- Add only a thin internal acceptance preflight wrapper and reuse existing release artifact verifier semantics.
-- Place internal acceptance checklist and evidence template under `docs/internal-acceptance/`.
-- Place Post-MVP backlog, roadmap, and top-three feature specifications under `docs/post-mvp/`.
-- Include artifact validation plus production audit, typecheck, default tests, and Studio build in preflight handling.
-- Include component, method, service, and dependency design for the Next top-three future features as specification only.
+- テキスト入力パネルはStudioメインエリアの新しい「テキスト入力」タブとして配置する。
+- AIシーン分割エンジンは既存CodexパネルIPC（U2）を再利用してCodexと連携する。
+- シーン分割ドラフト状態は `{workspace}/draft-{videoId}.json` に永続化する。
+- 素材カタログはWorkspace選択時にassetsフォルダをスキャンしてメモリにキャッシュする。
+- 生成JSONは `input/{videoId}.json` に直接書き込む（既存パイプライン再利用）。
+- シーン調整UI（C3）は新規独立パネル。台本ドラフト編集UI（U3）はJSON手動修正ルートとして継続。
+- 素材推薦プロンプトはナレーションテキスト + 素材ファイル名リストをCodexへ渡す。
 
-## Current Implementation Boundary
+## 実装境界
 
-U11 implementation includes:
+### U12 実装に含むもの
 
-- README restructuring for Desktop-first internal adoption.
-- Internal acceptance checklist and evidence template.
-- One local acceptance preflight command.
-- Post-MVP backlog, roadmap, and top-three specification documents.
-- Focused tests for new preflight behavior and any new pure validation logic.
+- テキスト入力パネル（貼り付け・ファイル読み込み）
+- AIシーン分割エンジン（Codex IPC経由）
+- シーン調整UI（並び替え・追加・削除・テキスト編集）
+- 素材推薦パネル（AI推薦 + 人間確認・変更）
+- DraftPersistenceService（`draft-{id}.json`）
+- AssetCatalogService（assetsフォルダスキャン）
+- VideoScriptGeneratorService（`input/{id}.json` 生成）
 
-U11 implementation excludes:
+### U12 実装から除くもの
 
-- Series management runtime UI or persistence.
-- Template library runtime UI or persistence.
-- Multiple Workspace runtime UI or persistence.
-- Auto update, installer changes, cloud sync, YouTube integration, or complete Codex automation.
+- 素材ライブラリ管理UI（assetsフォルダへの追加・削除・タグ付け）
+- 複数プロジェクト同時編集
+- クラウド保存・共有
+- シリーズ管理・テンプレートライブラリ
+- 既存Codexパネルのチャット体験の変更
 
 ## Component Summary
 
-| Component | Current U11 Status | Purpose |
+| コンポーネント | U12での状態 | 目的 |
 |---|---|---|
-| Desktop-First README | Implement | Non-developer Desktop adoption path. |
-| Internal Acceptance Documentation | Implement | Checklist and evidence capture. |
-| Acceptance Preflight | Implement | Non-destructive local readiness verification. |
-| Release Evidence Adapter | Implement or reuse | Safe read-only release evidence access. |
-| Post-MVP Planning | Implement as docs | Backlog, roadmap, and top-three specs. |
-| Future Series Spec | Specification only | Define future series behavior. |
-| Future Template Spec | Specification only | Define future template behavior. |
-| Future Multiple Workspace Spec | Specification only | Define future Workspace switching behavior. |
+| C1 テキスト入力パネル | 新規実装 | 草案テキストの入力ゲートウェイ |
+| C2 AIシーン分割エンジン | 新規実装（S1） | テキスト → Codex → Scene[] |
+| C3 シーン調整UI | 新規実装 | シーン一覧の確認・編集 |
+| C4 素材推薦パネル | 新規実装（S4） | AI素材推薦 + 人間確認フロー |
+| C5 JSON自動生成 | 新規実装（S5） | VideoScript生成・パイプライン接続 |
+| Codexパネル（U2） | 継続・IPC再利用 | S1・S4のAIバックエンド |
+| 台本ドラフト編集UI（U3） | 継続・変更なし | JSON手動修正ルート |
+| コマンド実行パネル（U6） | 継続・変更なし | 音声生成・レンダリング |
+| Remotionプレビュー（U7） | 継続・変更なし | 映像プレビュー |
 
 ## Service Summary
 
-| Service | Responsibility | Primary Outputs |
+| サービス | 責務 | 主な出力 |
 |---|---|---|
-| Internal Adoption Documentation Service | README, checklist, evidence template coordination | `README.md`, `docs/internal-acceptance/` |
-| Acceptance Preflight Service | Artifact, release-state, build/test readiness checks | npm command, Japanese report, exit code |
-| Post-MVP Planning Service | Future backlog and top-three specs | `docs/post-mvp/` |
-| Release Boundary Reuse Service | Existing release-state and manifest semantics | Sanitized evidence summary |
-| Design Governance Service | Scope and extension compliance preservation | Downstream design and code-generation constraints |
+| S1 SceneSegmentationService | テキスト → Codex → Scene[] | Scene[] |
+| S2 AssetCatalogService | assetsフォルダスキャン・キャッシュ | AssetCatalog |
+| S3 DraftPersistenceService | draft-{id}.json read/write | 永続化ドラフト |
+| S4 AssetRecommendationService | Codex素材推薦・パース | AssetRecommendation[] |
+| S5 VideoScriptGeneratorService | VideoScript生成・書き込み | input/{id}.json |
 
 ## Key Dependencies
 
-- Existing release contracts in `src/studio/shared/release.ts`.
-- Existing release artifact behavior in `scripts/release-artifacts.ts`.
-- Existing npm scripts for audit, typecheck, tests, Studio build, packaging, and release verification.
-- Existing Workspace, local-file, command, Codex approval, and VideoScript boundaries for future feature specifications.
+- 既存CodexパネルIPC（U2） — S1・S4のAI推論バックエンド
+- 既存WorkspaceRootService — S2・S3のパス解決
+- 既存VideoScriptスキーマ（Zodスキーマ） — S5のバリデーション
+- 既存 `input/` ディレクトリ規約 — S5の出力先
+- 既存台本ドラフト編集UI（U3） — JSON手動修正ルート（共有ファイル経由）
 
 ## Design Constraints
 
-- Preflight must be non-destructive.
-- Preflight must return non-zero for missing artifact, checksum mismatch, wrong architecture, wrong release state, or build/test gate failure.
-- Unsigned `local-acceptance` must never be described as `publishable`.
-- README must avoid Gatekeeper disablement and quarantine removal as normal instructions.
-- Evidence templates must avoid credentials, tokens, personal data, and unnecessary absolute paths.
-- Future feature specs must preserve context isolation, purpose-specific IPC, schema validation, atomic writes, and fail-closed recovery.
-- Clean-profile acceptance must remain Not Run until actually performed in a compatible environment.
+- Codexパネルの既存チャット体験を壊さない。
+- assetsフォルダ構造を変更しない。
+- 既存VOICEVOXパイプライン・Remotionレンダリングの起動方法を変更しない。
+- `VideoScript` JSON形式（既存スキーマ）との後方互換を維持する。
+- `input/{id}.json` へのバリデーション失敗時は書き込みをしない（fail-closed）。
 
-## Downstream Carry-Forward
+## Extension Compliance Summary
 
-### Functional Design
-
-Functional Design must detail:
-
-- Preflight result model and status transitions.
-- Artifact discovery and release evidence validation rules.
-- Japanese report wording and failure action mapping.
-- Checklist and evidence template field semantics.
-- Post-MVP backlog and spec document structure.
-
-### NFR Requirements
-
-NFR Requirements must preserve:
-
-- Security: checksum, SBOM, no secret/PII reporting, fail-closed release state, bounded parsing.
-- Resiliency: Low criticality, RTO hours, RPO manual backup, direct/in-place deployment, rollback note, incident record.
-- Partial PBT: round-trip and invariant testing for new pure parser/serializer/normalizer logic.
-
-### Code Generation
-
-Code Generation must implement only:
-
-- Documentation files and README links.
-- Thin preflight command and npm script.
-- Focused example tests and PBT only where new pure logic exists.
-
-## Artifact References
-
-- `aidlc-docs/inception/application-design/components.md`
-- `aidlc-docs/inception/application-design/component-methods.md`
-- `aidlc-docs/inception/application-design/services.md`
-- `aidlc-docs/inception/application-design/component-dependency.md`
-
-## Extension Compliance
-
-| Extension | Status | Rationale |
+| Extension | 状態 | 適用ルール |
 |---|---|---|
-| Security Baseline | Compliant | The design enforces artifact integrity, bounded validation, safe evidence, release-state separation, and Main-mediated future filesystem access. Cloud, network, and authentication rules are N/A for U11. |
-| Resiliency Baseline | Compliant | The design captures Low criticality, local Backup & Restore, direct/in-place deployment, rollback notes, incident evidence, and fail-closed preflight. Cloud HA and centralized observability rules are N/A. |
-| Property-Based Testing (Partial) | Compliant | The design carries PBT-02, PBT-03, PBT-07, PBT-08, and PBT-09 forward for new pure data logic. Other PBT rules remain advisory in Partial mode. |
-
-## Completeness Check
-
-- Components defined: Yes.
-- Component methods defined: Yes.
-- Services defined: Yes.
-- Dependencies and communication patterns defined: Yes.
-- U11 implementation boundary defined: Yes.
-- Future specification boundary defined: Yes.
-- Extension findings: No blocking findings.
+| Security Baseline | Compliant | assetsパス検証、Codex入力サニタイズ、PII/token非記録、fail-closed JSON書き込み、VideoScriptスキーマ検証 |
+| Resiliency Baseline | Compliant | ドラフト永続化（再起動継続）、Codex失敗時のテキスト保持、素材欠損時の部分エラー、JSON書き込み失敗時no-op |
+| Property-Based Testing (Partial) | Compliant | VideoScript round-trip（S5）、シーン境界unique（C3）、素材パスschema-valid（C4）をPBT対象として識別 |

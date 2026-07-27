@@ -1,90 +1,66 @@
-# Unit of Work Story Map: GUI with Embedded Codex Panel
+# U12 Unit of Work Story Map
 
-## Story Mapping Summary
+## ストーリーマッピングサマリー
 
-All 20 user stories are assigned to at least one unit. Primary ownership is listed first.
+U12の11ストーリー（US-1〜US-11）はすべていずれかのユニットに割り当てられている。
 
-| Story | Primary Unit | Supporting Units |
+| ストーリー | 主担当ユニット | サポートユニット |
 |---|---|---|
-| US-1: Open or create a single video project | U1 | U3 |
-| US-2: Preserve CLI compatibility | U8 | U1, U3, U6 |
-| US-3: Discuss a video idea with Codex | U2 | U1 |
-| US-4: Handle Codex authentication or connection failure | U2 | U1 |
-| US-5: Generate a script JSON draft from the planning conversation | U4 | U2, U3 |
-| US-6: Review generated JSON in raw and structured views | U3 | U1 |
-| US-7: Ask Codex to revise a draft before applying it | U4 | U2, U3 |
-| US-8: Apply an approved JSON draft | U3 | U4, U1 |
-| US-9: Edit scenes directly in the GUI | U3 | U5 |
-| US-10: Select and attach image assets | U5 | U3 |
-| US-11: Handle missing asset failures | U5 | U3, U6 |
-| US-12: Validate the active script from the GUI | U6 | U3 |
-| US-13: Generate voice and timeline artifacts | U6 | U1 |
-| US-14: Handle VOICEVOX not running | U6 | U13 Log Panel within U6 |
-| US-15: Preview the current video inside the GUI | U7 | U6, U3 |
-| US-16: Render MP4 from the GUI | U8 | U6 |
-| US-17: Monitor logs for long-running operations | U6 | U8 |
-| US-18: Approve Codex-proposed production actions | U4 | U2, U6, U3 |
-| US-19: Recover from render failures | U8 | U6, U2 |
-| US-20: Continue manually when Codex is unavailable | U1 | U2, U3, U6 |
+| US-1: テキストエリアへの草案貼り付け | U12-A | — |
+| US-2: テキストファイルの読み込み | U12-A | — |
+| US-3: AIによる意味的シーン自動分割 | U12-B | U12-A（入力テキスト受け取り） |
+| US-4: シーン境界の調整 | U12-C | U12-B（Scene[]受け取り） |
+| US-5: シーンナレーションテキストの編集 | U12-C | — |
+| US-6: AIによる素材推薦と承認 | U12-D | U12-C（確定シーン）、U12-B（Codex IPC） |
+| US-7: 素材の手動変更 | U12-D | U12-C |
+| US-8: 内部JSONの自動生成と手動修正 | U12-E | U12-D（素材確定）、U3（JSON編集UI） |
+| US-9: VOICEVOX音声生成 | U12-E（統合確認） | U6（既存コマンド実行） |
+| US-10: Remotionプレビュー | U12-E（統合確認） | U7（既存プレビュー） |
+| US-11: MP4レンダリング | U12-E（統合確認） | U6（既存レンダリング） |
 
-## Unit Coverage
+## ユニット別カバレッジ
 
-### U1: Electron App Shell and Workspace Foundation
+### U12-A: テキスト入力パネル
 
-- Primary stories: US-1, US-20.
-- Supports: US-2, US-3, US-4, US-6, US-8, US-13.
+- 主担当ストーリー: US-1, US-2
+- サポート: なし
 
-### U2: Codex App Server Connection
+### U12-B: AIシーン分割エンジン
 
-- Primary stories: US-3, US-4.
-- Supports: US-5, US-7, US-18, US-19, US-20.
+- 主担当ストーリー: US-3
+- サポート: US-6（Codex IPC経路を素材推薦でも使用）
 
-### U3: JSON Draft Review and Scene Editing
+### U12-C: シーン調整UI
 
-- Primary stories: US-6, US-8, US-9.
-- Supports: US-1, US-2, US-5, US-7, US-10, US-11, US-12, US-15, US-18.
+- 主担当ストーリー: US-4, US-5
+- サポート: US-6, US-7（確定シーンをU12-Dへ渡す）
 
-### U4: Codex Proposal and Approval Flow
+### U12-D: 素材推薦パネル
 
-- Primary stories: US-5, US-7, US-18.
-- Supports: US-8.
+- 主担当ストーリー: US-6, US-7
+- サポート: US-8（素材割り当て確定後にU12-Eへ委譲）
 
-### U5: Asset Selection and Visual Attachment
+### U12-E: JSON自動生成・パイプライン接続
 
-- Primary stories: US-10, US-11.
-- Supports: US-9.
+- 主担当ストーリー: US-8
+- パイプライン統合確認: US-9, US-10, US-11（既存コンポーネントとの接続確認）
 
-### U6: Command Runner and Log Panel
+## Priority Coverage
 
-- Primary stories: US-12, US-13, US-14, US-17.
-- Supports: US-2, US-11, US-15, US-16, US-18, US-19, US-20.
+| 優先度 | ストーリー数 | ストーリーID |
+|---|---|---|
+| Must | 10件 | US-1〜US-9, US-11 |
+| Should | 1件 | US-10 |
+| Could | 0件 | — |
 
-### U7: Embedded Remotion Preview
+## ストーリーと要件の対応（確認）
 
-- Primary stories: US-15.
-- Supports: none.
-
-### U8: Render Workflow and CLI Compatibility Verification
-
-- Primary stories: US-2, US-16, US-19.
-- Supports: US-17.
-
-## First Vertical Slice
-
-The first desired vertical slice is:
-
-1. Open a video ID.
-2. Connect to Codex.
-3. Discuss a video idea.
-4. Receive a JSON draft.
-5. Display the draft in the GUI.
-
-This slice spans:
-
-- U1: workspace foundation.
-- U2: Codex connection.
-- U3: draft display.
-- U4: Codex proposal routing.
-
-It intentionally stops before save, validation, audio generation, or rendering.
-
+| 要件ID | カバーするストーリー | カバーするユニット |
+|---|---|---|
+| FR-U12-1 テキスト入力 | US-1, US-2 | U12-A |
+| FR-U12-2 AIシーン分割 | US-3 | U12-B |
+| FR-U12-3 シーン調整UI | US-4, US-5 | U12-C |
+| FR-U12-4 素材割り当て | US-6, US-7 | U12-D |
+| FR-U12-5 JSON自動生成 | US-8 | U12-E |
+| FR-U12-6 VOICEVOX連携 | US-9 | U12-E（統合確認） |
+| FR-U12-7 プレビュー・レンダリング | US-10, US-11 | U12-E（統合確認） |

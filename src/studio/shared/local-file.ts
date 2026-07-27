@@ -18,4 +18,13 @@ export type LocalFileApi = {
     exists(publicPath: string): Promise<boolean>;
     trash(publicPath: string): Promise<void>;
   };
+  draft: {
+    read(videoId: string): Promise<string | null>;
+    write(videoId: string, data: string): Promise<void>;
+  };
+};
+
+export type TextInputFileApi = {
+  openFileDialog(): Promise<{filePath: string; fileName: string} | null>;
+  readTextFile(filePath: string): Promise<{content: string; byteSize: number}>;
 };

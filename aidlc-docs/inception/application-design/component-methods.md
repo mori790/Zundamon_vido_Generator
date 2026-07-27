@@ -1,85 +1,50 @@
-# U11 Component Methods
+# U12 Component Methods
 
-## C1: Desktop-First README Component
+## C1: テキスト入力パネル
 
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `renderDesktopIntroduction` | Product purpose, supported Mac, release state | README section | Places non-developer Desktop entry information before CLI details. |
-| `renderInternalDistributionWarning` | Release state, signing status | README warning block | Explains `local-acceptance` and blocks public-release interpretation. |
-| `renderFirstRunGuide` | Workspace, Codex, VOICEVOX, sample-video flow | README section | Defines the ordered user path from launch to smoke render. |
-| `renderTroubleshootingIndex` | Known recovery actions | README section | Routes users to safe recovery without destructive or secret-revealing commands. |
-| `renderDeveloperAppendix` | Existing CLI, test, release commands | README appendix | Preserves existing developer and CLI workflows after GUI sections. |
+| メソッド | シグネチャ | 責務 |
+|---|---|---|
+| `handlePaste` | `(text: string) => void` | テキストエリアへの貼り付けを受け取り、ステートへ格納する |
+| `handleFileLoad` | `() => Promise<void>` | ファイル選択ダイアログを開き、.txt/.md を読み込んでステートへ格納する |
+| `validateInput` | `(text: string) => ValidationResult` | 空文字列チェックを行い、エラーメッセージまたはOKを返す |
+| `startSegmentation` | `() => void` | バリデーション後、SceneSegmentationServiceを呼び出す |
 
-## C2: Internal Acceptance Documentation Component
+## C2: AIシーン分割エンジン（SceneSegmentationService）
 
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `writeCleanProfileSmokeChecklist` | Minimum smoke requirements, additional checks | Checklist Markdown | Creates the internal acceptance runbook. |
-| `writeAcceptanceEvidenceTemplate` | Required evidence fields, safety warnings | Evidence template Markdown | Creates a reusable result record template. |
-| `markAcceptanceStatus` | Actual execution status | Checklist status text | Keeps unexecuted clean-profile acceptance marked as Not Run. |
-| `linkAcceptanceDocsFromReadme` | Docs paths | README links | Makes checklist and evidence template discoverable. |
+| メソッド | シグネチャ | 責務 |
+|---|---|---|
+| `buildPrompt` | `(text: string) => string` | シーン分割プロンプト文字列を組み立てる |
+| `segment` | `(text: string) => Promise<Scene[]>` | Codex IPC経由でプロンプトを送信し、レスポンスをScene[]に変換して返す |
+| `parseResponse` | `(raw: string) => Scene[]` | CodexのJSON/テキストレスポンスをScene[]型にパースする |
+| `handleError` | `(error: Error) => SegmentationError` | タイムアウト・接続エラーをSegmentationError型に変換する |
 
-## C3: Acceptance Preflight Component
+## C3: シーン調整UI
 
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `runAcceptancePreflight` | CLI options, repository root | Preflight result | Orchestrates artifact checks and local build/test gates. |
-| `verifyRequiredArtifacts` | Artifact directory | Artifact presence result | Checks arm64 ZIP, release manifest, and SBOM presence. |
-| `verifyManifestChecksum` | Manifest, ZIP path | Checksum result | Confirms ZIP SHA-256 matches manifest evidence. |
-| `verifyLocalAcceptanceState` | Release evidence | Release-state result | Requires `local-acceptance` and rejects `publishable` claims for unsigned artifacts. |
-| `runVerificationGate` | Command list | Gate result | Runs or confirms production audit, typecheck, default tests, and Studio build. |
-| `formatPreflightReportJa` | Preflight result | Japanese report text | Provides pass/fail, action guidance, and evidence paths. |
-| `exitForPreflightResult` | Preflight result | Process exit code | Returns 0 only when all required checks pass. |
+| メソッド | シグネチャ | 責務 |
+|---|---|---|
+| `renderSceneList` | `(scenes: Scene[]) => ReactNode` | シーンカード一覧を描画する |
+| `reorderScene` | `(fromIndex: number, toIndex: number) => void` | シーンを並び替え、ドラフトを保存する |
+| `addScene` | `(afterIndex: number) => void` | 指定位置に空シーンを挿入し、ドラフトを保存する |
+| `deleteScene` | `(index: number) => Promise<void>` | 確認ダイアログを表示後にシーンを削除し、ドラフトを保存する |
+| `updateNarration` | `(index: number, text: string) => void` | シーンのナレーションテキストを更新し、ドラフトを保存する |
+| `confirmScenes` | `() => void` | シーン一覧を確定し、素材推薦パネル（C4）へ委譲する |
 
-## C4: Release Evidence Adapter
+## C4: 素材推薦パネル（AssetRecommendationService）
 
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `loadReleaseManifest` | Manifest path | Parsed manifest | Reads bounded release metadata through existing validation. |
-| `loadSbomEvidence` | SBOM path | SBOM presence metadata | Confirms SBOM availability without parsing unnecessary sensitive data. |
-| `resolveReleaseArtifacts` | Repository root, optional artifact path | Artifact references | Locates ZIP, manifest, SBOM, and evidence paths. |
-| `classifyReleaseEvidence` | Parsed manifest, signing evidence | Release state | Reuses existing classification semantics. |
-| `summarizeEvidenceForReport` | Release evidence | Sanitized summary | Removes secrets and unnecessary absolute paths from user-facing output. |
+| メソッド | シグネチャ | 責務 |
+|---|---|---|
+| `buildRecommendationPrompt` | `(scene: Scene, assetList: AssetCatalog) => string` | ナレーションテキスト + 素材ファイル名リストを含むプロンプトを組み立てる |
+| `recommend` | `(scene: Scene) => Promise<AssetRecommendation>` | Codex IPC経由で推薦を取得し、AssetRecommendation型で返す |
+| `recommendAll` | `(scenes: Scene[]) => Promise<AssetRecommendation[]>` | 全シーンの推薦を非同期で取得する（シーンごとに独立して実行） |
+| `applyRecommendation` | `(sceneIndex: number, recommendation: AssetRecommendation) => void` | 推薦を素材割り当てに適用し、ドラフトを保存する |
+| `overrideAsset` | `(sceneIndex: number, type: AssetType, assetPath: string) => void` | ユーザーが手動で素材を変更し、ドラフトを保存する |
+| `renderPanel` | `(scene: Scene, recommendation: AssetRecommendation) => ReactNode` | シーンカードに推薦UIをインラインで描画する |
 
-## C5: Post-MVP Planning Component
+## C5: JSON自動生成・パイプライン接続（VideoScriptGeneratorService）
 
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `writePostMvpBacklog` | Candidate list, value, risk, dependency, size | Backlog Markdown | Documents all future candidates without duplicates. |
-| `writeRoadmap` | Next, Later, Future groups | Roadmap Markdown | Captures priority bands without date commitments. |
-| `writeTopThreeSpecs` | Series, template, workspace requirements | Spec documents | Produces implementation-decision-ready specs for the top three features. |
-| `recordFutureBoundary` | Future candidate risks | Spec section | Keeps Human Approval and local-only risk visible. |
-
-## C6: Future Series Management Specification Component
-
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `defineSeriesMetadataSchema` | Series requirements | Schema specification | Defines versioned Series metadata fields. |
-| `validateSeriesReferences` | Series metadata, existing video IDs | Validation result | Rejects missing and duplicate video IDs. |
-| `saveSeriesAtomically` | Valid Series metadata | Save contract | Specifies atomic persistence and invalid-data preservation. |
-| `deleteSeriesReferenceOnly` | Series ID | Deletion contract | Specifies non-destructive series deletion. |
-
-## C7: Future Template Library Specification Component
-
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `defineTemplateSchema` | Template requirements | Schema specification | Defines template ID, schema version, skeleton, and placeholders. |
-| `validateTemplateInput` | Template, placeholder values | Validation result | Rejects missing placeholders, type mismatch, unknown fields, and unsupported versions. |
-| `createDraftFromTemplate` | Template, placeholder values | Draft contract | Specifies draft creation without active-script overwrite. |
-| `validateGeneratedDraft` | Draft JSON | VideoScript validation result | Requires existing VideoScript schema compatibility. |
-
-## C8: Future Multiple Workspace Specification Component
-
-| Method | Input | Output | Purpose |
-|---|---|---|---|
-| `defineWorkspaceReferenceSchema` | Workspace reference requirements | Schema specification | Defines canonical path, display name, and last-used fields. |
-| `normalizeWorkspaceReferences` | Reference list | Deduplicated list | Requires canonical path uniqueness. |
-| `validateWorkspaceReferenceInMain` | Candidate path | Validation result | Keeps filesystem authority in Main. |
-| `confirmWorkspaceSwitch` | Unsaved draft, running command, Codex turn state | Confirmation contract | Prevents silent context loss. |
-| `removeWorkspaceReferenceOnly` | Workspace reference | Deletion contract | Specifies non-destructive removal from recent list. |
-
-## Notes
-
-- Method names describe design contracts and are not final implementation names.
-- Detailed business rules move to Functional Design.
-- U11 implementation methods apply only to C1 through C5; C6 through C8 are future specifications.
+| メソッド | シグネチャ | 責務 |
+|---|---|---|
+| `mapToVideoScript` | `(draft: SceneDraft) => VideoScript` | ドラフト状態（シーン+素材）をVideoScriptオブジェクトに変換する |
+| `validate` | `(script: VideoScript) => ValidationResult` | 既存VideoScriptスキーマでバリデーションを行う |
+| `write` | `(videoId: string, script: VideoScript) => Promise<void>` | バリデーション後に `input/{videoId}.json` を書き込む |
+| `generate` | `(videoId: string, draft: SceneDraft) => Promise<void>` | map → validate → write を一括実行する |

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import {readFile, stat} from 'node:fs/promises';
 import {app, BrowserWindow, dialog, ipcMain, shell} from 'electron';
 import {CommandRunner} from './command-runner';
 import {checkPreview, loadPreview} from './preview-data-service';
@@ -6,6 +7,7 @@ import {createRenderOutputService} from './render-output-service';
 import {createLocalFileService} from './local-file-service';
 import {CodexAppServerService} from './codex-app-server-service';
 import type {StartCommandRequest} from '../shared/command';
+import {buildSegmentationPrompt, parseSegmentationResponse, type SegmentationResult} from '../shared/scene-segmentation';
 import {WorkspaceRootService} from './workspace-root-service';
 import {createDependencyDiagnosisService} from './dependency-diagnosis-service';
 import {resolveRuntimeResources} from './runtime-resources';
@@ -135,6 +137,24 @@ ipcMain.handle('local-file:asset-exists', async (_event, publicPath: string) =>
   (await localFiles()).asset.exists(publicPath));
 ipcMain.handle('local-file:trash-asset', async (_event, publicPath: string) =>
   (await localFiles()).asset.trash(publicPath));
+ipcMain.handle('local-file:read-draft', async (_event, videoId: string) =>
+  (await localFiles()).draft.read(videoId));
+ipcMain.handle('local-file:write-draft', async (_event, videoId: string, data: string) =>
+  (await localFiles()).draft.write(videoId, data));
+ipcMain.handle('text-input:open-file-dialog', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{name: 'Text Files', extensions: ['txt', 'md']}],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  const filePath = result.filePaths[0];
+  return {filePath, fileName: path.basename(filePath)};
+});
+ipcMain.handle('text-input:read-file', async (_event, filePath: string) => {
+  const info = await stat(filePath);
+  const content = await readFile(filePath, 'utf8');
+  return {content, byteSize: info.size};
+});
 ipcMain.handle('codex:connect', async (_event, videoId: string) => {
   const status = await dependencies.check('codex');
   if (status.status !== 'ready') throw new Error('Codex CLIのinstall、version、login状態を確認してください。');
@@ -147,6 +167,53 @@ ipcMain.handle('codex:start-new-thread', (_event, videoId: string) => codex.star
 ipcMain.handle('codex:respond-approval', (_event, id: string, approved: boolean) =>
   codex.respondApproval(id, approved));
 ipcMain.handle('codex:disconnect', () => codex.disconnect());
+ipcMain.handle('scene-segmentation:segment', (_event, draftText: string, videoId: string): Promise<SegmentationResult> => {
+  const prompt = buildSegmentationPrompt(draftText);
+  return new Promise<SegmentationResult>((resolve) => {
+    let settled = false;
+    let unsub: () => void = () => undefined;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      unsub();
+      resolve({ok: false, reason: 'timeout', message: 'シーン分割がタイムアウトしました（120秒）。再試行してください。'});
+    }, 120_000);
+
+    unsub = codex.onEvent((event) => {
+      if (settled) return;
+      if (event.type === 'turn-completed') {
+        settled = true;
+        clearTimeout(timeout);
+        unsub();
+        resolve(parseSegmentationResponse(event.message.content));
+      } else if (event.type === 'turn-failed') {
+        settled = true;
+        clearTimeout(timeout);
+        unsub();
+        resolve({ok: false, reason: 'turn-failed', message: 'シーン分割に失敗しました。再試行してください。'});
+      }
+    });
+
+    codex.send({videoId, message: prompt, context: {workspaceMode: 'empty-draft'}}).catch((err: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      unsub();
+      const msg = err instanceof Error ? err.message : String(err);
+      const isNotConnected = msg.includes('not connected');
+      const isAlreadyActive = msg.includes('already active');
+      resolve({
+        ok: false,
+        reason: isNotConnected ? 'codex-not-connected' : isAlreadyActive ? 'codex-turn-active' : 'turn-failed',
+        message: isNotConnected
+          ? 'Codexに接続されていません。Workspaceを開いてください。'
+          : isAlreadyActive
+          ? 'Codexは別の処理中です。完了後に再試行してください。'
+          : `シーン分割に失敗しました: ${msg}`,
+      });
+    });
+  });
+});
 
 async function createMainWindow(): Promise<void> {
   const window = new BrowserWindow({

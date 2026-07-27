@@ -95,6 +95,21 @@ export function createLocalFileService(root = process.cwd(), testAssetPath?: str
         await shell.trashItem(resolvePublic(publicPath));
       },
     },
+    draft: {
+      async read(videoId) {
+        try {
+          return await readFile(resolveStudio(videoId, 'draft-text.json'), 'utf8');
+        } catch (error) {
+          if ((error as {code?: string}).code === 'ENOENT') return null;
+          throw error;
+        }
+      },
+      async write(videoId, data) {
+        const target = resolveStudio(videoId, 'draft-text.json');
+        await mkdir(path.dirname(target), {recursive: true});
+        await writeFile(target, data, {encoding: 'utf8'});
+      },
+    },
   };
 }
 

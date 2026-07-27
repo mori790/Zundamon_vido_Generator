@@ -1,68 +1,87 @@
-# U11 Component Dependencies
+# U12 Component Dependencies
 
 ## Dependency Matrix
 
-| Component | Depends On | Used By | Communication Pattern |
+| コンポーネント | 依存先 | 利用元 | 通信パターン |
 |---|---|---|---|
-| C1 Desktop-First README | U11 requirements, release state terminology, internal acceptance docs | P1, P2, S1 | Markdown links and command references |
-| C2 Internal Acceptance Documentation | U11 smoke criteria, evidence fields, security warnings | P1, P2, S1 | Markdown checklist and template |
-| C3 Acceptance Preflight | C4 release evidence adapter, existing npm scripts | P2, S2 | CLI orchestration and process exit code |
-| C4 Release Evidence Adapter | Existing release contracts and artifact outputs | C1, C3, S2, S4 | Read-only typed evidence summary |
-| C5 Post-MVP Planning | U11 backlog requirements, stories, future constraints | P2, P3, S3 | Markdown planning documents |
-| C6 Future Series Spec | Existing Workspace and script concepts | C5, future implementation unit | Specification only |
-| C7 Future Template Spec | Existing VideoScript schema and U3 draft apply boundary | C5, future implementation unit | Specification only |
-| C8 Future Multiple Workspace Spec | Existing WorkspaceRootService and Workspace API concepts | C5, future implementation unit | Specification only |
+| C1 テキスト入力パネル | S1（SceneSegmentationService） | ユーザー | Rendererからサービス呼び出し |
+| C2 AIシーン分割エンジン（S1） | 既存CodexパネルIPC（U2） | C1 | IPC経由Codexプロンプト送受信 |
+| C3 シーン調整UI | C2（Scene[]受け取り）、S3（ドラフト保存） | ユーザー、C4 | React状態管理 + DraftPersistenceService |
+| C4 素材推薦パネル（S4） | S2（AssetCatalogService）、既存CodexIPC（U2）、S3 | C3（確定シーン受け取り） | Codex IPC + ファイルシステム読み取り |
+| C5 JSON生成サービス（S5） | S3（SceneDraft読み込み）、既存VideoScriptスキーマ | C4（素材確定後）、既存U3 | ファイルシステム書き込み（input/{id}.json） |
+| S2 AssetCatalogService | 既存WorkspaceRootService | C4、S4 | ファイルシステムスキャン |
+| S3 DraftPersistenceService | 既存WorkspaceRootService | C3、C4、C5 | JSON read/write（draft-{id}.json） |
 
-## Data Flow
+## データフロー
 
-### Internal Adoption Flow
+### フロー1: テキスト入力 → シーン分割
 
-1. U11 requirements and stories define non-developer acceptance needs.
-2. C1 creates the README entry path.
-3. C2 creates checklist and evidence template.
-4. C4 provides release-state vocabulary and evidence references.
-5. Users follow README links to checklist and record results in the evidence template.
+```
+ユーザーがテキストを貼り付けまたはファイル読み込み
+    ↓ C1（テキスト入力パネル）
+バリデーション（空文字チェック）
+    ↓ S1（SceneSegmentationService）
+Codexプロンプト組み立て
+    ↓ 既存CodexパネルIPC（U2）
+Codexレスポンス受信・パース
+    ↓ Scene[]
+C3（シーン調整UI）に渡す
+    ↓ S3（DraftPersistenceService）
+draft-{id}.json に保存
+```
 
-### Preflight Flow
+### フロー2: シーン調整
 
-1. P2 runs the npm preflight command.
-2. C3 resolves repository and artifact locations.
-3. C4 reads manifest, ZIP, SBOM, checksum, architecture, and release-state evidence.
-4. C3 runs or verifies production audit, typecheck, default tests, and Studio build.
-5. C3 reports Japanese pass/fail results and returns an exit code.
-6. Existing Workspace, input, asset, and output directories remain untouched.
+```
+ユーザーがシーン一覧を確認・編集（並び替え・追加・削除・テキスト編集）
+    ↓ C3（シーン調整UI）
+変更をリアルタイムで S3（DraftPersistenceService）に保存
+    ↓
+ユーザーがシーン確定を実行
+    ↓ C4（素材推薦パネル）へ委譲
+```
 
-### Post-MVP Planning Flow
+### フロー3: 素材推薦 → 割り当て
 
-1. C5 reads the U11 approved backlog and stories.
-2. C5 writes roadmap and backlog docs under `docs/post-mvp/`.
-3. C6, C7, and C8 contribute top-three feature specifications.
-4. Future implementation units can consume those specs after separate approval.
+```
+C4（素材推薦パネル）が確定シーン一覧を受け取る
+    ↓ S2（AssetCatalogService）
+assetsフォルダの素材ファイルリストを取得
+    ↓ S4（AssetRecommendationService）
+シーンごとに「ナレーションテキスト + 素材リスト」プロンプトを送信
+    ↓ 既存CodexパネルIPC（U2）
+推薦結果をシーンカードに表示
+    ↓
+ユーザーが承認または手動変更
+    ↓ S3（DraftPersistenceService）
+素材割り当てをドラフトに保存
+```
 
-## Coupling Rules
+### フロー4: JSON生成 → パイプライン接続
 
-- README must link to docs and command names; it must not duplicate release-state algorithms.
-- Preflight must reuse existing release evidence contracts where practical.
-- Preflight must not depend on Renderer or Electron window state.
-- Future specs may reference existing runtime concepts but must not require U11 runtime code changes.
-- Any future Renderer access to series, template, or Workspace data must remain purpose-specific and Main-mediated.
-- Clean-profile smoke result must remain Not Run until a real compatible environment executes it.
+```
+ユーザーがJSONを生成する
+    ↓ C5（VideoScriptGeneratorService: S5）
+S3からSceneDraftを読み込む
+    ↓
+VideoScriptへマッピング
+    ↓
+スキーマバリデーション
+    ↓（成功時のみ）
+input/{videoId}.json に書き込む
+    ↓
+既存台本ドラフト編集UI（U3）でJSONを閲覧・手動修正可能
+    ↓
+既存VOICEVOXパイプライン / Remotionプレビュー / レンダリングへ
+```
 
-## Change Impact
+## 既存コンポーネントとの境界
 
-| Area | Current U11 Impact | Future Impact |
+| 既存コンポーネント | U12との関係 | 変更要否 |
 |---|---|---|
-| Electron Main | No direct runtime change expected, unless preflight reuses shared release code only | Future series/template/workspace IPC design |
-| Renderer | No direct U11 runtime change | Future Start screen and library flows |
-| CLI scripts | Add thin acceptance preflight command | Possible future migration tooling |
-| Shared contracts | Prefer reuse; add only if preflight needs typed shared result | Future schemas for series, templates, workspace refs |
-| Docs | Major U11 change | Ongoing source for future implementation units |
-| Tests | Focused preflight and documentation checks | Future PBT for data models |
-
-## Extension Compliance
-
-| Extension | Status | Rationale |
-|---|---|---|
-| Security Baseline | Compliant | Dependencies keep filesystem authority out of Renderer, preserve artifact integrity checks, and avoid secret-bearing evidence. |
-| Resiliency Baseline | Compliant | Dependencies keep preflight fail-closed and non-destructive, with explicit rollback and incident evidence paths. |
-| Property-Based Testing (Partial) | Compliant | Dependencies identify future round-trip and invariant surfaces while limiting U11 enforcement to new pure logic. |
+| Codexパネル（U2） | C2・C4がIPC経由で入力チャンネルとして利用 | IPC契約追加の可能性あり（Codex側UIへの通知が不要な「バックグラウンド呼び出し」が必要かどうか要詳細設計） |
+| 台本ドラフト編集UI（U3） | C5が生成したinput/{id}.jsonをU3が表示・編集 | 変更なし（共有ファイルパスを経由） |
+| コマンド実行パネル（U6） | 音声生成・レンダリングコマンドをそのまま利用 | 変更なし |
+| Remotionプレビュー（U7） | C5生成後のJSONでプレビュー | 変更なし |
+| WorkspaceRootService | S2・S3がWorkspaceパスを参照 | 変更なし（既存API利用） |
+| VideoScriptスキーマ | C5がスキーマ検証に利用 | 変更なし（再利用） |

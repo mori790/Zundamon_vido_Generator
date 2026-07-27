@@ -4,6 +4,8 @@ import type {PreviewApi} from '../shared/preview';
 import type {RenderOutputApi} from '../shared/render';
 import type {DependencyApi} from '../shared/desktop';
 import type {WorkspaceRootApi} from '../shared/workspace';
+import type {TextInputFileApi} from '../shared/local-file';
+import type {SceneSegmentationApi} from '../shared/scene-segmentation';
 
 const commandApi: CommandApi = {
   start: (request: StartCommandRequest) => ipcRenderer.invoke('command:start', request),
@@ -65,7 +67,20 @@ contextBridge.exposeInMainWorld('localFileApi', {
     exists: (publicPath: string) => ipcRenderer.invoke('local-file:asset-exists', publicPath),
     trash: (publicPath: string) => ipcRenderer.invoke('local-file:trash-asset', publicPath),
   },
+  draft: {
+    read: (videoId: string) => ipcRenderer.invoke('local-file:read-draft', videoId),
+    write: (videoId: string, data: string) => ipcRenderer.invoke('local-file:write-draft', videoId, data),
+  },
 });
+
+contextBridge.exposeInMainWorld('textInputFileApi', {
+  openFileDialog: () => ipcRenderer.invoke('text-input:open-file-dialog'),
+  readTextFile: (filePath: string) => ipcRenderer.invoke('text-input:read-file', filePath),
+} satisfies TextInputFileApi);
+
+contextBridge.exposeInMainWorld('sceneSegmentationApi', {
+  segment: (draftText: string, videoId: string) => ipcRenderer.invoke('scene-segmentation:segment', draftText, videoId),
+} satisfies SceneSegmentationApi);
 
 contextBridge.exposeInMainWorld('codexApi', {
   connect: (videoId: string) => ipcRenderer.invoke('codex:connect', videoId),

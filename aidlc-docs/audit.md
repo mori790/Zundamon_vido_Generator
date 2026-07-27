@@ -3047,3 +3047,56 @@ questionやその選択肢が所々英語でわかりにくいから、以後日
 **Context**: Post-U11 local-acceptance real artifact preflight passed.
 
 ---
+
+## U12-A NFR Requirements 承認
+**Timestamp**: 2026-07-27T09:30:00Z
+**User Input**: "承認して次の段階へ進む"
+**AI Response**: "U12-A NFR Requirements承認を記録し、NFR Design段階へ移行した。"
+**Context**: CONSTRUCTION - U12-A NFR Requirements承認完了。
+
+---
+
+## U12-A NFR Design 承認
+**Timestamp**: 2026-07-27T09:40:00Z
+**User Input**: "承認して次の段階へ進む"
+**AI Response**: "U12-A NFR Design承認を記録し、Code Generation Plan段階へ移行した。"
+**Context**: CONSTRUCTION - U12-A NFR Design承認完了。
+
+---
+
+## U12-A Code Generation Plan 生成完了
+**Timestamp**: 2026-07-27T09:45:00Z
+**User Input**: （NFR Design承認後の自動進行）
+**AI Response**: "U12-A Code Generation Planを生成した。新規8ファイル（text-input-draft.ts / TextInputTab.tsx / TextInputArea.tsx / FileLoadButton.tsx / SegmentationButton.tsx / TextInputStatusMessage.tsx / text-input-validation.test.ts / draft-persistence.test.ts）と変更5ファイル（local-file.ts / local-file-service.ts / main.ts / preload.ts / StudioApp.tsx）を計画した。9ステップの生成計画でUS-1・US-2をカバーする。"
+**Context**: CONSTRUCTION - U12-A Code Generation Plan生成完了、承認待ち。
+
+---
+
+## U12-A Code Generation Plan 承認
+**Timestamp**: 2026-07-27T09:50:00Z
+**User Input**: "承認して次の段階へ進む"
+**AI Response**: "U12-A Code Generation Plan承認を記録し、実装を開始した。"
+**Context**: CONSTRUCTION - U12-A Code Generation Plan承認完了。
+
+---
+
+## U12-A Code Generation 完了
+**Timestamp**: 2026-07-27T09:55:00Z
+**User Input**: （Code Generation Plan承認後の実装）
+**AI Response**: "U12-A実装完了。新規8ファイル生成（text-input-draft.ts / TextInputTab.tsx / TextInputArea.tsx / FileLoadButton.tsx / SegmentationButton.tsx / TextInputStatusMessage.tsx / text-input-validation.test.ts / draft-persistence.test.ts）。変更6ファイル（local-file.ts / local-file-service.ts / main.ts / preload.ts / StudioApp.tsx / asset.test.ts）。検証結果: tsc 0エラー、164テスト全PASS（40ファイル）、studio:build成功。"
+**Context**: CONSTRUCTION - U12-A Code Generation完了、承認待ち。
+
+---
+**User Input**: （NFR Requirements承認後の自動進行）
+**AI Response**: "U12-A NFR Design成果物を生成した。nfr-design-patterns.md（デバウンスパターン・Fail-Open保存パターン・Fail-Closed入力検証パターン・IPC境界パターン・エラー分離パターン・ロジック抽出パターン）とlogical-components.md（TextInputValidator/FileLoadHelper/useDraftSave/DraftPersistenceService/TextInputTab/TextInputTestHelpers）を作成した。"
+**Context**: CONSTRUCTION - U12-A NFR Design生成完了、承認待ち。
+
+---
+
+## U12 Requirements Analysis — 方針転換
+**Timestamp**: 2026-07-27T08:00:00Z
+**User Input**: "方針を転換しようと思ってて、外部で作りたい動画内容の文章（草案）を作成し、このアプリではその文章をsceneに区切って、sceneに合わせて素材を当てはめていく編集半自動化の形にしていこうか。要件、仕様を詰めていこう"
+**AI Response**: "要件確認質問ファイル（u12-text-to-scene-pivot-requirement-verification-questions.md）を作成し、全6グループの回答を確認した。自然文テキスト入力、AIによる意味的シーン分割（30+シーン対応）、全素材タイプのAI推薦+人間確認、VOICEVOX継続利用、MP4出力維持、JSON手作成廃止（手動修正可）、既存U1〜U11全機能継続として要件を確定した。u12-text-to-scene-pivot-requirements.mdを生成した。"
+**Context**: INCEPTION - U12 Requirements Analysis完了、承認待ち。
+
+---
