@@ -16,34 +16,27 @@ type FileSystemAccess = {
   stat(path: string): Promise<{mtime?: Date}>;
 };
 
-type NodeRequire = (id: string) => unknown;
-
 declare global {
-  interface Window {
-    require?: NodeRequire;
-  }
+  var localFileApi: import('../shared/local-file').LocalFileApi | undefined;
 }
 
 const browserFs = async (): Promise<FileSystemAccess> => {
-  const require = window.require;
-  if (!require) {
+  const api = globalThis.localFileApi;
+  if (!api) {
     throw new Error('Local file access is unavailable in this renderer.');
   }
-  const fs = require('node:fs/promises') as typeof import('node:fs/promises');
   return {
-    async readDirectory(dirPath) {
-      const entries = await fs.readdir(dirPath, {withFileTypes: true});
-      return entries.map((entry) => ({
-        name: entry.name,
-        kind: entry.isFile() ? 'file' : 'directory',
-      }));
+    async readDirectory() {
+      return api.workspace.listInput();
     },
     async readFile(filePath) {
-      return fs.readFile(filePath, 'utf8');
+      const source = await api.workspace.readScript(filePath.replace(/^input\//, ''));
+      if (source === null) throw Object.assign(new Error('Not found'), {code: 'ENOENT'});
+      return source;
     },
     async stat(filePath) {
-      const stats = await fs.stat(filePath);
-      return {mtime: stats.mtime};
+      const entry = (await api.workspace.listInput()).find((item) => `input/${item.name}` === filePath);
+      return {mtime: entry?.mtime ? new Date(entry.mtime) : undefined};
     },
   };
 };

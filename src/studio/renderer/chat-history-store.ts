@@ -10,28 +10,22 @@ type FileSystemAccess = {
   writeFile(path: string, data: string): Promise<void>;
 };
 
-type NodeRequire = (id: string) => unknown;
-
-declare global {
-  interface Window {
-    require?: NodeRequire;
-  }
-}
-
 const browserFs = (): FileSystemAccess => {
-  const require = window.require;
-  if (!require) {
+  const api = globalThis.localFileApi;
+  if (!api) {
     throw new Error('Local file access is unavailable in this renderer.');
   }
-  const fs = require('node:fs/promises') as typeof import('node:fs/promises');
   return {
-    async mkdir(path, options) {
-      await fs.mkdir(path, options);
-    },
+    async mkdir() {},
     async readFile(path) {
-      return fs.readFile(path, 'utf8');
+      const videoId = path.split('/').at(-2) ?? '';
+      const source = await api.chat.read(videoId);
+      if (source === null) throw Object.assign(new Error('Not found'), {code: 'ENOENT'});
+      return source;
     },
-    writeFile: fs.writeFile as unknown as FileSystemAccess['writeFile'],
+    async writeFile(path, data) {
+      await api.chat.write(path.split('/').at(-2) ?? '', data);
+    },
   };
 };
 

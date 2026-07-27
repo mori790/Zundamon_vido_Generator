@@ -31,3 +31,9 @@ Expected:
 1. `npm run studio:dev` と `npm run studio:start` を起動する。
 2. Workspace、draft review、asset selection、Validate、Voice、Timeline、Previewを確認する。
 3. Renderのoverwrite confirm/cancel、progress、ETA、Stop、partial warning、manual retry、Finder revealを確認する。
+## U9 Codex App Server
+
+- Run `npm run test:studio:e2e` to verify the context-isolated preload and purpose-specific local-file IPC.
+- Start Studio, select Real, and verify initialize, thread start/resume, streamed response, Stop, reconnect, and new thread.
+- Trigger a safe approval request and verify Approve, Deny, timeout, disconnect, and shutdown settle fail closed.
+- Fault-inject malformed/oversized JSONL, process exit, pending capacity, and three reconnect failures; verify manual recovery without turn replay.

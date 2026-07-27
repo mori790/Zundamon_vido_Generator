@@ -1,4 +1,4 @@
-import {ipcRenderer} from 'electron';
+import {contextBridge, ipcRenderer} from 'electron';
 import type {CommandApi, LogEntry, Operation, StartCommandRequest} from '../shared/command';
 import type {PreviewApi} from '../shared/preview';
 import type {RenderOutputApi} from '../shared/render';
@@ -20,17 +20,51 @@ const commandApi: CommandApi = {
   },
 };
 
-globalThis.commandApi = commandApi;
+contextBridge.exposeInMainWorld('commandApi', commandApi);
 
 const previewApi: PreviewApi = {
   check: (videoId: string) => ipcRenderer.invoke('preview:check', videoId),
   load: (videoId: string) => ipcRenderer.invoke('preview:load', videoId),
 };
 
-globalThis.previewApi = previewApi;
+contextBridge.exposeInMainWorld('previewApi', previewApi);
 
-globalThis.renderOutputApi = {
+contextBridge.exposeInMainWorld('renderOutputApi', {
   status: (videoId: string) => ipcRenderer.invoke('render-output:status', videoId),
   confirmOverwrite: (videoId: string) => ipcRenderer.invoke('render-output:confirm-overwrite', videoId),
   reveal: (videoId: string) => ipcRenderer.invoke('render-output:reveal', videoId),
-} satisfies RenderOutputApi;
+} satisfies RenderOutputApi);
+
+contextBridge.exposeInMainWorld('localFileApi', {
+  workspace: {
+    listInput: () => ipcRenderer.invoke('local-file:list-input'),
+    readScript: (fileName: string) => ipcRenderer.invoke('local-file:read-script', fileName),
+    writeScript: (fileName: string, data: string) => ipcRenderer.invoke('local-file:write-script', fileName, data),
+  },
+  chat: {
+    read: (videoId: string) => ipcRenderer.invoke('local-file:read-chat', videoId),
+    write: (videoId: string, data: string) => ipcRenderer.invoke('local-file:write-chat', videoId, data),
+  },
+  asset: {
+    select: () => ipcRenderer.invoke('local-file:select-asset'),
+    copy: (videoId: string, token: string, overwrite: boolean) =>
+      ipcRenderer.invoke('local-file:copy-asset', videoId, token, overwrite),
+    exists: (publicPath: string) => ipcRenderer.invoke('local-file:asset-exists', publicPath),
+    trash: (publicPath: string) => ipcRenderer.invoke('local-file:trash-asset', publicPath),
+  },
+});
+
+contextBridge.exposeInMainWorld('codexApi', {
+  connect: (videoId: string) => ipcRenderer.invoke('codex:connect', videoId),
+  send: (input: unknown) => ipcRenderer.invoke('codex:send', input),
+  interrupt: () => ipcRenderer.invoke('codex:interrupt'),
+  reconnect: (videoId: string) => ipcRenderer.invoke('codex:reconnect', videoId),
+  startNewThread: (videoId: string) => ipcRenderer.invoke('codex:start-new-thread', videoId),
+  respondApproval: (id: string, approved: boolean) => ipcRenderer.invoke('codex:respond-approval', id, approved),
+  disconnect: () => ipcRenderer.invoke('codex:disconnect'),
+  onEvent(listener: (event: unknown) => void) {
+    const handler = (_event: Electron.IpcRendererEvent, event: unknown) => listener(event);
+    ipcRenderer.on('codex:event', handler);
+    return () => ipcRenderer.removeListener('codex:event', handler);
+  },
+});

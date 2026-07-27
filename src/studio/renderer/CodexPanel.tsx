@@ -11,6 +11,8 @@ import {
 import {extractProposals, type Proposal} from '../shared/proposal';
 import type {WorkspaceMode} from '../shared/workspace';
 import {MockCodexConnection} from './mock-codex-connection';
+import {RealCodexConnection} from './real-codex-connection';
+import type {CodexApproval} from '../shared/codex-app-server';
 
 export type CodexPanelProps = {
   videoId: string;
@@ -54,15 +56,36 @@ export function CodexPanel({
   connection,
   proposalError,
 }: CodexPanelProps): JSX.Element {
-  const codexConnection = useMemo(() => connection ?? new MockCodexConnection(), [connection]);
+  const [mode, setMode] = useState<'real' | 'mock'>(connection || !globalThis.codexApi ? 'mock' : 'real');
+  const codexConnection = useMemo<CodexConnection>(
+    () => connection ?? (mode === 'real' ? new RealCodexConnection() : new MockCodexConnection()),
+    [connection, mode],
+  );
   const [connectionState, setConnectionState] = useState<CodexConnectionState>({status: 'connecting'});
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [approval, setApproval] = useState<CodexApproval | null>(null);
+  const [streamingText, setStreamingText] = useState('');
 
   useEffect(() => {
     let active = true;
-    codexConnection.connect()
+    const real = codexConnection instanceof RealCodexConnection ? codexConnection : null;
+    const unsubscribeApproval = real?.onApproval(setApproval);
+    let queuedDelta = '';
+    let deltaTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribeDelta = real?.onDelta((delta) => {
+      queuedDelta += delta;
+      if (!deltaTimer) {
+        deltaTimer = setTimeout(() => {
+          const batch = queuedDelta;
+          queuedDelta = '';
+          deltaTimer = null;
+          setStreamingText((current) => current + batch);
+        }, 50);
+      }
+    });
+    (real ? real.connectWorkspace(videoId) : codexConnection.connect())
       .then((state) => {
         if (active) {
           setConnectionState(state);
@@ -79,6 +102,9 @@ export function CodexPanel({
 
     return () => {
       active = false;
+      unsubscribeApproval?.();
+      unsubscribeDelta?.();
+      if (deltaTimer) clearTimeout(deltaTimer);
       codexConnection.disconnect().catch(() => undefined);
     };
   }, [codexConnection]);
@@ -102,6 +128,7 @@ export function CodexPanel({
     const withUserMessage = appendChatMessage(history.messages, userMessage);
     setInput('');
     setSending(true);
+    setStreamingText('');
     await persist({...history, messages: withUserMessage});
 
     try {
@@ -110,6 +137,7 @@ export function CodexPanel({
         message,
         context: {workspaceMode, title},
       });
+      setStreamingText('');
       const extraction = extractProposals(
         assistantMessage.id,
         videoId,
@@ -125,6 +153,7 @@ export function CodexPanel({
         setError('Codex返答が1 MBを超えたため、提案抽出をスキップしました。');
       }
     } catch (caught) {
+      setStreamingText((current) => current ? `${current}\n\n未完了` : '');
       setError(caught instanceof Error ? caught.message : 'Codexへの送信に失敗しました。');
     } finally {
       setSending(false);
@@ -142,6 +171,32 @@ export function CodexPanel({
           {connectionStatusLabel(connectionState)}
         </span>
       </header>
+      {!connection ? (
+        <label>
+          接続
+          <select data-testid="codex-connection-mode" value={mode} onChange={(event) => setMode(event.target.value as 'real' | 'mock')}>
+            <option value="real">Real</option>
+            <option value="mock">Mock</option>
+          </select>
+        </label>
+      ) : null}
+
+      {approval && codexConnection instanceof RealCodexConnection ? (
+        <section className="proposal-card pending" data-testid="codex-server-approval-card">
+          <strong>Codex操作承認</strong>
+          <p>{approval.summary}</p>
+          <div className="proposal-actions">
+            <button data-testid="codex-server-approval-deny" onClick={() => {
+              void codexConnection.respondApproval(approval.id, false);
+              setApproval(null);
+            }} type="button">Deny</button>
+            <button data-testid="codex-server-approval-approve" onClick={() => {
+              void codexConnection.respondApproval(approval.id, true);
+              setApproval(null);
+            }} type="button">Approve</button>
+          </div>
+        </section>
+      ) : null}
 
       {error || proposalError ? (
         <div className="error-banner compact" data-testid="codex-chat-error">
@@ -165,6 +220,12 @@ export function CodexPanel({
             />
           ))
         )}
+        {streamingText ? (
+          <article aria-live="polite" className="codex-message assistant" data-testid="codex-streaming-message">
+            <strong>Codex</strong>
+            <p>{streamingText}</p>
+          </article>
+        ) : null}
       </div>
 
       <form
@@ -176,7 +237,7 @@ export function CodexPanel({
       >
         <textarea
           data-testid="codex-chat-input"
-          disabled={connectionState.status === 'connecting'}
+          disabled={connectionState.status === 'connecting' || sending}
           onChange={(event) => setInput(event.target.value)}
           placeholder="例: Kubernetes初心者向けにPod復活の動画構成を考えたい"
           rows={4}
@@ -189,6 +250,22 @@ export function CodexPanel({
         >
           {sending ? '送信中' : '送信'}
         </button>
+        {sending && codexConnection.interrupt ? (
+          <button data-testid="codex-chat-stop-button" onClick={() => void codexConnection.interrupt?.()} type="button">
+            Stop
+          </button>
+        ) : null}
+        {codexConnection.reconnect ? (
+          <button data-testid="codex-reconnect-button" onClick={() => {
+            setConnectionState({status: 'connecting'});
+            void codexConnection.reconnect?.().then(setConnectionState);
+          }} type="button">Reconnect</button>
+        ) : null}
+        {codexConnection.startNewThread ? (
+          <button data-testid="codex-new-thread-button" onClick={() => void codexConnection.startNewThread?.()} type="button">
+            New thread
+          </button>
+        ) : null}
       </form>
     </aside>
   );

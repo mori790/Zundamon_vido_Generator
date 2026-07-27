@@ -5,6 +5,7 @@
 - Node.js 20、npm。
 - macOS。Electron、Remotion、native Finder revealの確認に使用する。
 - VOICEVOX Engine 0.25系。voice生成とlive integrationで使用する。
+- Codex CLI 0.145.0以降。ChatGPT login済みであること。
 
 ## Build Steps
 
@@ -18,7 +19,9 @@ npm run studio:build
 
 - TypeScriptがerrorなしで終了する。
 - Electron Renderer buildが `dist-studio/` に生成される。
+- context-isolated preloadが `dist-studio/preload.cjs` に生成される。
 - Remotion CLIと関連packageは4.0.499、Zodは4.4.3に整合する。
+- Electron 41.7.1、Vite 6.4.3、Vitest 4.1.10、fast-check 4.9.0はexact versionに整合する。
 
 ## Runtime Commands
 

@@ -45,6 +45,9 @@ export type CodexUserInput = {
 export type CodexConnection = {
   connect(): Promise<CodexConnectionState>;
   sendMessage(input: CodexUserInput): Promise<ChatMessage>;
+  interrupt?(): Promise<void>;
+  reconnect?(): Promise<CodexConnectionState>;
+  startNewThread?(): Promise<void>;
   disconnect(): Promise<void>;
 };
 

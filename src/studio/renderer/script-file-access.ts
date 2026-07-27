@@ -1,26 +1,18 @@
 import type {ScriptFileAccess} from '../shared/script-apply';
 
-type NodeRequire = (id: string) => unknown;
-
-declare global {
-  interface Window {
-    require?: NodeRequire;
-  }
-}
-
 export function createRendererScriptFileAccess(): ScriptFileAccess {
-  const require = window.require;
-  if (!require) {
+  const api = globalThis.localFileApi;
+  if (!api) {
     throw new Error('Local file access is unavailable in this renderer.');
   }
-
-  const fs = require('node:fs/promises') as typeof import('node:fs/promises');
   return {
     async readFile(path) {
-      return fs.readFile(path, 'utf8');
+      const source = await api.workspace.readScript(path.replace(/^input\//, ''));
+      if (source === null) throw Object.assign(new Error('Not found'), {code: 'ENOENT'});
+      return source;
     },
     async writeFile(path, data) {
-      await fs.writeFile(path, data);
+      await api.workspace.writeScript(path.replace(/^input\//, ''), data);
     },
   };
 }

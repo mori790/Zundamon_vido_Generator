@@ -16,3 +16,18 @@
 3. Render buttonからmanual retryできることを確認する。
 
 Environment依存のため、GUI E2Eは手動確認を正とする。
+
+## U9 Real Codex Workflow
+
+1. `npm run studio:build` 後にStudioを起動し、Codex接続がRealであることを確認する。
+2. Workspaceでメッセージを送信し、stream表示、完了履歴、JSON proposal抽出を確認する。
+3. 実行中にStopし、partial textが `未完了` と表示され履歴へ保存されないことを確認する。
+4. Workspaceを戻って再度開き、thread resumeを確認する。
+5. ReconnectとNew threadを実行し、手動回復を確認する。
+6. 安全な操作承認を発生させ、ApproveとDenyを確認する。
+
+Automated Electron boundary:
+
+```bash
+npm run test:studio:e2e
+```

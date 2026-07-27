@@ -6,14 +6,6 @@ import {
   type SelectedImage,
 } from '../shared/asset';
 
-type NodeRequire = (id: string) => unknown;
-
-declare global {
-  interface Window {
-    require?: NodeRequire;
-  }
-}
-
 export type AssetFileAccess = {
   selectImage(): Promise<SelectedImage | null>;
   copyImage(videoId: string, selected: SelectedImage, overwrite?: boolean): Promise<AssetCopyResult>;
@@ -29,51 +21,33 @@ type AssetFileAccessOptions = {
 };
 
 export function createRendererAssetFileAccess(options: AssetFileAccessOptions = {}): AssetFileAccess {
-  const require = window.require;
-  if (!require) {
+  const api = globalThis.localFileApi;
+  if (!api) {
     return unavailableAssetFileAccess();
   }
-  const fs = require('node:fs/promises') as typeof import('node:fs/promises');
-  const fsConstants = (require('node:fs') as typeof import('node:fs')).constants;
-  const path = require('node:path') as typeof import('node:path');
-  const process = require('node:process') as typeof import('node:process');
-  const electron = require('electron') as typeof import('electron');
-  const workspaceRoot = options.workspaceRoot ?? process.cwd();
-  const selectImage = options.selectImage ?? (() => selectLocalImage(electron.webUtils));
   const decodeImage = options.decodeImage ?? decodeSelectedImage;
-  const trashItem = options.trashItem ?? ((targetPath) => electron.shell.trashItem(targetPath));
 
   return {
-    selectImage,
+    async selectImage() {
+      if (options.selectImage) return options.selectImage();
+      const selected = await api.asset.select();
+      if (!selected) return null;
+      return {
+        sourcePath: selected.token,
+        fileName: selected.fileName,
+        file: new File([new Uint8Array(selected.bytes).buffer as ArrayBuffer], selected.fileName),
+      };
+    },
     async copyImage(videoId, selected, overwrite = false) {
       try {
         if (!isAllowedImageFileName(selected.fileName)) {
           return {status: 'failed', message: 'PNGまたはJPEGファイルを選択してください。'};
         }
-        const sourcePath = await fs.realpath(selected.sourcePath);
-        const sourceStat = await fs.stat(sourcePath);
-        if (!sourceStat.isFile()) {
-          return {status: 'failed', message: '通常の画像ファイルを選択してください。'};
-        }
-        if (sourceStat.size > MAX_IMAGE_BYTES) {
+        if (selected.file.size > MAX_IMAGE_BYTES) {
           return {status: 'failed', message: '画像は20 MB以下にしてください。'};
         }
         await decodeImage(selected.file);
-
-        const {destinationPath, publicPath} = resolveVisualDestination(
-          workspaceRoot,
-          videoId,
-          selected.fileName,
-          path,
-        );
-        if (await pathExists(fs, destinationPath)) {
-          if (!overwrite) {
-            return {status: 'replacement-required', publicPath};
-          }
-        }
-        await fs.mkdir(path.dirname(destinationPath), {recursive: true});
-        await fs.copyFile(sourcePath, destinationPath, overwrite ? 0 : fsConstants.COPYFILE_EXCL);
-        return {status: 'copied', publicPath};
+        return api.asset.copy(videoId, selected.sourcePath, overwrite);
       } catch (error) {
         return {
           status: 'failed',
@@ -82,14 +56,10 @@ export function createRendererAssetFileAccess(options: AssetFileAccessOptions = 
       }
     },
     async exists(publicPath) {
-      try {
-        return await pathExists(fs, resolvePublicAssetPath(workspaceRoot, publicPath, path));
-      } catch {
-        return false;
-      }
+      return api.asset.exists(publicPath);
     },
     async trash(publicPath) {
-      await trashItem(resolvePublicAssetPath(workspaceRoot, publicPath, path));
+      await api.asset.trash(publicPath);
     },
   };
 }
@@ -122,21 +92,6 @@ export function resolvePublicAssetPath(
   return candidate;
 }
 
-async function selectLocalImage(webUtils: typeof import('electron').webUtils): Promise<SelectedImage | null> {
-  const file = await new Promise<File | null>((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.png,.jpg,.jpeg,image/png,image/jpeg';
-    input.addEventListener('change', () => resolve(input.files?.[0] ?? null), {once: true});
-    input.addEventListener('cancel', () => resolve(null), {once: true});
-    input.click();
-  });
-  if (!file) {
-    return null;
-  }
-  return {file, fileName: file.name, sourcePath: webUtils.getPathForFile(file)};
-}
-
 async function decodeSelectedImage(file: File): Promise<void> {
   const bitmap = await createImageBitmap(file);
   try {
@@ -145,15 +100,6 @@ async function decodeSelectedImage(file: File): Promise<void> {
     }
   } finally {
     bitmap.close();
-  }
-}
-
-async function pathExists(fs: typeof import('node:fs/promises'), targetPath: string): Promise<boolean> {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
   }
 }
 

@@ -1,6 +1,5 @@
 import path from 'node:path';
 import os from 'node:os';
-import {constants as fsConstants} from 'node:fs';
 import * as fs from 'node:fs/promises';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
@@ -22,7 +21,7 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   vi.restoreAllMocks();
-  window.require = undefined as never;
+  delete globalThis.localFileApi;
   await Promise.all(temporaryDirectories.splice(0).map((directory) => fs.rm(directory, {recursive: true})));
 });
 
@@ -60,17 +59,6 @@ function createScript(image = '/visuals/sample-video/demo.png'): VideoScript {
       },
     ],
   };
-}
-
-function installNodeRequire(trashItem = vi.fn().mockResolvedValue(undefined)) {
-  window.require = ((id: string) => {
-    if (id === 'node:fs/promises') return fs;
-    if (id === 'node:fs') return {constants: fsConstants};
-    if (id === 'node:path') return path;
-    if (id === 'node:process') return process;
-    if (id === 'electron') return {shell: {trashItem}, webUtils: {getPathForFile: () => ''}};
-    throw new Error(`Unexpected module: ${id}`);
-  }) as never;
 }
 
 describe('asset rules', () => {
@@ -116,7 +104,20 @@ describe('renderer asset file access', () => {
     const sourcePath = path.join(workspaceRoot, 'source.png');
     await fs.writeFile(sourcePath, 'first');
     const trashItem = vi.fn().mockResolvedValue(undefined);
-    installNodeRequire(trashItem);
+    const copy = vi.fn()
+      .mockResolvedValueOnce({status: 'copied', publicPath: '/visuals/sample-video/source.png'})
+      .mockResolvedValueOnce({status: 'replacement-required', publicPath: '/visuals/sample-video/source.png'})
+      .mockResolvedValueOnce({status: 'copied', publicPath: '/visuals/sample-video/source.png'});
+    globalThis.localFileApi = {
+      workspace: {} as never,
+      chat: {} as never,
+      asset: {
+        select: vi.fn(),
+        copy,
+        exists: vi.fn().mockResolvedValue(true),
+        trash: trashItem,
+      },
+    };
     const file = new File(['first'], 'source.png', {type: 'image/png'});
     const access = createRendererAssetFileAccess({
       decodeImage: vi.fn().mockResolvedValue(undefined),
@@ -139,9 +140,7 @@ describe('renderer asset file access', () => {
     });
     expect(await access.exists('/visuals/sample-video/source.png')).toBe(true);
     await access.trash('/visuals/sample-video/source.png');
-    expect(trashItem).toHaveBeenCalledWith(
-      path.join(workspaceRoot, 'public', 'visuals', 'sample-video', 'source.png'),
-    );
+    expect(trashItem).toHaveBeenCalledWith('/visuals/sample-video/source.png');
   });
 
   it('rejects oversized images before decode and blocks paths outside public', async () => {
@@ -150,9 +149,13 @@ describe('renderer asset file access', () => {
     const sourcePath = path.join(workspaceRoot, 'large.png');
     await fs.writeFile(sourcePath, '');
     await fs.truncate(sourcePath, MAX_IMAGE_BYTES + 1);
-    installNodeRequire();
+    globalThis.localFileApi = {
+      workspace: {} as never,
+      chat: {} as never,
+      asset: {select: vi.fn(), copy: vi.fn(), exists: vi.fn(), trash: vi.fn()},
+    };
     const decodeImage = vi.fn();
-    const file = new File([], 'large.png', {type: 'image/png'});
+    const file = new File([new Uint8Array(MAX_IMAGE_BYTES + 1)], 'large.png', {type: 'image/png'});
     const access = createRendererAssetFileAccess({decodeImage, workspaceRoot});
 
     expect(await access.copyImage('sample-video', {file, fileName: file.name, sourcePath}))

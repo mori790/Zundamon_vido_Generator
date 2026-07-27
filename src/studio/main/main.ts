@@ -3,6 +3,8 @@ import {app, BrowserWindow, dialog, ipcMain, shell} from 'electron';
 import {CommandRunner} from './command-runner';
 import {checkPreview, loadPreview} from './preview-data-service';
 import {createRenderOutputService} from './render-output-service';
+import {createLocalFileService} from './local-file-service';
+import {CodexAppServerService} from './codex-app-server-service';
 import type {StartCommandRequest} from '../shared/command';
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -29,6 +31,11 @@ const runner = new CommandRunner(process.cwd(), {
     BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('command:log', entry));
   },
 }, undefined, (videoId) => renderOutputService.verify(videoId));
+const localFiles = createLocalFileService();
+const codex = new CodexAppServerService();
+codex.onEvent((event) => {
+  BrowserWindow.getAllWindows().forEach((window) => window.webContents.send('codex:event', event));
+});
 
 ipcMain.handle('command:start', (_event, request: StartCommandRequest) => runner.start(request));
 ipcMain.handle('command:stop', (_event, operationId: string) => runner.stop(operationId));
@@ -40,6 +47,25 @@ ipcMain.handle('render-output:status', (_event, videoId: string) => renderOutput
 ipcMain.handle('render-output:confirm-overwrite', (_event, videoId: string) =>
   renderOutputService.confirmOverwrite(videoId));
 ipcMain.handle('render-output:reveal', (_event, videoId: string) => renderOutputService.reveal(videoId));
+ipcMain.handle('local-file:list-input', () => localFiles.workspace.listInput());
+ipcMain.handle('local-file:read-script', (_event, fileName: string) => localFiles.workspace.readScript(fileName));
+ipcMain.handle('local-file:write-script', (_event, fileName: string, data: string) =>
+  localFiles.workspace.writeScript(fileName, data));
+ipcMain.handle('local-file:read-chat', (_event, videoId: string) => localFiles.chat.read(videoId));
+ipcMain.handle('local-file:write-chat', (_event, videoId: string, data: string) => localFiles.chat.write(videoId, data));
+ipcMain.handle('local-file:select-asset', () => localFiles.asset.select());
+ipcMain.handle('local-file:copy-asset', (_event, videoId: string, token: string, overwrite: boolean) =>
+  localFiles.asset.copy(videoId, token, overwrite));
+ipcMain.handle('local-file:asset-exists', (_event, publicPath: string) => localFiles.asset.exists(publicPath));
+ipcMain.handle('local-file:trash-asset', (_event, publicPath: string) => localFiles.asset.trash(publicPath));
+ipcMain.handle('codex:connect', (_event, videoId: string) => codex.connect(videoId));
+ipcMain.handle('codex:send', (_event, input) => codex.send(input));
+ipcMain.handle('codex:interrupt', () => codex.interrupt());
+ipcMain.handle('codex:reconnect', (_event, videoId: string) => codex.reconnect(videoId));
+ipcMain.handle('codex:start-new-thread', (_event, videoId: string) => codex.startNewThread(videoId));
+ipcMain.handle('codex:respond-approval', (_event, id: string, approved: boolean) =>
+  codex.respondApproval(id, approved));
+ipcMain.handle('codex:disconnect', () => codex.disconnect());
 
 async function createMainWindow(): Promise<void> {
   const window = new BrowserWindow({
@@ -49,9 +75,9 @@ async function createMainWindow(): Promise<void> {
     minHeight: 640,
     title: 'Zundamon Studio',
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true,
-      preload: path.join(process.cwd(), 'src/studio/main/preload.ts'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(process.cwd(), 'dist-studio/preload.cjs'),
     },
   });
 
@@ -66,6 +92,7 @@ async function createMainWindow(): Promise<void> {
 app.whenReady().then(createMainWindow);
 
 app.on('window-all-closed', () => {
+  void codex.disconnect();
   if (process.platform !== 'darwin') {
     app.quit();
   }
