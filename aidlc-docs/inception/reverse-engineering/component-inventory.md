@@ -24,6 +24,9 @@
 13. Codex/VOICEVOX dependency diagnosis.
 14. Production resource resolver and packaged CLI adapter.
 15. Forge packaging and release-artifact verifier.
+16. Text draft input and persistence.
+17. Codex-assisted scene segmentation and response validation.
+18. Scene editor, per-scene asset assignment, and script builder.
 
 ## Infrastructure Inventory
 
@@ -37,8 +40,9 @@
 
 ## Test Inventory
 
-- Default suite: 37 files and 135 tests.
+- Default suite: 45 TypeScript/TSX test files; latest completed U12 run recorded 207 passing tests.
 - Live VOICEVOX integration: separate opt-in test.
 - Electron E2E: context-isolated preload and asset workflow.
 - Codex integration: protocol example/PBT, fake-process, Renderer adapter, and Real panel tests.
 - U10 integration: Workspace root, dependency diagnosis, resource resolution, release policy PBT, packaged render smoke.
+- U12 coverage: draft persistence/validation, segmentation parsing, scene editing, asset assignment, script building, and Renderer tabs.

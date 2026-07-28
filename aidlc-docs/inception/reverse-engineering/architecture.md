@@ -17,7 +17,7 @@ Electron uses a context-isolated security boundary. The Main process owns child 
 - **Preload**
   - Exposes purpose-specific Workspace, dependency, command, preview, render-output, local-file, and Codex APIs.
 - **React Renderer**
-  - Owns workspace navigation, script review, Codex panel, preview, production commands, and status UI.
+  - Owns workspace navigation, text input, scene segmentation/editing, asset assignment, JSON generation, script review, Codex panel, preview, production commands, and status UI.
 - **Shared Studio Contracts**
   - Defines validated messages, state transitions, limits, proposals, assets, drafts, and IPC types.
 - **Generation Core**
@@ -39,6 +39,15 @@ Electron uses a context-isolated security boundary. The Main process owns child 
 4. Renderer requests production commands.
 5. Main runs existing npm/TypeScript scripts and streams operations/logs.
 6. Preview reads generated render data; Render writes `output/{videoId}.mp4`.
+
+### Text-to-Scene Workflow
+
+1. Renderer accepts pasted text or a bounded local text file.
+2. Shared validation rejects unsupported, empty, or oversized input.
+3. Renderer sends a constrained segmentation prompt through the existing Codex boundary.
+4. The response parser validates and normalizes ordered scenes.
+5. Creator edits scene text, tags, and order, then assigns local image assets.
+6. Script builder converts confirmed scenes into the existing validated `VideoScript` format.
 
 ### Codex Workflow
 

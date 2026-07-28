@@ -3,7 +3,7 @@
 ## Verification Status
 
 - TypeScript strict check passes.
-- Default suite: 37 test files and 135 tests pass.
+- Latest completed U12 verification recorded 207 passing tests; 45 TypeScript/TSX test files are currently present.
 - Studio production build passes.
 - Context-isolated Electron E2E passes.
 - Live Codex App Server initialize, thread start/resume, stream, and interrupt smoke passes.
@@ -29,8 +29,10 @@
 - Turn replay is avoided after reconnect.
 - Session persistence is atomic and file access is confined.
 - PBT covers protocol round-trip, bounds, and state monotonicity.
+- Text-to-scene parsing and validation are isolated in shared pure functions.
+- The UI reuses the existing Codex and purpose-specific filesystem boundaries.
 
-## Technical Debt and U11 Risks
+## Technical Debt and Current Risks
 
 - README is not aligned with the packaged Desktop workflow.
 - Clean-profile internal acceptance and live VOICEVOX integration remain manual.
@@ -38,6 +40,9 @@
 - ZIP is 261 MiB and exceeds the warning threshold.
 - No CI runner validates a clean packaged artifact.
 - No automatic updater or public release feed exists.
+- Renderer workflow orchestration is concentrated in `StudioApp.tsx`.
+- Global CSS has grown across multiple workflow tabs without explicit design tokens.
+- UI usability, keyboard flow, narrow-window behavior, and workflow discoverability lack recorded acceptance criteria.
 
 ## Release Readiness
 

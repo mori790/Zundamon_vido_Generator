@@ -67,3 +67,14 @@ These text sequences are the parser-safe alternatives to graphical sequence diag
 4. npm generates a CycloneDX SBOM.
 5. The verifier records SHA-256, version, Git revision, architecture, and release state.
 6. Missing Apple evidence keeps the state at `local-acceptance` and prohibits public distribution.
+
+## Text to Scene to JSON
+
+1. Creator enters or loads natural-language draft text in `TextInputTab`.
+2. Shared validation checks content and file limits.
+3. The existing Codex connection receives a bounded scene-segmentation prompt.
+4. Shared parsing validates the returned ordered scenes.
+5. Creator revises scenes in `SceneListTab`.
+6. Creator assigns images in `AssetAssignTab`.
+7. `JsonGenerateTab` builds and writes the existing `VideoScript` JSON.
+8. Studio returns to the workspace flow for validation, preview, and rendering.

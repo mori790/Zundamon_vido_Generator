@@ -34,6 +34,7 @@
 ### `localFileApi`
 
 - Workspace: list input, read script, write script.
+- Draft text: read and write the per-video natural-language draft.
 - Chat: read and write per-video history.
 - Asset: select, tokenized copy, existence check, and trash.
 
@@ -62,12 +63,15 @@
 - `renderVideo(videoId, options)` - renders MP4 with progress and stop support.
 - `applyScriptDraft(videoId, rawJson, fileAccess)` - validates, backs up, and writes an approved script.
 - `WorkspaceRootService` - selects, validates, persists, restores, or clears the project root.
+- `validateTextInput(...)` - validates draft presence and bounded length.
+- `buildSegmentationPrompt(draftText)` and `parseSegmentationResponse(responseText)` - create the constrained Codex request and validate its scene response.
+- `buildVideoScript(scenes, videoId, title)` - converts confirmed scenes and assets into the existing `VideoScript` schema.
 - `createDependencyDiagnosisService()` - performs bounded Codex and VOICEVOX checks.
 - Release verifier - classifies `local-acceptance` through `publishable` from explicit evidence.
 
 ## Principal Data Models
 
-- `VideoScript`, `Scene`, `Timeline`, `WorkspaceState`.
+- `VideoScript`, `Scene`, `SceneWithAsset`, `TextInputDraft`, `Timeline`, `WorkspaceState`.
 - `ChatHistory`, `ChatMessage`, `Proposal`, `CodexApproval`, `CodexEvent`.
 - `Operation`, `LogEntry`, `PreviewState`, `RenderOutputStatus`.
 - `WorkspaceReference`, `ProjectRootState`, `DependencyReport`, `ReleaseManifest`, `ReleaseEvidence`.
